@@ -1,0 +1,905 @@
+[
+  {
+    "id": "cessna-grand-caravan-ex",
+    "manufacturer": "Cessna",
+    "model": "Grand Caravan EX",
+    "description": "A rugged single-engine commuter for short regional routes.",
+    "imageAsset": "assets/aircraft/cessna-grand-caravan-ex.jpg",
+    "typicalSeats": 14,
+    "targetSeconds": 300,
+    "unlockType": "free",
+    "gameLayoutId": "level_c208",
+    "cabin": {
+      "rows": 7,
+      "seatBlocks": [
+        1,
+        1
+      ],
+      "aisleCount": 1,
+      "aisleCapacity": 6
+    },
+    "level": 1
+  },
+  {
+    "id": "cessna-skycourier",
+    "manufacturer": "Cessna",
+    "model": "SkyCourier",
+    "description": "A twin-engine utility turboprop built for regional passenger service.",
+    "imageAsset": "assets/aircraft/cessna-skycourier.jpg",
+    "typicalSeats": 19,
+    "targetSeconds": 360,
+    "unlockType": "progression",
+    "gameLayoutId": "level_skycourier",
+    "cabin": {
+      "rows": 10,
+      "seatBlocks": [
+        1,
+        1
+      ],
+      "aisleCount": 1,
+      "aisleCapacity": 7
+    },
+    "level": 2,
+    "unlockRequirement": "Complete Grand Caravan EX under 05:00"
+  },
+  {
+    "id": "saab-340b",
+    "manufacturer": "Saab",
+    "model": "340B",
+    "description": "A compact turboprop designed for dependable short regional links.",
+    "imageAsset": "assets/aircraft/saab-340b.jpg",
+    "typicalSeats": 34,
+    "targetSeconds": 420,
+    "unlockType": "progression",
+    "gameLayoutId": "level_saab340",
+    "cabin": {
+      "rows": 17,
+      "seatBlocks": [
+        1,
+        1
+      ],
+      "aisleCount": 1,
+      "aisleCapacity": 10
+    },
+    "level": 3,
+    "unlockRequirement": "Complete SkyCourier under 06:00"
+  },
+  {
+    "id": "atr-42-600",
+    "level": 4,
+    "manufacturer": "ATR",
+    "model": "42-600",
+    "description": "A compact turboprop built for short regional hops.",
+    "imageAsset": "assets/aircraft/atr-42-600.jpg",
+    "typicalSeats": 48,
+    "targetSeconds": 480,
+    "unlockType": "progression",
+    "cabin": {
+      "rows": 12,
+      "seatBlocks": [
+        2,
+        2
+      ],
+      "aisleCount": 1,
+      "aisleCapacity": 12
+    },
+    "gameLayoutId": "level_one",
+    "unlockRequirement": "Complete 340B under 07:00"
+  },
+  {
+    "id": "embraer-erj-145",
+    "level": 5,
+    "manufacturer": "Embraer",
+    "model": "ERJ-145",
+    "description": "A slim regional jet designed for frequent, quick turnarounds.",
+    "imageAsset": "assets/aircraft/embraer-erj-145.jpg",
+    "typicalSeats": 50,
+    "targetSeconds": 510,
+    "unlockType": "progression",
+    "unlockRequirement": "Complete 42-600 under 08:00",
+    "cabin": {
+      "rows": 13,
+      "seatBlocks": [
+        2,
+        2
+      ],
+      "aisleCount": 1,
+      "aisleCapacity": 12
+    },
+    "gameLayoutId": "level_one"
+  },
+  {
+    "id": "saab-2000",
+    "manufacturer": "Saab",
+    "model": "2000",
+    "description": "A fast regional turboprop built for longer, higher-speed routes.",
+    "imageAsset": "assets/aircraft/saab-2000.jpg",
+    "typicalSeats": 50,
+    "targetSeconds": 510,
+    "unlockType": "progression",
+    "gameLayoutId": "level_one",
+    "cabin": {
+      "rows": 13,
+      "seatBlocks": [
+        2,
+        2
+      ],
+      "aisleCount": 1,
+      "aisleCapacity": 14
+    },
+    "level": 6,
+    "unlockRequirement": "Complete ERJ-145 under 08:30"
+  },
+  {
+    "id": "ilyushin-il-114-300",
+    "manufacturer": "Ilyushin",
+    "model": "Il-114-300",
+    "description": "A modernized turboprop designed for regional and remote airports.",
+    "imageAsset": "assets/aircraft/ilyushin-il-114-300.jpg",
+    "typicalSeats": 68,
+    "targetSeconds": 540,
+    "unlockType": "progression",
+    "gameLayoutId": "level_two",
+    "cabin": {
+      "rows": 17,
+      "seatBlocks": [
+        2,
+        2
+      ],
+      "aisleCount": 1,
+      "aisleCapacity": 16
+    },
+    "level": 7,
+    "unlockRequirement": "Complete 2000 under 08:30"
+  },
+  {
+    "id": "bombardier-crj-700",
+    "level": 8,
+    "manufacturer": "Bombardier",
+    "model": "CRJ-700",
+    "description": "A stretched regional jet with a narrow single aisle.",
+    "imageAsset": "assets/aircraft/crj-700.jpg",
+    "typicalSeats": 70,
+    "targetSeconds": 555,
+    "unlockType": "progression",
+    "unlockRequirement": "Complete Il-114-300 under 09:00",
+    "cabin": {
+      "rows": 18,
+      "seatBlocks": [
+        2,
+        2
+      ],
+      "aisleCount": 1,
+      "aisleCapacity": 13
+    },
+    "gameLayoutId": "level_two"
+  },
+  {
+    "id": "atr-72-600",
+    "level": 9,
+    "manufacturer": "ATR",
+    "model": "72-600",
+    "description": "A high-wing regional workhorse for busy short routes.",
+    "imageAsset": "assets/aircraft/atr-72-600.jpg",
+    "typicalSeats": 72,
+    "targetSeconds": 540,
+    "unlockType": "progression",
+    "unlockRequirement": "Complete CRJ-700 under 09:15",
+    "cabin": {
+      "rows": 12,
+      "seatBlocks": [
+        3,
+        3
+      ],
+      "aisleCount": 1,
+      "aisleCapacity": 14
+    },
+    "gameLayoutId": "level_two"
+  },
+  {
+    "id": "embraer-e170",
+    "level": 10,
+    "manufacturer": "Embraer",
+    "model": "E170",
+    "description": "A regional jet with a roomy four-abreast cabin.",
+    "imageAsset": "assets/aircraft/embraer-e170.jpg",
+    "typicalSeats": 72,
+    "targetSeconds": 555,
+    "unlockType": "progression",
+    "unlockRequirement": "Complete 72-600 under 09:00",
+    "cabin": {
+      "rows": 18,
+      "seatBlocks": [
+        2,
+        2
+      ],
+      "aisleCount": 1,
+      "aisleCapacity": 14
+    }
+  },
+  {
+    "id": "dash-8-q400",
+    "level": 11,
+    "manufacturer": "De Havilland Canada",
+    "model": "Dash 8-400",
+    "description": "A fast turboprop that connects regional airports efficiently.",
+    "imageAsset": "assets/aircraft/dash-8-q400.jpg",
+    "typicalSeats": 78,
+    "targetSeconds": 570,
+    "unlockType": "progression",
+    "unlockRequirement": "Complete E170 under 09:15",
+    "cabin": {
+      "rows": 20,
+      "seatBlocks": [
+        2,
+        2
+      ],
+      "aisleCount": 1,
+      "aisleCapacity": 12
+    }
+  },
+  {
+    "id": "embraer-e175",
+    "level": 12,
+    "manufacturer": "Embraer",
+    "model": "E175",
+    "description": "A longer regional jet sized for high-frequency routes.",
+    "imageAsset": "assets/aircraft/embraer-e175.jpg",
+    "typicalSeats": 78,
+    "targetSeconds": 570,
+    "unlockType": "progression",
+    "unlockRequirement": "Complete Dash 8-400 under 09:30",
+    "cabin": {
+      "rows": 20,
+      "seatBlocks": [
+        2,
+        2
+      ],
+      "aisleCount": 1,
+      "aisleCapacity": 14
+    }
+  },
+  {
+    "id": "antonov-an-148",
+    "level": 13,
+    "manufacturer": "Antonov",
+    "model": "An-148",
+    "description": "A high-wing regional jet made for varied runway conditions.",
+    "imageAsset": "assets/aircraft/antonov-an-148.jpg",
+    "typicalSeats": 85,
+    "targetSeconds": 600,
+    "unlockType": "progression",
+    "unlockRequirement": "Complete E175 under 09:30",
+    "cabin": {
+      "rows": 17,
+      "seatBlocks": [
+        2,
+        3
+      ],
+      "aisleCount": 1,
+      "aisleCapacity": 15
+    }
+  },
+  {
+    "id": "comac-arj21",
+    "level": 14,
+    "manufacturer": "COMAC",
+    "model": "ARJ21-700",
+    "description": "A regional jet built to serve short and medium routes.",
+    "imageAsset": "assets/aircraft/comac-arj21.jpg",
+    "typicalSeats": 90,
+    "targetSeconds": 615,
+    "unlockType": "progression",
+    "unlockRequirement": "Complete An-148 under 10:00",
+    "cabin": {
+      "rows": 18,
+      "seatBlocks": [
+        2,
+        3
+      ],
+      "aisleCount": 1,
+      "aisleCapacity": 15
+    }
+  },
+  {
+    "id": "antonov-an-158",
+    "level": 15,
+    "manufacturer": "Antonov",
+    "model": "An-158",
+    "description": "A stretched regional jet with extra economy seating.",
+    "imageAsset": "assets/aircraft/antonov-an-158.jpg",
+    "typicalSeats": 99,
+    "targetSeconds": 630,
+    "unlockType": "progression",
+    "unlockRequirement": "Complete ARJ21-700 under 10:15",
+    "cabin": {
+      "rows": 20,
+      "seatBlocks": [
+        2,
+        3
+      ],
+      "aisleCount": 1,
+      "aisleCapacity": 16
+    }
+  },
+  {
+    "id": "embraer-e190",
+    "level": 16,
+    "manufacturer": "Embraer",
+    "model": "E190",
+    "description": "A versatile single-aisle jet for short and medium routes.",
+    "imageAsset": "assets/aircraft/embraer-e190.jpg",
+    "typicalSeats": 100,
+    "targetSeconds": 630,
+    "unlockType": "progression",
+    "unlockRequirement": "Complete An-158 under 10:30",
+    "cabin": {
+      "rows": 20,
+      "seatBlocks": [
+        2,
+        3
+      ],
+      "aisleCount": 1,
+      "aisleCapacity": 16
+    }
+  },
+  {
+    "id": "sukhoi-superjet-100",
+    "manufacturer": "Sukhoi",
+    "model": "Superjet 100",
+    "description": "A regional jet designed for short-haul city-pair service.",
+    "imageAsset": "assets/aircraft/sukhoi-superjet-100.jpg",
+    "typicalSeats": 100,
+    "targetSeconds": 630,
+    "unlockType": "progression",
+    "cabin": {
+      "rows": 20,
+      "seatBlocks": [
+        2,
+        3
+      ],
+      "aisleCount": 1,
+      "aisleCapacity": 20
+    },
+    "level": 17,
+    "unlockRequirement": "Complete E190 under 10:30"
+  },
+  {
+    "id": "airbus-a220-100",
+    "level": 18,
+    "manufacturer": "Airbus",
+    "model": "A220-100",
+    "description": "A quiet, wide-seat narrow-body for thinner routes.",
+    "imageAsset": "assets/aircraft/a220-100.jpg",
+    "typicalSeats": 125,
+    "targetSeconds": 675,
+    "unlockType": "progression",
+    "unlockRequirement": "Complete Superjet 100 under 10:30",
+    "cabin": {
+      "rows": 25,
+      "seatBlocks": [
+        2,
+        3
+      ],
+      "aisleCount": 1,
+      "aisleCapacity": 18
+    }
+  },
+  {
+    "id": "embraer-e195",
+    "level": 19,
+    "manufacturer": "Embraer",
+    "model": "E195-E2",
+    "description": "A modern stretched jet with efficient high-density seating.",
+    "imageAsset": "assets/aircraft/embraer-e195-e2.jpg",
+    "typicalSeats": 132,
+    "targetSeconds": 690,
+    "unlockType": "progression",
+    "unlockRequirement": "Complete A220-100 under 11:15",
+    "cabin": {
+      "rows": 26,
+      "seatBlocks": [
+        2,
+        3
+      ],
+      "aisleCount": 1,
+      "aisleCapacity": 17
+    }
+  },
+  {
+    "id": "airbus-a319neo",
+    "level": 20,
+    "manufacturer": "Airbus",
+    "model": "A319neo",
+    "description": "A compact A320-family jet with updated engines.",
+    "imageAsset": "assets/aircraft/a319neo.jpg",
+    "typicalSeats": 140,
+    "targetSeconds": 720,
+    "unlockType": "progression",
+    "unlockRequirement": "Complete E195-E2 under 11:30",
+    "cabin": {
+      "rows": 23,
+      "seatBlocks": [
+        3,
+        3
+      ],
+      "aisleCount": 1,
+      "aisleCapacity": 20
+    }
+  },
+  {
+    "id": "boeing-737-700",
+    "level": 21,
+    "manufacturer": "Boeing",
+    "model": "737-700",
+    "description": "A short-fuselage 737 suited to shorter or thinner routes.",
+    "imageAsset": "assets/aircraft/737-700.jpg",
+    "typicalSeats": 140,
+    "targetSeconds": 720,
+    "unlockType": "progression",
+    "unlockRequirement": "Complete A319neo under 12:00",
+    "cabin": {
+      "rows": 23,
+      "seatBlocks": [
+        3,
+        3
+      ],
+      "aisleCount": 1,
+      "aisleCapacity": 20
+    }
+  },
+  {
+    "id": "airbus-a220-300",
+    "level": 22,
+    "manufacturer": "Airbus",
+    "model": "A220-300",
+    "description": "A longer A220 variant that adds seats without losing range.",
+    "imageAsset": "assets/aircraft/a220-300.jpg",
+    "typicalSeats": 145,
+    "targetSeconds": 720,
+    "unlockType": "progression",
+    "unlockRequirement": "Complete 737-700 under 12:00",
+    "cabin": {
+      "rows": 29,
+      "seatBlocks": [
+        2,
+        3
+      ],
+      "aisleCount": 1,
+      "aisleCapacity": 18
+    }
+  },
+  {
+    "id": "airbus-a320",
+    "level": 23,
+    "manufacturer": "Airbus",
+    "model": "A320",
+    "description": "A familiar single-aisle jet for short and medium-haul flights.",
+    "imageAsset": "assets/aircraft/a320.jpg",
+    "typicalSeats": 150,
+    "targetSeconds": 750,
+    "unlockType": "progression",
+    "unlockRequirement": "Complete A220-300 under 12:00",
+    "cabin": {
+      "rows": 25,
+      "seatBlocks": [
+        3,
+        3
+      ],
+      "aisleCount": 1,
+      "aisleCapacity": 20
+    }
+  },
+  {
+    "id": "comac-c919",
+    "level": 24,
+    "manufacturer": "COMAC",
+    "model": "C919",
+    "description": "A new-generation single-aisle jet for domestic trunk routes.",
+    "imageAsset": "assets/aircraft/comac-c919.jpg",
+    "typicalSeats": 158,
+    "targetSeconds": 765,
+    "unlockType": "progression",
+    "unlockRequirement": "Complete A320 under 12:30",
+    "cabin": {
+      "rows": 26,
+      "seatBlocks": [
+        3,
+        3
+      ],
+      "aisleCount": 1,
+      "aisleCapacity": 21
+    }
+  },
+  {
+    "id": "boeing-737-800",
+    "level": 25,
+    "manufacturer": "Boeing",
+    "model": "737-800",
+    "description": "A high-capacity 737 variant common on short-haul networks.",
+    "imageAsset": "assets/aircraft/737-800.jpg",
+    "typicalSeats": 175,
+    "targetSeconds": 810,
+    "unlockType": "progression",
+    "unlockRequirement": "Complete C919 under 12:45",
+    "cabin": {
+      "rows": 29,
+      "seatBlocks": [
+        3,
+        3
+      ],
+      "aisleCount": 1,
+      "aisleCapacity": 22
+    }
+  },
+  {
+    "id": "airbus-a321neo",
+    "level": 26,
+    "manufacturer": "Airbus",
+    "model": "A321neo",
+    "description": "A stretched single-aisle jet with range for longer routes.",
+    "imageAsset": "assets/aircraft/a321neo.jpg",
+    "typicalSeats": 185,
+    "targetSeconds": 840,
+    "unlockType": "progression",
+    "unlockRequirement": "Complete 737-800 under 13:30",
+    "cabin": {
+      "rows": 31,
+      "seatBlocks": [
+        3,
+        3
+      ],
+      "aisleCount": 1,
+      "aisleCapacity": 23
+    }
+  },
+  {
+    "id": "boeing-737-9",
+    "level": 27,
+    "manufacturer": "Boeing",
+    "model": "737-9 MAX",
+    "description": "The longest 737 MAX variant before the 737-10.",
+    "imageAsset": "assets/aircraft/737-9-max.jpg",
+    "typicalSeats": 190,
+    "targetSeconds": 855,
+    "unlockType": "progression",
+    "unlockRequirement": "Complete A321neo under 14:00",
+    "cabin": {
+      "rows": 32,
+      "seatBlocks": [
+        3,
+        3
+      ],
+      "aisleCount": 1,
+      "aisleCapacity": 23
+    }
+  },
+  {
+    "id": "tupolev-tu-214",
+    "manufacturer": "Tupolev",
+    "model": "Tu-214",
+    "description": "A medium-range single-aisle jet for domestic and regional routes.",
+    "imageAsset": "assets/aircraft/tupolev-tu-214.jpg",
+    "typicalSeats": 194,
+    "targetSeconds": 870,
+    "unlockType": "progression",
+    "cabin": {
+      "rows": 28,
+      "seatBlocks": [
+        2,
+        3,
+        2
+      ],
+      "aisleCount": 2,
+      "aisleCapacity": 28
+    },
+    "level": 28,
+    "unlockRequirement": "Complete 737-9 MAX under 14:15"
+  },
+  {
+    "id": "boeing-757-200",
+    "level": 29,
+    "manufacturer": "Boeing",
+    "model": "757-200",
+    "description": "A powerful narrow-body built for dense and longer routes.",
+    "imageAsset": "assets/aircraft/757-200.jpg",
+    "typicalSeats": 200,
+    "targetSeconds": 870,
+    "unlockType": "progression",
+    "unlockRequirement": "Complete Tu-214 under 14:30",
+    "cabin": {
+      "rows": 33,
+      "seatBlocks": [
+        3,
+        3
+      ],
+      "aisleCount": 1,
+      "aisleCapacity": 24
+    }
+  },
+  {
+    "id": "airbus-a321xlr",
+    "level": 30,
+    "manufacturer": "Airbus",
+    "model": "A321XLR",
+    "description": "A long-range single-aisle aircraft for transcontinental links.",
+    "imageAsset": "assets/aircraft/a321xlr.jpg",
+    "typicalSeats": 206,
+    "targetSeconds": 885,
+    "unlockType": "progression",
+    "unlockRequirement": "Complete 757-200 under 14:30",
+    "cabin": {
+      "rows": 34,
+      "seatBlocks": [
+        3,
+        3
+      ],
+      "aisleCount": 1,
+      "aisleCapacity": 24
+    }
+  },
+  {
+    "id": "boeing-767-300er",
+    "level": 31,
+    "manufacturer": "Boeing",
+    "model": "767-300ER",
+    "description": "A proven twin-aisle jet for medium and long-haul flights.",
+    "imageAsset": "assets/aircraft/767-300er.jpg",
+    "typicalSeats": 218,
+    "targetSeconds": 900,
+    "unlockType": "progression",
+    "unlockRequirement": "Complete A321XLR under 14:45",
+    "cabin": {
+      "rows": 31,
+      "seatBlocks": [
+        2,
+        3,
+        2
+      ],
+      "aisleCount": 2,
+      "aisleCapacity": 28
+    }
+  },
+  {
+    "id": "airbus-a330-200",
+    "level": 32,
+    "manufacturer": "Airbus",
+    "model": "A330-200",
+    "description": "A wide-body twinjet balanced for long-range missions.",
+    "imageAsset": "assets/aircraft/a330-200.jpg",
+    "typicalSeats": 247,
+    "targetSeconds": 960,
+    "unlockType": "progression",
+    "unlockRequirement": "Complete 767-300ER under 15:00",
+    "cabin": {
+      "rows": 35,
+      "seatBlocks": [
+        2,
+        3,
+        2
+      ],
+      "aisleCount": 2,
+      "aisleCapacity": 30
+    }
+  },
+  {
+    "id": "boeing-787-8",
+    "level": 33,
+    "manufacturer": "Boeing",
+    "model": "787-8 Dreamliner",
+    "description": "A long-range composite wide-body for intercontinental travel.",
+    "imageAsset": "assets/aircraft/787-8.jpg",
+    "typicalSeats": 248,
+    "targetSeconds": 960,
+    "unlockType": "progression",
+    "unlockRequirement": "Complete A330-200 under 16:00",
+    "cabin": {
+      "rows": 35,
+      "seatBlocks": [
+        2,
+        3,
+        2
+      ],
+      "aisleCount": 2,
+      "aisleCapacity": 30
+    }
+  },
+  {
+    "id": "ilyushin-il-96-300",
+    "manufacturer": "Ilyushin",
+    "model": "Il-96-300",
+    "description": "A four-engine wide-body built for long-haul passenger service.",
+    "imageAsset": "assets/aircraft/ilyushin-il-96-300.jpg",
+    "typicalSeats": 252,
+    "targetSeconds": 990,
+    "unlockType": "progression",
+    "cabin": {
+      "rows": 36,
+      "seatBlocks": [
+        2,
+        3,
+        2
+      ],
+      "aisleCount": 2,
+      "aisleCapacity": 32
+    },
+    "level": 34,
+    "unlockRequirement": "Complete 787-8 Dreamliner under 16:00"
+  },
+  {
+    "id": "airbus-a330-300",
+    "level": 35,
+    "manufacturer": "Airbus",
+    "model": "A330-300",
+    "description": "A stretched twin-engine wide-body with a spacious twin aisle.",
+    "imageAsset": "assets/aircraft/a330-300.jpg",
+    "typicalSeats": 277,
+    "targetSeconds": 1020,
+    "unlockType": "progression",
+    "unlockRequirement": "Complete Il-96-300 under 16:30",
+    "cabin": {
+      "rows": 40,
+      "seatBlocks": [
+        2,
+        3,
+        2
+      ],
+      "aisleCount": 2,
+      "aisleCapacity": 32
+    }
+  },
+  {
+    "id": "boeing-787-9",
+    "level": 36,
+    "manufacturer": "Boeing",
+    "model": "787-9 Dreamliner",
+    "description": "A longer Dreamliner built for more passengers and greater range.",
+    "imageAsset": "assets/aircraft/787-9.jpg",
+    "typicalSeats": 296,
+    "targetSeconds": 1050,
+    "unlockType": "progression",
+    "unlockRequirement": "Complete A330-300 under 17:00",
+    "cabin": {
+      "rows": 42,
+      "seatBlocks": [
+        2,
+        3,
+        2
+      ],
+      "aisleCount": 2,
+      "aisleCapacity": 34
+    }
+  },
+  {
+    "id": "boeing-777-200er",
+    "level": 37,
+    "manufacturer": "Boeing",
+    "model": "777-200ER",
+    "description": "A long-range wide-body built for high-capacity international service.",
+    "imageAsset": "assets/aircraft/777-200er.jpg",
+    "typicalSeats": 313,
+    "targetSeconds": 1080,
+    "unlockType": "progression",
+    "unlockRequirement": "Complete 787-9 Dreamliner under 17:30",
+    "cabin": {
+      "rows": 45,
+      "seatBlocks": [
+        2,
+        3,
+        2
+      ],
+      "aisleCount": 2,
+      "aisleCapacity": 36
+    }
+  },
+  {
+    "id": "airbus-a350-900",
+    "level": 38,
+    "manufacturer": "Airbus",
+    "model": "A350-900",
+    "description": "A modern long-haul wide-body with a quiet twin-aisle cabin.",
+    "imageAsset": "assets/aircraft/a350.jpg",
+    "typicalSeats": 315,
+    "targetSeconds": 1080,
+    "unlockType": "premium",
+    "cabin": {
+      "rows": 45,
+      "seatBlocks": [
+        2,
+        3,
+        2
+      ],
+      "aisleCount": 2,
+      "aisleCapacity": 36
+    },
+    "priceLabel": "Premium aircraft"
+  },
+  {
+    "id": "airbus-a350-1000",
+    "level": 39,
+    "manufacturer": "Airbus",
+    "model": "A350-1000",
+    "description": "The largest A350 pairs long range with a longer cabin.",
+    "imageAsset": "assets/aircraft/a350-1000.jpg",
+    "typicalSeats": 369,
+    "targetSeconds": 1170,
+    "unlockType": "progression",
+    "unlockRequirement": "Complete 777-200ER under 18:00",
+    "cabin": {
+      "rows": 53,
+      "seatBlocks": [
+        2,
+        3,
+        2
+      ],
+      "aisleCount": 2,
+      "aisleCapacity": 40
+    }
+  },
+  {
+    "id": "boeing-777-300er",
+    "level": 40,
+    "manufacturer": "Boeing",
+    "model": "777-300ER",
+    "description": "A stretched twinjet carrying large passenger loads over long distances.",
+    "imageAsset": "assets/aircraft/777-300er.jpg",
+    "typicalSeats": 396,
+    "targetSeconds": 1230,
+    "unlockType": "progression",
+    "unlockRequirement": "Complete A350-1000 under 19:30",
+    "cabin": {
+      "rows": 57,
+      "seatBlocks": [
+        2,
+        3,
+        2
+      ],
+      "aisleCount": 2,
+      "aisleCapacity": 42
+    }
+  },
+  {
+    "id": "boeing-747-8",
+    "level": 41,
+    "manufacturer": "Boeing",
+    "model": "747-8 Intercontinental",
+    "description": "A four-engine classic updated with a long, roomy passenger deck.",
+    "imageAsset": "assets/aircraft/747-8.jpg",
+    "typicalSeats": 467,
+    "targetSeconds": 1350,
+    "unlockType": "premium",
+    "priceLabel": "Premium aircraft",
+    "cabin": {
+      "rows": 67,
+      "seatBlocks": [
+        2,
+        3,
+        2
+      ],
+      "aisleCount": 2,
+      "aisleCapacity": 46
+    }
+  },
+  {
+    "id": "airbus-a380-800",
+    "level": 42,
+    "manufacturer": "Airbus",
+    "model": "A380-800",
+    "description": "A full-length double-deck giant designed for the busiest routes.",
+    "imageAsset": "assets/aircraft/a380-800.jpg",
+    "typicalSeats": 525,
+    "targetSeconds": 1500,
+    "unlockType": "premium",
+    "priceLabel": "Premium aircraft",
+    "cabin": {
+      "rows": 75,
+      "seatBlocks": [
+        2,
+        3,
+        2
+      ],
+      "aisleCount": 2,
+      "aisleCapacity": 50
+    }
+  }
+]
