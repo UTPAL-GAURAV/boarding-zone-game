@@ -7,7 +7,7 @@ abstract final class LevelC208 {
     designWidth: 360,
     designHeight: 620,
     rowCount: 7,
-    zoneCount: 4,
+    zoneCount: 6,
     rowStartY: 150,
     rowSpacing: 47,
     seatWidth: 39,
@@ -16,7 +16,7 @@ abstract final class LevelC208 {
       SeatColumnLayout(label: 'A', centerX: 111, aisleIndex: 0),
       SeatColumnLayout(label: 'B', centerX: 249, aisleIndex: 0),
     ],
-    rowDefaultZones: [0, 0, 1, 1, 2, 3, 3],
+    rowDefaultZones: [5, 5, 5, 5, 5, 5, 5],
     aisles: [
       BoardingAisleLayout(
         id: 'main',

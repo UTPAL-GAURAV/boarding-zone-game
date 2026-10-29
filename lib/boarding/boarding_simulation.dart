@@ -48,6 +48,7 @@ class BoardingSimulation {
     this.layout = LevelOne.aircraft,
     this.luggageStowSeconds = 0.45,
     this.shuffleSeed,
+    List<int>? initialZones,
   }) : seats = [
          for (final spec in layout.seatSpecs())
            BoardingSeat(
@@ -58,7 +59,14 @@ class BoardingSimulation {
              zone: spec.defaultZone,
            ),
        ],
-       _aisles = [for (final aisle in layout.aisles) _AisleRuntime(aisle)];
+       _aisles = [for (final aisle in layout.aisles) _AisleRuntime(aisle)] {
+    if (initialZones?.length == seats.length) {
+      for (var index = 0; index < seats.length; index++) {
+        final zone = initialZones![index];
+        if (zone >= 0 && zone < layout.zoneCount) seats[index].zone = zone;
+      }
+    }
+  }
 
   final AircraftLayout layout;
   final double luggageStowSeconds;
@@ -96,9 +104,15 @@ class BoardingSimulation {
       for (final passenger in aisle.manifest) passenger.seat,
   ]);
 
-  void cycleZone(BoardingSeat seat) {
-    if (isBoarding) return;
-    seat.zone = (seat.zone + 1) % layout.zoneCount;
+  bool assignZone(BoardingSeat seat, int zone) {
+    if (isBoarding ||
+        zone < 0 ||
+        zone >= layout.zoneCount ||
+        seat.zone == zone) {
+      return false;
+    }
+    seat.zone = zone;
+    return true;
   }
 
   void start() {
@@ -140,6 +154,13 @@ class BoardingSimulation {
       aisle.manifest.clear();
       aisle.manifestIndex = 0;
       aisle.entryClock = 0;
+    }
+  }
+
+  void resetToDefaultZones() {
+    reset();
+    for (final seat in seats) {
+      seat.zone = layout.zoneCount - 1;
     }
   }
 

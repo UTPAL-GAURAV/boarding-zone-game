@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flame/game.dart';
 import 'package:flutter/material.dart';
 
@@ -9,12 +11,20 @@ import 'levels/level_one.dart';
 class BoardingGamePage extends StatefulWidget {
   const BoardingGamePage({
     super.key,
+    required this.aircraftName,
     this.layout = LevelOne.aircraft,
+    this.initialZones,
+    this.onZonesChanged,
     this.onCompleted,
+    this.onNext,
   });
 
+  final String aircraftName;
   final AircraftLayout layout;
-  final ValueChanged<int>? onCompleted;
+  final List<int>? initialZones;
+  final Future<void> Function(List<int> zones)? onZonesChanged;
+  final Future<void> Function(int seconds)? onCompleted;
+  final Future<void> Function()? onNext;
 
   @override
   State<BoardingGamePage> createState() => _BoardingGamePageState();
@@ -23,7 +33,12 @@ class BoardingGamePage extends StatefulWidget {
 class _BoardingGamePageState extends State<BoardingGamePage> {
   late final BoardingSimulation _simulation;
   late final CabinGame _game;
+  late final ScrollController _cabinScrollController;
+  late List<int> _lastSavedZones;
+  Future<void>? _completionSave;
+  int _selectedZone = 5;
   bool _reportedCompletion = false;
+  bool _paintPointerActive = false;
 
   static const _zones = CabinGame.zoneColors;
   static const _ink = Color(0xFF172B45);
@@ -32,22 +47,70 @@ class _BoardingGamePageState extends State<BoardingGamePage> {
   @override
   void initState() {
     super.initState();
-    _simulation = BoardingSimulation(layout: widget.layout);
+    _selectedZone = widget.layout.zoneCount - 1;
+    _cabinScrollController = ScrollController();
+    _simulation = BoardingSimulation(
+      layout: widget.layout,
+      initialZones: widget.initialZones,
+    );
+    _lastSavedZones = _zoneSnapshot();
     _game = CabinGame(simulation: _simulation, onChanged: _refresh);
   }
 
   void _refresh() {
+    _saveZonesWhenChanged();
     if (_simulation.isComplete && !_reportedCompletion) {
       _reportedCompletion = true;
-      widget.onCompleted?.call(_simulation.elapsedSeconds.floor());
+      _completionSave = widget.onCompleted?.call(
+        _simulation.elapsedSeconds.floor(),
+      );
     }
     if (mounted) setState(() {});
   }
 
   void _reset() {
-    _simulation.reset();
+    _simulation.resetToDefaultZones();
+    _selectedZone = widget.layout.zoneCount - 1;
     _refresh();
   }
+
+  @override
+  void dispose() {
+    _cabinScrollController.dispose();
+    super.dispose();
+  }
+
+  List<int> _zoneSnapshot() => [
+    for (final seat in _simulation.seats) seat.zone,
+  ];
+
+  void _saveZonesWhenChanged() {
+    final zones = _zoneSnapshot();
+    if (zones.length == _lastSavedZones.length &&
+        List<int>.generate(
+          zones.length,
+          (index) => index,
+        ).every((index) => zones[index] == _lastSavedZones[index])) {
+      return;
+    }
+    _lastSavedZones = zones;
+    final callback = widget.onZonesChanged;
+    if (callback != null) unawaited(callback(List.unmodifiable(zones)));
+  }
+
+  Future<void> _backToFleet() async {
+    await widget.onZonesChanged?.call(List.unmodifiable(_zoneSnapshot()));
+    if (mounted) Navigator.of(context).pop();
+  }
+
+  Future<void> _nextFlight() async {
+    await _completionSave;
+    await widget.onZonesChanged?.call(List.unmodifiable(_zoneSnapshot()));
+    await widget.onNext?.call();
+    if (mounted) Navigator.of(context).pop();
+  }
+
+  String _zoneLabel(int index) => String.fromCharCode(65 + index);
 
   String get _timer {
     final seconds = _simulation.elapsedSeconds.floor();
@@ -57,10 +120,12 @@ class _BoardingGamePageState extends State<BoardingGamePage> {
   }
 
   String get _boardingStatus {
-    if (!_simulation.isBoarding) return 'Tap a seat to change its zone';
+    if (!_simulation.isBoarding) {
+      return 'Zone ${_zoneLabel(_selectedZone)} selected · tap or swipe seats to paint';
+    }
     final zone = _simulation.currentEntryZone;
     if (zone != null) {
-      return 'Zone ${zone + 1} boarding · ${_simulation.waitingCount} waiting';
+      return 'Zone ${_zoneLabel(zone)} boarding · ${_simulation.waitingCount} waiting';
     }
     return _simulation.isComplete
         ? 'All passengers seated'
@@ -114,66 +179,49 @@ class _BoardingGamePageState extends State<BoardingGamePage> {
       height: 54,
       child: Row(
         children: [
-          Container(
-            width: 44,
-            height: 44,
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [Color(0xFF4789DD), Color(0xFF245AAE)],
-              ),
-              borderRadius: BorderRadius.circular(15),
-              boxShadow: const [
-                BoxShadow(
-                  color: Color(0x28446EAA),
-                  blurRadius: 12,
-                  offset: Offset(0, 5),
-                ),
-              ],
-            ),
-            child: const Icon(
-              Icons.flight_takeoff_rounded,
+          Tooltip(
+            message: 'Back to fleet',
+            child: Material(
               color: Colors.white,
-              size: 23,
+              borderRadius: BorderRadius.circular(14),
+              child: InkWell(
+                onTap: () => unawaited(_backToFleet()),
+                borderRadius: BorderRadius.circular(14),
+                child: const SizedBox(
+                  width: 44,
+                  height: 44,
+                  child: Icon(Icons.arrow_back_rounded, color: _ink, size: 22),
+                ),
+              ),
             ),
           ),
-          const SizedBox(width: 11),
-          const Expanded(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Boarding Zone',
-                  style: TextStyle(
-                    color: _ink,
-                    fontSize: 19,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: -0.4,
-                  ),
-                ),
-                SizedBox(height: 2),
-                Text(
-                  'PLAN A FASTER BOARDING',
-                  style: TextStyle(
-                    color: _muted,
-                    fontSize: 9,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: 1.25,
-                  ),
-                ),
-              ],
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              widget.aircraftName,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                color: _ink,
+                fontSize: 16,
+                fontWeight: FontWeight.w800,
+              ),
             ),
           ),
+          const SizedBox(width: 10),
           Material(
             color: Colors.white,
             borderRadius: BorderRadius.circular(14),
             child: InkWell(
               onTap: _reset,
               borderRadius: BorderRadius.circular(14),
-              child: const SizedBox(
-                width: 42,
-                height: 42,
-                child: Icon(Icons.restart_alt_rounded, color: _ink, size: 22),
+              child: const Tooltip(
+                message: 'Reset seats to Zone F',
+                child: SizedBox(
+                  width: 42,
+                  height: 42,
+                  child: Icon(Icons.restart_alt_rounded, color: _ink, size: 22),
+                ),
               ),
             ),
           ),
@@ -215,7 +263,7 @@ class _BoardingGamePageState extends State<BoardingGamePage> {
 
   Widget _buildZoneLegend() {
     return SizedBox(
-      height: 30,
+      height: 38,
       child: Row(
         children: [
           const Text(
@@ -227,13 +275,25 @@ class _BoardingGamePageState extends State<BoardingGamePage> {
               letterSpacing: 1.1,
             ),
           ),
-          const SizedBox(width: 10),
-          for (var zone = 0; zone < _simulation.layout.zoneCount; zone++) ...[
-            if (zone > 0) const SizedBox(width: 6),
-            _ZonePill(zone: zone + 1, color: _zones[zone]),
-          ],
-          const Spacer(),
-          const Icon(Icons.touch_app_rounded, color: _muted, size: 15),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Row(
+              children: [
+                for (var zone = 0; zone < _simulation.layout.zoneCount; zone++)
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 2),
+                      child: _ZonePill(
+                        zone: _zoneLabel(zone),
+                        color: _zones[zone],
+                        selected: zone == _selectedZone,
+                        onTap: () => setState(() => _selectedZone = zone),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
         ],
       ),
     );
@@ -248,16 +308,62 @@ class _BoardingGamePageState extends State<BoardingGamePage> {
           border: Border.all(color: const Color(0xFFE1E7EE)),
           borderRadius: BorderRadius.circular(28),
         ),
-        child: Stack(
-          fit: StackFit.expand,
-          children: [
-            Listener(
-              behavior: HitTestBehavior.opaque,
-              onPointerDown: (event) => _game.tapAt(event.localPosition),
-              child: GameWidget(game: _game),
-            ),
-            if (complete) _buildCompletionCard(),
-          ],
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final designScale =
+                constraints.maxWidth / _simulation.layout.designWidth;
+            final naturalHeight = _simulation.layout.designHeight * designScale;
+            final shouldScroll =
+                _simulation.layout.rowCount > 12 &&
+                naturalHeight > constraints.maxHeight;
+            final contentHeight = shouldScroll
+                ? naturalHeight
+                : constraints.maxHeight;
+            final scrollable = contentHeight > constraints.maxHeight + 1;
+            return Stack(
+              fit: StackFit.expand,
+              children: [
+                Scrollbar(
+                  controller: _cabinScrollController,
+                  thumbVisibility: scrollable,
+                  child: SingleChildScrollView(
+                    controller: _cabinScrollController,
+                    child: SizedBox(
+                      width: double.infinity,
+                      height: contentHeight,
+                      child: Listener(
+                        behavior: HitTestBehavior.opaque,
+                        onPointerDown: (event) {
+                          _paintPointerActive = _game.beginPaintingAt(
+                            event.localPosition,
+                            _selectedZone,
+                          );
+                        },
+                        onPointerMove: (event) {
+                          if (_paintPointerActive) {
+                            _game.continuePaintingAt(
+                              event.localPosition,
+                              _selectedZone,
+                            );
+                          }
+                        },
+                        onPointerUp: (_) {
+                          _paintPointerActive = false;
+                          _game.endPainting();
+                        },
+                        onPointerCancel: (_) {
+                          _paintPointerActive = false;
+                          _game.endPainting();
+                        },
+                        child: GameWidget(game: _game),
+                      ),
+                    ),
+                  ),
+                ),
+                if (complete) _buildCompletionCard(),
+              ],
+            );
+          },
         ),
       ),
     );
@@ -324,8 +430,22 @@ class _BoardingGamePageState extends State<BoardingGamePage> {
             ),
             const SizedBox(height: 4),
             const Text(
-              'Ready to plan another flight?',
+              'Ready for your next flight?',
               style: TextStyle(color: _muted, fontSize: 12),
+            ),
+            const SizedBox(height: 18),
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton.icon(
+                onPressed: () => unawaited(_nextFlight()),
+                icon: const Icon(Icons.arrow_forward_rounded),
+                label: const Text('NEXT FLIGHT'),
+                style: FilledButton.styleFrom(
+                  backgroundColor: const Color(0xFF3479D0),
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 13),
+                ),
+              ),
             ),
           ],
         ),
@@ -459,36 +579,67 @@ class _StatCard extends StatelessWidget {
 }
 
 class _ZonePill extends StatelessWidget {
-  const _ZonePill({required this.zone, required this.color});
+  const _ZonePill({
+    required this.zone,
+    required this.color,
+    required this.selected,
+    required this.onTap,
+  });
 
-  final int zone;
+  final String zone;
   final Color color;
+  final bool selected;
+  final VoidCallback onTap;
 
   @override
-  Widget build(BuildContext context) => Container(
-    padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 5),
-    decoration: BoxDecoration(
-      color: color.withValues(alpha: 0.12),
-      borderRadius: BorderRadius.circular(9),
-    ),
-    child: Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Container(
-          width: 7,
-          height: 7,
-          decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-        ),
-        const SizedBox(width: 4),
-        Text(
-          '$zone',
-          style: TextStyle(
-            color: color.withValues(alpha: 0.95),
-            fontSize: 10,
-            fontWeight: FontWeight.w800,
+  Widget build(BuildContext context) => Semantics(
+    container: true,
+    excludeSemantics: true,
+    button: true,
+    selected: selected,
+    label: 'Zone $zone${selected ? ', selected' : ''}',
+    onTap: onTap,
+    child: Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(11),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 120),
+          height: 34,
+          decoration: BoxDecoration(
+            color: color.withValues(alpha: selected ? 0.25 : 0.09),
+            border: Border.all(
+              color: selected ? color : color.withValues(alpha: 0.18),
+              width: selected ? 1.5 : 1,
+            ),
+            borderRadius: BorderRadius.circular(11),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                width: 7,
+                height: 7,
+                decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+              ),
+              const SizedBox(width: 3),
+              Text(
+                zone,
+                style: TextStyle(
+                  color: color.withValues(alpha: 0.95),
+                  fontSize: 10,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              if (selected) ...[
+                const SizedBox(width: 2),
+                Icon(Icons.check_rounded, color: color, size: 11),
+              ],
+            ],
           ),
         ),
-      ],
+      ),
     ),
   );
 }

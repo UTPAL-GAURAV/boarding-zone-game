@@ -43,6 +43,10 @@ class _BoardingHomeShellState extends State<BoardingHomeShell> {
     await AircraftCatalog.load();
     final profile = await _store.loadProfile();
     final progress = await _store.loadFleetProgress(AircraftCatalog.all);
+    final newestUnlocked = AircraftCatalog.all.lastWhere(
+      (aircraft) => progress[aircraft.id]?.unlocked == true,
+      orElse: () => AircraftCatalog.all.first,
+    );
     final bestTimes = {
       for (final entry in progress.entries)
         entry.key: entry.value.bestTimeSeconds,
@@ -50,6 +54,7 @@ class _BoardingHomeShellState extends State<BoardingHomeShell> {
     if (mounted) {
       setState(() {
         _profile = profile;
+        _selectedId = newestUnlocked.id;
         _bestTimes = bestTimes;
         _unlockedAircraftIds = {
           for (final entry in progress.entries)
@@ -96,6 +101,12 @@ class _BoardingHomeShellState extends State<BoardingHomeShell> {
       _showComingSoon(aircraft);
       return;
     }
+    final initialZones = await _store.loadSeatZones(
+      aircraft.id,
+      seatCount: layout.passengerCount,
+      zoneCount: layout.zoneCount,
+    );
+    if (!mounted) return;
     await Navigator.of(context).push(
       MaterialPageRoute<void>(
         builder: (_) => Theme(
@@ -114,8 +125,13 @@ class _BoardingHomeShellState extends State<BoardingHomeShell> {
               systemNavigationBarIconBrightness: Brightness.dark,
             ),
             child: BoardingGamePage(
+              aircraftName: aircraft.displayName,
               layout: layout,
+              initialZones: initialZones,
+              onZonesChanged: (zones) =>
+                  _store.saveSeatZones(aircraft.id, zones),
               onCompleted: (seconds) => _recordBestTime(aircraft, seconds),
+              onNext: () => _selectNextAircraft(aircraft),
             ),
           ),
         ),
@@ -131,6 +147,14 @@ class _BoardingHomeShellState extends State<BoardingHomeShell> {
       fleet: AircraftCatalog.all,
     );
     _applyFleetProgress(progress);
+  }
+
+  Future<void> _selectNextAircraft(Aircraft aircraft) async {
+    await _reloadFleetProgress();
+    if (!mounted) return;
+    final index = AircraftCatalog.all.indexOf(aircraft);
+    final next = AircraftCatalog.all[(index + 1) % AircraftCatalog.all.length];
+    setState(() => _selectedId = next.id);
   }
 
   Future<void> _reloadFleetProgress() async {
@@ -339,7 +363,7 @@ class _ProfileDialogState extends State<_ProfileDialog> {
   );
 }
 
-class _HomeTab extends StatelessWidget {
+class _HomeTab extends StatefulWidget {
   const _HomeTab({
     required this.crewName,
     required this.selected,
@@ -361,6 +385,62 @@ class _HomeTab extends StatelessWidget {
   final ValueChanged<Aircraft> onLockedTap;
 
   @override
+  State<_HomeTab> createState() => _HomeTabState();
+}
+
+class _HomeTabState extends State<_HomeTab> {
+  static const _cardExtent = 312.0;
+  late final ScrollController _fleetController;
+
+  int get _selectedIndex => AircraftCatalog.all
+      .indexWhere((aircraft) => aircraft.id == widget.selected.id)
+      .clamp(0, AircraftCatalog.all.length - 1);
+
+  @override
+  void initState() {
+    super.initState();
+    _fleetController = ScrollController(
+      initialScrollOffset: _selectedIndex * _cardExtent,
+    );
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _scrollToSelected(animate: false);
+    });
+  }
+
+  void _scrollToSelected({required bool animate}) {
+    if (!_fleetController.hasClients) return;
+    final position = _fleetController.position;
+    final target =
+        (_selectedIndex * _cardExtent - (position.viewportDimension - 300) / 2)
+            .clamp(0.0, position.maxScrollExtent);
+    if (animate) {
+      _fleetController.animateTo(
+        target,
+        duration: const Duration(milliseconds: 280),
+        curve: Curves.easeOutCubic,
+      );
+    } else {
+      _fleetController.jumpTo(target);
+    }
+  }
+
+  @override
+  void didUpdateWidget(covariant _HomeTab oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.selected.id != widget.selected.id) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _scrollToSelected(animate: true);
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    _fleetController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) => CustomScrollView(
     key: const PageStorageKey('fleet-scroll'),
     slivers: [
@@ -368,37 +448,39 @@ class _HomeTab extends StatelessWidget {
         padding: const EdgeInsets.fromLTRB(20, 18, 20, 28),
         sliver: SliverList.list(
           children: [
-            _HomeHeader(crewName: crewName, onTap: onProfileTap),
+            _HomeHeader(crewName: widget.crewName, onTap: widget.onProfileTap),
             const SizedBox(height: 36),
             const _PageTitle(kicker: 'SELECT YOUR AIRCRAFT', title: 'Fleet'),
             const SizedBox(height: 8),
             const Text(
-              'Swipe through the hangar to choose your next flight.',
+              'Swipe the hangar and tap an aircraft to enter its cabin.',
               style: TextStyle(color: _muted, fontSize: 12),
             ),
             const SizedBox(height: 18),
             SizedBox(
               height: 324,
               child: ListView.separated(
+                controller: _fleetController,
                 scrollDirection: Axis.horizontal,
                 itemCount: AircraftCatalog.all.length,
                 separatorBuilder: (_, _) => const SizedBox(width: 12),
                 itemBuilder: (context, index) {
                   final aircraft = AircraftCatalog.all[index];
-                  final unlocked = isUnlocked(aircraft);
+                  final unlocked = widget.isUnlocked(aircraft);
                   return _AircraftTile(
                     aircraft: aircraft,
-                    selected: aircraft.id == selected.id,
+                    selected: aircraft.id == widget.selected.id,
                     unlocked: unlocked,
-                    bestSeconds: bestTimes[aircraft.id],
+                    bestSeconds: widget.bestTimes[aircraft.id],
                     onTap: () {
                       if (aircraft.unlockType == AircraftUnlockType.premium &&
                           !unlocked) {
-                        onLockedTap(aircraft);
+                        widget.onLockedTap(aircraft);
                       } else if (unlocked) {
-                        onSelect(aircraft);
+                        widget.onSelect(aircraft);
+                        widget.onPlay(aircraft);
                       } else {
-                        onLockedTap(aircraft);
+                        widget.onLockedTap(aircraft);
                       }
                     },
                   );
@@ -430,7 +512,7 @@ class _HomeTab extends StatelessWidget {
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          selected.displayName,
+                          widget.selected.displayName,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: const TextStyle(
@@ -444,8 +526,8 @@ class _HomeTab extends StatelessWidget {
                   ),
                   const SizedBox(width: 10),
                   FilledButton.icon(
-                    onPressed: isUnlocked(selected)
-                        ? () => onPlay(selected)
+                    onPressed: widget.isUnlocked(widget.selected)
+                        ? () => widget.onPlay(widget.selected)
                         : null,
                     icon: const Icon(Icons.play_arrow_rounded, size: 20),
                     label: const Text('START FLIGHT'),
@@ -629,13 +711,6 @@ class _AircraftTile extends StatelessWidget {
                               : _accent,
                         ),
                       ),
-                      Positioned(
-                        right: 12,
-                        bottom: 12,
-                        child: _ManufacturerLogoBadge(
-                          manufacturer: aircraft.manufacturer,
-                        ),
-                      ),
                       if (!unlocked)
                         const Center(
                           child: Icon(
@@ -684,11 +759,29 @@ class _AircraftTile extends StatelessWidget {
                           ),
                         ),
                         const SizedBox(height: 4),
-                        Text(
-                          aircraft.subtitle,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(color: _muted, fontSize: 11),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                aircraft.subtitle,
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                                softWrap: true,
+                                style: const TextStyle(
+                                  color: _muted,
+                                  fontSize: 11,
+                                  height: 1.25,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Opacity(
+                              opacity: 0.58,
+                              child: _ManufacturerLogoBadge(
+                                manufacturer: aircraft.manufacturer,
+                              ),
+                            ),
+                          ],
                         ),
                         const Spacer(),
                         Text(

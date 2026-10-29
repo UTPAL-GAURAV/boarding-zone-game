@@ -24,6 +24,30 @@ void main() {
     expect(await store.bestTimeSeconds('airbus-a320'), 487);
   });
 
+  test('persists per-aircraft seat boarding zones locally', () async {
+    SharedPreferences.setMockInitialValues({});
+    final store = LocalProfileStore();
+    const zones = [0, 1, 2, 3, 4, 5];
+    await store.saveSeatZones('cessna-grand-caravan-ex', zones);
+
+    expect(
+      await store.loadSeatZones(
+        'cessna-grand-caravan-ex',
+        seatCount: zones.length,
+        zoneCount: 6,
+      ),
+      zones,
+    );
+    expect(
+      await store.loadSeatZones(
+        'cessna-grand-caravan-ex',
+        seatCount: zones.length + 1,
+        zoneCount: 6,
+      ),
+      isNull,
+    );
+  });
+
   test(
     'migrates Pilot defaults without changing the internal player ID',
     () async {

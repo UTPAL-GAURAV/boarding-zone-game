@@ -7,7 +7,7 @@ abstract final class LevelOne {
     designWidth: 360,
     designHeight: 620,
     rowCount: 12,
-    zoneCount: 4,
+    zoneCount: 6,
     rowStartY: 114,
     rowSpacing: 39,
     seatWidth: 37,
@@ -18,7 +18,7 @@ abstract final class LevelOne {
       SeatColumnLayout(label: 'C', centerX: 244, aisleIndex: 0),
       SeatColumnLayout(label: 'D', centerX: 290, aisleIndex: 0),
     ],
-    rowDefaultZones: [0, 0, 0, 1, 1, 1, 2, 2, 2, 3, 3, 3],
+    rowDefaultZones: [5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5],
     aisles: [
       BoardingAisleLayout(
         id: 'main',

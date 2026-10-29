@@ -7,7 +7,7 @@ abstract final class LevelTwo {
     designWidth: 360,
     designHeight: 620,
     rowCount: 12,
-    zoneCount: 4,
+    zoneCount: 6,
     rowStartY: 114,
     rowSpacing: 39,
     seatWidth: 29,
@@ -20,7 +20,7 @@ abstract final class LevelTwo {
       SeatColumnLayout(label: 'E', centerX: 266, aisleIndex: 0),
       SeatColumnLayout(label: 'F', centerX: 305, aisleIndex: 0),
     ],
-    rowDefaultZones: [0, 0, 0, 1, 1, 1, 2, 2, 2, 3, 3, 3],
+    rowDefaultZones: [5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5],
     aisles: [
       BoardingAisleLayout(
         id: 'main',

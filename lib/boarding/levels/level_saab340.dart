@@ -5,18 +5,18 @@ abstract final class LevelSaab340 {
   static const AircraftLayout aircraft = AircraftLayout(
     id: 'level_saab_340b_34_seat',
     designWidth: 360,
-    designHeight: 620,
+    designHeight: 810,
     rowCount: 17,
-    zoneCount: 4,
-    rowStartY: 104,
-    rowSpacing: 27,
+    zoneCount: 6,
+    rowStartY: 110,
+    rowSpacing: 37,
     seatWidth: 39,
-    seatHeight: 24,
+    seatHeight: 30,
     seatColumns: [
       SeatColumnLayout(label: 'A', centerX: 111, aisleIndex: 0),
       SeatColumnLayout(label: 'B', centerX: 249, aisleIndex: 0),
     ],
-    rowDefaultZones: [0, 0, 0, 0, 1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 3],
+    rowDefaultZones: [5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5],
     aisles: [
       BoardingAisleLayout(
         id: 'main',
@@ -40,7 +40,7 @@ abstract final class LevelSaab340 {
       left: 30,
       top: 38,
       width: 300,
-      height: 548,
+      height: 740,
       cornerRadius: 54,
     ),
     flightDeck: CabinRegion(

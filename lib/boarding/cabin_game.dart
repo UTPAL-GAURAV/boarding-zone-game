@@ -14,12 +14,15 @@ class CabinGame extends FlameGame {
   AircraftLayout get layout => simulation.layout;
   final VoidCallback onChanged;
   double _notifyClock = 0;
+  Offset? _lastPaintPosition;
 
   static const List<Color> zoneColors = [
     Color(0xFF4E91E5),
     Color(0xFFF2A64A),
     Color(0xFF56B991),
     Color(0xFFAD7BE0),
+    Color(0xFFE56B6F),
+    Color(0xFF49A9B7),
   ];
 
   @override
@@ -38,8 +41,29 @@ class CabinGame extends FlameGame {
     }
   }
 
-  void tapAt(Offset point) {
-    if (simulation.isBoarding || size.x == 0 || size.y == 0) return;
+  bool beginPaintingAt(Offset point, int zone) {
+    _lastPaintPosition = point;
+    return _paintAt(point, zone);
+  }
+
+  void continuePaintingAt(Offset point, int zone) {
+    final previous = _lastPaintPosition;
+    if (previous == null) {
+      beginPaintingAt(point, zone);
+      return;
+    }
+    final distance = (point - previous).distance;
+    final steps = (distance / 6).ceil().clamp(1, 240).toInt();
+    for (var step = 1; step <= steps; step++) {
+      _paintAt(Offset.lerp(previous, point, step / steps)!, zone);
+    }
+    _lastPaintPosition = point;
+  }
+
+  void endPainting() => _lastPaintPosition = null;
+
+  bool _paintAt(Offset point, int zone) {
+    if (simulation.isBoarding || size.x == 0 || size.y == 0) return false;
     final scale = math.min(
       size.x / layout.designWidth,
       size.y / layout.designHeight,
@@ -50,11 +74,11 @@ class CabinGame extends FlameGame {
     final y = (point.dy - top) / scale;
     for (final seat in simulation.seats) {
       if (_seatRect(seat.row, seat.column).inflate(4).contains(Offset(x, y))) {
-        simulation.cycleZone(seat);
-        onChanged();
-        return;
+        if (simulation.assignZone(seat, zone)) onChanged();
+        return true;
       }
     }
+    return false;
   }
 
   @override

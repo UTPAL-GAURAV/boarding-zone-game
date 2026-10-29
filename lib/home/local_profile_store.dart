@@ -66,6 +66,7 @@ class LocalProfileStore {
   static const _playerIdKey = 'player.internal_id';
   static const _displayNameKey = 'player.display_name';
   static const _bestPrefix = 'aircraft.best_seconds.';
+  static const _seatZonesPrefix = 'aircraft.seat_zones.v1.';
   static const _fleetProgressKey = 'fleet.aircraft_progress.v1';
   static const _crewNames = [
     'Falcon',
@@ -119,6 +120,36 @@ class LocalProfileStore {
         await _saveFleetProgress(progress.values);
       }
     }
+  }
+
+  Future<List<int>?> loadSeatZones(
+    String aircraftId, {
+    required int seatCount,
+    required int zoneCount,
+  }) async {
+    final raw = (await _preferences).getString('$_seatZonesPrefix$aircraftId');
+    if (raw == null) return null;
+    try {
+      final decoded = jsonDecode(raw) as List<dynamic>;
+      if (decoded.length != seatCount ||
+          decoded.any((value) => value is! int)) {
+        return null;
+      }
+      final zones = decoded.cast<int>();
+      if (zones.any((zone) => zone < 0 || zone >= zoneCount)) return null;
+      return zones;
+    } on FormatException {
+      return null;
+    } on TypeError {
+      return null;
+    }
+  }
+
+  Future<void> saveSeatZones(String aircraftId, List<int> zones) async {
+    await (await _preferences).setString(
+      '$_seatZonesPrefix$aircraftId',
+      jsonEncode(zones),
+    );
   }
 
   /// Loads the offline per-aircraft state, migrating older best-time keys.

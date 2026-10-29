@@ -7,7 +7,7 @@ abstract final class LevelSkyCourier {
     designWidth: 360,
     designHeight: 620,
     rowCount: 10,
-    zoneCount: 4,
+    zoneCount: 6,
     rowStartY: 132,
     rowSpacing: 36,
     seatWidth: 39,
@@ -16,7 +16,7 @@ abstract final class LevelSkyCourier {
       SeatColumnLayout(label: 'A', centerX: 111, aisleIndex: 0),
       SeatColumnLayout(label: 'B', centerX: 249, aisleIndex: 0),
     ],
-    rowDefaultZones: [0, 0, 0, 1, 1, 1, 2, 2, 3, 3],
+    rowDefaultZones: [5, 5, 5, 5, 5, 5, 5, 5, 5, 5],
     aisles: [
       BoardingAisleLayout(
         id: 'main',
