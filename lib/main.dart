@@ -52,7 +52,7 @@ Future<void> main() async {
 
       await Supabase.initialize(
         url: 'https://zfzbbvtdgwkhrbtlvjmm.supabase.co',
-        anonKey:
+        publishableKey:
             'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpmemJidnRkZ3draHJidGx2am1tIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTMzOTYyMjksImV4cCI6MjEwODk3MjIyOX0.61XvOkSuyaPsy1dV9x4JT1TBxamuJSqXpXmbHMaSYkg',
         httpClient: CronetClient.defaultCronetEngine(),
       );

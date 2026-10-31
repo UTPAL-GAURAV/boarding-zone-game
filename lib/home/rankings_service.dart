@@ -3,11 +3,13 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 class LeaderboardEntry {
   const LeaderboardEntry({
+    required this.playerId,
     required this.displayName,
     required this.bestMilliseconds,
     required this.runCount,
   });
 
+  final String playerId;
   final String displayName;
   final int bestMilliseconds;
   final int runCount;
@@ -100,7 +102,7 @@ class RankingsService {
       try {
         final rows = await _db
             .from('leaderboard')
-            .select('display_name, best_milliseconds, run_count')
+            .select('player_id, display_name, best_milliseconds, run_count')
             .eq('aircraft_id', aircraftId)
             .order('best_milliseconds', ascending: true)
             .limit(50);
@@ -112,6 +114,7 @@ class RankingsService {
         return [
           for (final row in rows)
             LeaderboardEntry(
+              playerId: row['player_id'] as String,
               displayName: row['display_name'] as String,
               bestMilliseconds: row['best_milliseconds'] as int,
               runCount: row['run_count'] as int,
@@ -156,6 +159,7 @@ class RankingsService {
         if (rows.isEmpty) return null;
         final row = rows.first;
         return LeaderboardEntry(
+          playerId: row['player_id'] as String,
           displayName: row['display_name'] as String,
           bestMilliseconds: row['best_milliseconds'] as int,
           runCount: row['run_count'] as int,

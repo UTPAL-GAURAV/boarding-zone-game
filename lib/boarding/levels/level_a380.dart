@@ -1,12 +1,12 @@
 import '../aircraft_layout.dart';
 
-/// Airbus A380-800 — 3-4-3 economy cabin (10 abreast, 2 aisles), 20 rows.
+/// Airbus A380-800 — 3-4-3 economy cabin (10 abreast, 2 aisles), 46 rows.
 abstract final class LevelA380 {
   static const AircraftLayout aircraft = AircraftLayout(
     id: 'level_a380_343',
     designWidth: 420,
-    designHeight: 750,
-    rowCount: 20,
+    designHeight: 1448,
+    rowCount: 46,
     zoneCount: 6,
     rowStartY: 114,
     rowSpacing: 29,
@@ -27,13 +27,16 @@ abstract final class LevelA380 {
     rowDefaultZones: [
       5, 5, 5, 5, 5, 5, 5, 5, 5, 5,
       5, 5, 5, 5, 5, 5, 5, 5, 5, 5,
+      5, 5, 5, 5, 5, 5, 5, 5, 5, 5,
+      5, 5, 5, 5, 5, 5, 5, 5, 5, 5,
+      5, 5, 5, 5, 5, 5,
     ],
     aisles: [
       BoardingAisleLayout(
         id: 'left',
         centerX: 101,
         width: 30,
-        capacity: 40,
+        capacity: 70,
         minimumSpacingRows: 0.4,
         entryIntervalSeconds: 0.24,
         walkingSpeedRowsPerSecond: 2.45,
@@ -45,7 +48,7 @@ abstract final class LevelA380 {
         id: 'right',
         centerX: 231,
         width: 30,
-        capacity: 40,
+        capacity: 70,
         minimumSpacingRows: 0.4,
         entryIntervalSeconds: 0.24,
         walkingSpeedRowsPerSecond: 2.45,
@@ -64,7 +67,7 @@ abstract final class LevelA380 {
       left: 6,
       top: 38,
       width: 408,
-      height: 680,
+      height: 1378,
       cornerRadius: 62,
     ),
     flightDeck: CabinRegion(

@@ -1,12 +1,12 @@
 import '../aircraft_layout.dart';
 
-/// Boeing 767-300ER — 2-4-2 wide-body (8 abreast, 2 aisles), 20 rows.
+/// Boeing 767-300ER — 2-4-2 wide-body (8 abreast, 2 aisles), 30 rows.
 abstract final class Level767 {
   static const AircraftLayout aircraft = AircraftLayout(
     id: 'level_767_242',
     designWidth: 400,
-    designHeight: 750,
-    rowCount: 20,
+    designHeight: 1010,
+    rowCount: 30,
     zoneCount: 6,
     rowStartY: 114,
     rowSpacing: 29,
@@ -25,13 +25,14 @@ abstract final class Level767 {
     rowDefaultZones: [
       5, 5, 5, 5, 5, 5, 5, 5, 5, 5,
       5, 5, 5, 5, 5, 5, 5, 5, 5, 5,
+      5, 5, 5, 5, 5, 5, 5, 5, 5, 5,
     ],
     aisles: [
       BoardingAisleLayout(
         id: 'left',
         centerX: 92,
         width: 30,
-        capacity: 40,
+        capacity: 55,
         minimumSpacingRows: 0.4,
         entryIntervalSeconds: 0.24,
         walkingSpeedRowsPerSecond: 2.45,
@@ -43,7 +44,7 @@ abstract final class Level767 {
         id: 'right',
         centerX: 244,
         width: 30,
-        capacity: 40,
+        capacity: 55,
         minimumSpacingRows: 0.4,
         entryIntervalSeconds: 0.24,
         walkingSpeedRowsPerSecond: 2.45,
@@ -62,7 +63,7 @@ abstract final class Level767 {
       left: 8,
       top: 38,
       width: 384,
-      height: 680,
+      height: 940,
       cornerRadius: 58,
     ),
     flightDeck: CabinRegion(

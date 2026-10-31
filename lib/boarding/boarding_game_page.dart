@@ -12,6 +12,7 @@ class BoardingGamePage extends StatefulWidget {
   const BoardingGamePage({
     super.key,
     required this.aircraftName,
+    this.aircraftImageAsset,
     this.layout = LevelOne.aircraft,
     this.initialZones,
     this.onZonesChanged,
@@ -23,6 +24,7 @@ class BoardingGamePage extends StatefulWidget {
   });
 
   final String aircraftName;
+  final String? aircraftImageAsset;
   final AircraftLayout layout;
   final List<int>? initialZones;
   final Future<void> Function(List<int> zones)? onZonesChanged;
@@ -52,6 +54,8 @@ class _BoardingGamePageState extends State<BoardingGamePage> {
   bool _paintPointerActive = false;
   double _lastPointerGlobalY = 0;
   double _lastPointerGlobalX = 0;
+  // Tracks the running best time across replays in this session.
+  int? _currentBestMilliseconds;
 
   static const _zones = CabinGame.zoneColors;
   static const _ink = Color(0xFFFFFFFF);
@@ -71,6 +75,7 @@ class _BoardingGamePageState extends State<BoardingGamePage> {
       layout: widget.layout,
       initialZones: widget.initialZones,
     );
+    _currentBestMilliseconds = widget.previousBestMilliseconds;
     _lastSavedZones = _zoneSnapshot();
     _game = CabinGame(simulation: _simulation, onChanged: _refresh);
   }
@@ -80,8 +85,9 @@ class _BoardingGamePageState extends State<BoardingGamePage> {
     if (_simulation.isComplete && !_reportedCompletion) {
       _reportedCompletion = true;
       final ms = (_simulation.elapsedSeconds * 1000).round();
-      final prev = widget.previousBestMilliseconds;
+      final prev = _currentBestMilliseconds;
       _isNewRecord = prev == null || ms < prev;
+      if (_isNewRecord) _currentBestMilliseconds = ms;
       _completionSave = widget.onCompleted?.call(ms);
     }
     if (mounted) setState(() {});
@@ -91,6 +97,14 @@ class _BoardingGamePageState extends State<BoardingGamePage> {
     _simulation.resetToDefaultZones();
     _selectedZone = widget.layout.zoneCount - 1;
     _refresh();
+  }
+
+  void _replay() {
+    _simulation.reset();
+    _reportedCompletion = false;
+    _isNewRecord = false;
+    _completionSave = null;
+    if (mounted) setState(() {});
   }
 
   @override
@@ -202,6 +216,7 @@ class _BoardingGamePageState extends State<BoardingGamePage> {
   }
 
   Widget _buildHeader() {
+    final imageAsset = widget.aircraftImageAsset;
     return SizedBox(
       height: 54,
       child: Row(
@@ -235,6 +250,19 @@ class _BoardingGamePageState extends State<BoardingGamePage> {
               ),
             ),
           ),
+          if (imageAsset != null) ...[
+            const SizedBox(width: 8),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(8),
+              child: Image.asset(
+                imageAsset,
+                width: 52,
+                height: 36,
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+              ),
+            ),
+          ],
           const SizedBox(width: 10),
           Material(
             color: _panel,
@@ -258,7 +286,7 @@ class _BoardingGamePageState extends State<BoardingGamePage> {
   }
 
   Widget _buildStats() {
-    final best = widget.previousBestMilliseconds;
+    final best = _currentBestMilliseconds;
     return Row(
       children: [
         Expanded(
@@ -523,10 +551,10 @@ class _BoardingGamePageState extends State<BoardingGamePage> {
               textAlign: TextAlign.center,
               style: const TextStyle(color: _muted, fontSize: 14, height: 1.4),
             ),
-            if (!_isNewRecord && widget.previousBestMilliseconds != null) ...[
+            if (!_isNewRecord && _currentBestMilliseconds != null) ...[
               const SizedBox(height: 4),
               Text(
-                'Your best: ${_formatMs(widget.previousBestMilliseconds!)}',
+                'Your best: ${_formatMs(_currentBestMilliseconds!)}',
                 textAlign: TextAlign.center,
                 style: const TextStyle(color: _muted, fontSize: 12),
               ),
@@ -554,22 +582,44 @@ class _BoardingGamePageState extends State<BoardingGamePage> {
               style: TextStyle(color: _muted, fontSize: 12),
             ),
             const SizedBox(height: 18),
-            SizedBox(
-              width: double.infinity,
-              child: FilledButton.icon(
-                onPressed: () => unawaited(_nextFlight()),
-                icon: const Icon(Icons.arrow_forward_rounded),
-                label: const Text('NEXT FLIGHT'),
-                style: FilledButton.styleFrom(
-                  backgroundColor: _accent,
-                  foregroundColor: Color(0xFF0A0E1A),
-                  padding: const EdgeInsets.symmetric(vertical: 13),
-                  textStyle: const TextStyle(
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: 0.5,
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: _replay,
+                    icon: const Icon(Icons.replay_rounded, size: 18),
+                    label: const Text('REPLAY'),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: Colors.white,
+                      side: BorderSide(color: Colors.white.withValues(alpha: 0.25)),
+                      padding: const EdgeInsets.symmetric(vertical: 13),
+                      textStyle: const TextStyle(
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: 0.5,
+                        fontSize: 11,
+                      ),
+                    ),
                   ),
                 ),
-              ),
+                const SizedBox(width: 10),
+                Expanded(
+                  flex: 2,
+                  child: FilledButton.icon(
+                    onPressed: () => unawaited(_nextFlight()),
+                    icon: const Icon(Icons.arrow_forward_rounded),
+                    label: const Text('NEXT FLIGHT'),
+                    style: FilledButton.styleFrom(
+                      backgroundColor: _accent,
+                      foregroundColor: Color(0xFF0A0E1A),
+                      padding: const EdgeInsets.symmetric(vertical: 13),
+                      textStyle: const TextStyle(
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
           ],
         ),

@@ -49,3 +49,5 @@ app.*.map.json
 
 # Local secrets — never commit
 lib/config/secrets.dart
+android/keystore.properties
+android/app/*.jks

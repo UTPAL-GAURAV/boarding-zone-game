@@ -22,7 +22,7 @@ Built with the Flame engine. Each aircraft is a timed puzzle — zone seats, boa
 | HTTP (Android) | cronet_http ^1.3.0 via `CronetClient.defaultCronetEngine()` |
 | Error reporting | sentry_flutter ^8.0.0 (DSN placeholder — needs replacing) |
 | Auth | google_sign_in ^6.2.1 (triggered only at purchase) |
-| Payments | razorpay_flutter ^1.3.6 (test mode) |
+| Payments | razorpay_flutter ^1.3.6 (test mode — not yet live) |
 | URL launch | url_launcher ^6.3.0 |
 
 ---
@@ -44,12 +44,12 @@ lib/
       level_c208.dart              — L01 Cessna Grand Caravan EX
       level_skycourier.dart        — L02 Cessna SkyCourier
       level_saab340.dart           — L03 Saab 340B
-      level_one.dart               — L04-06 shared layout (2×2 narrow-body)
-      level_two.dart               — L07-09 shared layout (3×3 narrow-body)
-      level_767.dart               — L31-37 wide-body 2-4-2 / 2-3-2
-      level_wide_232.dart          — wide-body 2-3-2 variant
-      level_wide_333.dart          — wide-body 3-3-3
-      level_a380.dart              — L42 A380 3-4-3
+      level_one.dart               — L04-06 shared layout (4-abreast narrow-body), 13 rows
+      level_two.dart               — L07-09 shared layout (4-abreast narrow-body), 18 rows
+      level_767.dart               — L31-37 wide-body 2-4-2 (8 abreast), 30 rows
+      level_wide_232.dart          — wide-body 2-3-2 (7 abreast, A330/787), 36 rows
+      level_wide_333.dart          — wide-body 3-3-3 (9 abreast, A350/777/747), 40 rows
+      level_a380.dart              — L42 A380 3-4-3 (10 abreast), 46 rows
   home/
     aircraft.dart                  — Aircraft model + AircraftCatalog (loads fleet JSON)
     aircraft_level_registry.dart   — maps gameLayoutId → AircraftLayout
@@ -60,7 +60,7 @@ lib/
     shop_service.dart              — Google Sign-In + Supabase purchase record/restore
 assets/
   data/aircraft_fleet.json         — 42 aircraft definitions (source of truth)
-  aircraft/                        — aircraft photos
+  aircraft/                        — aircraft photos (filenames must match imageAsset in JSON)
   manufacturers/                   — manufacturer logos
 android/
   app/
@@ -101,9 +101,9 @@ RLS is enabled on all tables. `purchases` currently has a permissive policy (all
 42 aircraft across levels 1–42, defined in `assets/data/aircraft_fleet.json`.
 
 - **Levels 1–30:** `unlockType: progression` — unlock by beating the previous aircraft's target time
-- **Levels 31–42:** `unlockType: premium` — require the Premium Fleet Pass purchase (₹499)
+- **Levels 31–42:** `unlockType: premium` — require the Premium Fleet Pass purchase ($5.99)
 
-### Playable game layouts (levels with a cabin game implemented)
+### Playable game layouts
 
 | Levels | Layout ID | Aircraft |
 |---|---|---|
@@ -112,8 +112,13 @@ RLS is enabled on all tables. `purchases` currently has a permissive policy (all
 | 3 | level_saab340 | Saab 340B |
 | 4–6 | level_one | ATR 42-600, ERJ-145, Saab 2000 |
 | 7–9 | level_two | Il-114-300, CRJ-700, ATR 72-600 |
+| 31–37 | level_767 | Wide-body 2-4-2 (Boeing 767 family) |
+| 38–41 (2-3-2) | level_wide_232 | A330/787/777-200ER |
+| 38–41 (3-3-3) | level_wide_333 | A350/777-300ER/747 |
+| 42 | level_a380 | Airbus A380-800 |
 
-**Levels 10–42 have no game layout yet** — they show "Coming Soon" in-app.
+**Levels 10–30 have no game layout yet** — they show "Coming Soon" in-app.  
+Levels 31–42 have layouts but are premium-locked.
 
 ### Seat layout configs (real-world economy layouts)
 
@@ -125,10 +130,26 @@ RLS is enabled on all tables. `purchases` currently has a permissive policy (all
 | 4-abreast | `["A","B","W","C","D"]` | L4–9 |
 | 5-abreast | `["A","B","W","C","D","E"]` | L13–22 |
 | 6-abreast | `["A","B","C","W","D","E","F"]` | L20–30 (single-aisle mainline) |
-| 7-abreast | `["A","B","W","C","D","E","F","W","G","H"]` | L31–37 (767, A330, 787) |
-| 9-abreast | `["A","B","C","W","D","E","F","W","G","H","J"]` | L38–42 (A350, 747, A380) |
+| 7-abreast (2-3-2) | `["A","B","W","C","D","E","W","F","G"]` | L31–37 (767, A330, 787) |
+| 8-abreast (2-4-2) | `["A","B","W","C","D","E","F","W","G","H"]` | 767 variant |
+| 9-abreast (3-3-3) | `["A","B","C","W","D","E","F","W","G","H","J"]` | L38–41 (A350, 747, 777) |
+| 10-abreast (3-4-3) | `["A","B","C","W","D","E","F","G","W","H","J","K"]` | L42 (A380) |
 
 `seatBlocks` in `AircraftLayout` is render-only (used to draw overhead bin panels and row numbers) and is separate from `seatLayout`.
+
+### Row counts (real-world economy cabin rows)
+
+| Layout | Row count | Basis |
+|---|---|---|
+| level_c208 | 5 | Cessna 208 (9 seats) |
+| level_skycourier | 9 | Cessna SkyCourier (19 seats) |
+| level_saab340 | 17 | Saab 340B (35 seats) |
+| level_one | 13 | ATR 42 / ERJ-145 / Saab 2000 |
+| level_two | 18 | CRJ-700 / ATR 72 |
+| level_767 | 30 | Boeing 767-300ER |
+| level_wide_232 | 36 | A330-200 / Boeing 787 |
+| level_wide_333 | 40 | A350 / Boeing 777-300ER |
+| level_a380 | 46 | Airbus A380-800 |
 
 ---
 
@@ -155,17 +176,44 @@ RLS is enabled on all tables. `purchases` currently has a permissive policy (all
 
 ---
 
-## Payment flow
+## Payment flow (current — not yet live)
 
 ```
-Tap "Unlock with Google"
-  → Google Sign-In (one tap)
-  → Razorpay sheet (₹499 / 49900 paise)
+Shop tab → "Sign in with Google"
+  → Google Sign-In (silent first, then picker)
+  → Shows signed-in account chip + "CLAIM YOUR SEAT" button
+  → Tap "CLAIM YOUR SEAT" → SnackBar: "Coming soon — payments aren't live yet"
+```
+
+**When Razorpay goes live**, replace the SnackBar stub in `_ShopTabState._handlePurchase()` with:
+```
+Razorpay sheet (₹499 / 49900 paise)
   → _onPaymentSuccess → ShopService.recordPurchase → Supabase purchases table
   → setState(_premiumUnlocked = true) → all L31-42 aircraft unlocked
 ```
 
 Restore flow: "Restore purchase" → Google Sign-In → `ShopService.restorePurchase` → Supabase lookup → unlock locally.
+
+---
+
+## Game screen — `BoardingGamePage`
+
+Key parameters:
+- `aircraftName` — shown in header
+- `aircraftImageAsset` — thumbnail shown after the name in the header
+- `layout` — `AircraftLayout` (required)
+- `previewOnly` — disables boarding, shows cabin preview only (for locked premium aircraft)
+- `previousBestMilliseconds` — best time at navigation time (seeded into `_currentBestMilliseconds`)
+- `onCompleted(ms)` — called with final time when boarding completes
+- `onNext()` — called when user taps "NEXT FLIGHT"
+
+Header layout: `← | Aircraft Name | [photo thumbnail] | ↺`
+
+Completion popup shows:
+- `REPLAY` (outlined) — calls `_replay()`, resets simulation without resetting zone paint
+- `NEXT FLIGHT` (filled, 2× width) — calls `_nextFlight()`
+
+`_currentBestMilliseconds` is mutable state (not `widget.previousBestMilliseconds`) — updates in-session so BEST shows correctly after replaying.
 
 ---
 
@@ -204,33 +252,18 @@ App never crashes on network failure — errors are swallowed after 3 retries an
 
 ### High priority
 
-1. **Sentry DSN** — replace `'SENTRY_DSN_PLACEHOLDER'` in `lib/main.dart:12` with the real DSN from sentry.io (org: nordiclabsdev, project: boarding-zone-game).
-
-2. **Razorpay go-live** — after Play Store publication and Razorpay account verification:
-   - Replace `rzp_test_SpygPfgyLGh3TU` in `lib/config/secrets.dart` with the live key from dashboard.razorpay.com
+1. **Razorpay go-live** — after Play Store publication and Razorpay account verification:
+   - Replace the SnackBar "coming soon" stub in `_ShopTabState._handlePurchase()` with the actual Razorpay `open()` call
+   - Replace `rzp_test_SpygPfgyLGh3TU` in `lib/config/secrets.dart` with the live key
    - Tighten Supabase RLS on `purchases` table to verify payment server-side (currently permissive)
-
-3. **Game package name finalisation** — `com.nordiclabs.boardingbluster` is set. Update Google OAuth client in Cloud Console if package name changes again.
-
-4. **Google OAuth — Android client** — verify the registered OAuth client (ID above) is type **Android** (not Web). Android type doesn't use a client secret.
 
 ### Medium priority
 
-5. **Game layouts for levels 10–42** — 33 aircraft currently show "Coming Soon". Each needs an `AircraftLayout` implementation in `lib/boarding/levels/` and a `gameLayoutId` entry in `aircraft_fleet.json` + `AircraftLevelRegistry`.
-
-6. **Promo banner in Shop tab** — `_PromoBanner` widget in `boarding_home_shell.dart` is a placeholder. Add real URLs/names for developer websites when ready. Use `url_launcher` (already a dependency).
-
-7. **`publishableKey` migration** — replace `anonKey:` with `publishableKey:` in `Supabase.initialize()` in `lib/main.dart`.
-
-8. **Release signing config** — `build.gradle.kts` still uses debug keys for release builds. Create a proper keystore and signing config before publishing.
+2. **Game layouts for levels 10–30** — 21 aircraft currently show "Coming Soon". Each needs an `AircraftLayout` in `lib/boarding/levels/` and a `gameLayoutId` in `aircraft_fleet.json` + `AircraftLevelRegistry`.
 
 ### Low priority
 
-9. **Cross-device purchase restore UX** — after reinstall, user must manually tap "Restore purchase". Consider auto-checking on app start if a cached Google ID exists.
-
-10. **Leaderboard player matching** — currently matches by `displayName + bestMilliseconds`. If two players share the same name and time, highlighting may be wrong. Consider matching by `player_id` instead (requires adding `player_id` to the `leaderboard` view).
-
-11. **Game name in pubspec** — `name: boarding_bluster` is set. The git repo folder is still named `boarding-zone-game` — rename the folder/repo on GitHub when convenient.
+3. **Promo banner / developer links** — Shop tab has no external links yet. Wire up `url_launcher` when developer site is ready.
 
 ---
 
@@ -241,6 +274,8 @@ App never crashes on network failure — errors are swallowed after 3 retries an
 - The `leaderboard` Supabase view is read-only; scores are written to the `scores` table directly.
 - Player UUID is generated client-side (`_newUuid()` in `LocalProfileStore`) — not tied to any auth system for anonymous play.
 - `_premiumUnlocked` in `_BoardingHomeShellState` is the single source of truth for premium access. It's loaded from `ShopService.isPremiumUnlocked()` (local cache) on startup and set to `true` after a successful payment.
+- Profile avatar icon: `Icons.airline_seat_recline_normal_rounded` (passenger icon, not person).
+- Aircraft image assets: filenames are as they appear in `aircraft_fleet.json` under `imageAsset`. Extension is `.jpeg` for some (e.g. `a380-800.jpeg`), `.jpg` for others — check the actual file before adding new entries.
 
 ### Boarding simulation architecture
 

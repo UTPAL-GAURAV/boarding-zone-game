@@ -5,8 +5,8 @@ abstract final class LevelWide333 {
   static const AircraftLayout aircraft = AircraftLayout(
     id: 'level_wide_333',
     designWidth: 400,
-    designHeight: 750,
-    rowCount: 20,
+    designHeight: 1288,
+    rowCount: 40,
     zoneCount: 6,
     rowStartY: 114,
     rowSpacing: 29,
@@ -26,13 +26,15 @@ abstract final class LevelWide333 {
     rowDefaultZones: [
       5, 5, 5, 5, 5, 5, 5, 5, 5, 5,
       5, 5, 5, 5, 5, 5, 5, 5, 5, 5,
+      5, 5, 5, 5, 5, 5, 5, 5, 5, 5,
+      5, 5, 5, 5, 5, 5, 5, 5, 5, 5,
     ],
     aisles: [
       BoardingAisleLayout(
         id: 'left',
         centerX: 112,
         width: 30,
-        capacity: 40,
+        capacity: 65,
         minimumSpacingRows: 0.4,
         entryIntervalSeconds: 0.24,
         walkingSpeedRowsPerSecond: 2.45,
@@ -44,7 +46,7 @@ abstract final class LevelWide333 {
         id: 'right',
         centerX: 224,
         width: 30,
-        capacity: 40,
+        capacity: 65,
         minimumSpacingRows: 0.4,
         entryIntervalSeconds: 0.24,
         walkingSpeedRowsPerSecond: 2.45,
@@ -63,7 +65,7 @@ abstract final class LevelWide333 {
       left: 8,
       top: 38,
       width: 384,
-      height: 680,
+      height: 1218,
       cornerRadius: 60,
     ),
     flightDeck: CabinRegion(

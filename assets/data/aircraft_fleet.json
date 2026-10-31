@@ -6,7 +6,7 @@
     "description": "A rugged single-engine commuter for short regional routes.",
     "imageAsset": "assets/aircraft/cessna-grand-caravan-ex.jpeg",
     "typicalSeats": 14,
-    "targetSeconds": 300,
+    "targetSeconds": 22,
     "unlockType": "free",
     "gameLayoutId": "level_c208",
     "cabin": {
@@ -28,7 +28,7 @@
     "description": "A twin-engine utility turboprop built for regional passenger service.",
     "imageAsset": "assets/aircraft/cessna-skycourier.jpeg",
     "typicalSeats": 19,
-    "targetSeconds": 360,
+    "targetSeconds": 30,
     "unlockType": "progression",
     "gameLayoutId": "level_skycourier",
     "cabin": {
@@ -51,7 +51,7 @@
     "description": "A compact turboprop designed for dependable short regional links.",
     "imageAsset": "assets/aircraft/saab-340b.jpeg",
     "typicalSeats": 34,
-    "targetSeconds": 420,
+    "targetSeconds": 40,
     "unlockType": "progression",
     "gameLayoutId": "level_saab340",
     "cabin": {
@@ -75,7 +75,7 @@
     "description": "A compact turboprop built for short regional hops.",
     "imageAsset": "assets/aircraft/atr-42-600.jpeg",
     "typicalSeats": 48,
-    "targetSeconds": 480,
+    "targetSeconds": 56,
     "unlockType": "progression",
     "cabin": {
       "rows": 12,
@@ -100,7 +100,7 @@
     "description": "A slim regional jet designed for frequent, quick turnarounds.",
     "imageAsset": "assets/aircraft/embraer-erj-145.jpeg",
     "typicalSeats": 50,
-    "targetSeconds": 510,
+    "targetSeconds": 70,
     "unlockType": "progression",
     "unlockRequirement": "Complete 42-600 under 08:00",
     "cabin": {
@@ -124,7 +124,7 @@
     "description": "A fast regional turboprop built for longer, higher-speed routes.",
     "imageAsset": "assets/aircraft/saab-2000.jpeg",
     "typicalSeats": 50,
-    "targetSeconds": 510,
+    "targetSeconds": 70,
     "unlockType": "progression",
     "gameLayoutId": "level_one",
     "cabin": {
@@ -149,7 +149,7 @@
     "description": "A modernized turboprop designed for regional and remote airports.",
     "imageAsset": "assets/aircraft/ilyushin-il-114-300.jpeg",
     "typicalSeats": 68,
-    "targetSeconds": 540,
+    "targetSeconds": 71,
     "unlockType": "progression",
     "gameLayoutId": "level_two",
     "cabin": {
@@ -175,7 +175,7 @@
     "description": "A stretched regional jet with a narrow single aisle.",
     "imageAsset": "assets/aircraft/bombardier-crj-700.jpeg",
     "typicalSeats": 70,
-    "targetSeconds": 555,
+    "targetSeconds": 78,
     "unlockType": "progression",
     "unlockRequirement": "Complete Il-114-300 under 09:00",
     "cabin": {

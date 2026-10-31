@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
 
+import 'package:google_sign_in/google_sign_in.dart';
 import 'package:razorpay_flutter/razorpay_flutter.dart';
 
 import '../boarding/boarding_game_page.dart';
@@ -66,7 +67,17 @@ class _BoardingHomeShellState extends State<BoardingHomeShell> {
     await AircraftCatalog.load();
     final profile = await _store.loadProfile();
     final progress = await _store.loadFleetProgress(AircraftCatalog.all);
-    final premiumUnlocked = await _shop.isPremiumUnlocked();
+    bool premiumUnlocked = await _shop.isPremiumUnlocked();
+
+    // Auto-restore: if premium is not locally cached but a Google ID is stored,
+    // silently check Supabase to recover after reinstall.
+    if (!premiumUnlocked) {
+      final cachedId = await _shop.cachedGoogleId();
+      if (cachedId != null && cachedId.isNotEmpty) {
+        premiumUnlocked = await _shop.restorePurchase(cachedId);
+      }
+    }
+
     final newestUnlocked = AircraftCatalog.all.lastWhere(
       (aircraft) => progress[aircraft.id]?.unlocked == true,
       orElse: () => AircraftCatalog.all.first,
@@ -126,48 +137,7 @@ class _BoardingHomeShellState extends State<BoardingHomeShell> {
     );
   }
 
-  Future<void> _startPurchase() async {
-    // 1. Google Sign-In
-    final account = await _shop.signIn();
-    if (!mounted) return;
-    if (account == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Sign-in cancelled. Purchase not started.'),
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
-      return;
-    }
-
-    // 2. Payment coming soon — Razorpay not yet live
-    if (!mounted) return;
-    showDialog<void>(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: _panel,
-        icon: const Icon(Icons.rocket_launch_rounded, color: _accent, size: 32),
-        title: const Text(
-          'Coming Soon',
-          style: TextStyle(color: Colors.white),
-        ),
-        content: Text(
-          'Hi ${account.displayName?.split(' ').first ?? 'there'}! Payments are not live yet. Check back soon to unlock the Premium Fleet Pass.',
-          style: const TextStyle(color: _muted),
-        ),
-        actions: [
-          FilledButton(
-            onPressed: () => Navigator.pop(context),
-            style: FilledButton.styleFrom(
-              backgroundColor: _accent,
-              foregroundColor: _navy,
-            ),
-            child: const Text('Got it'),
-          ),
-        ],
-      ),
-    );
-  }
+  Future<GoogleSignInAccount?> _signInForShop() => _shop.signIn();
 
   Future<void> _onPaymentSuccess(PaymentSuccessResponse response) async {
     final paymentId = response.paymentId ?? 'unknown';
@@ -281,6 +251,7 @@ class _BoardingHomeShellState extends State<BoardingHomeShell> {
                 ),
                 child: BoardingGamePage(
                   aircraftName: aircraft.displayName,
+                  aircraftImageAsset: aircraft.imageAsset,
                   layout: layout,
                   previewOnly: true,
                   onUnlockTap: () => setState(() => _destination = 2),
@@ -326,6 +297,7 @@ class _BoardingHomeShellState extends State<BoardingHomeShell> {
             ),
             child: BoardingGamePage(
               aircraftName: aircraft.displayName,
+              aircraftImageAsset: aircraft.imageAsset,
               layout: layout,
               initialZones: initialZones,
               previousBestMilliseconds: _bestTimes[aircraft.id],
@@ -487,7 +459,7 @@ class _BoardingHomeShellState extends State<BoardingHomeShell> {
               ),
               _ShopTab(
                 premiumUnlocked: _premiumUnlocked,
-                onPurchase: _startPurchase,
+                signIn: _signInForShop,
                 onRestore: _restorePurchase,
               ),
             ],
@@ -848,7 +820,7 @@ class _HomeHeader extends StatelessWidget {
                   border: Border.all(color: _accent.withValues(alpha: 0.4)),
                 ),
                 child: const Icon(
-                  Icons.person_rounded,
+                  Icons.airline_seat_recline_normal_rounded,
                   color: _accent,
                   size: 18,
                 ),
@@ -1328,7 +1300,7 @@ class _RankingsTabState extends State<_RankingsTab> {
                   final playerBest = snapshot.data?.$2;
                   final playerInTop =
                       playerBest != null &&
-                      entries.any((e) => e.displayName == playerBest.displayName);
+                      entries.any((e) => e.playerId == playerBest.playerId);
                   if (entries.isEmpty && playerBest == null) {
                     return Padding(
                       padding: const EdgeInsets.symmetric(vertical: 24),
@@ -1348,9 +1320,7 @@ class _RankingsTabState extends State<_RankingsTab> {
                           name: entries[i].displayName,
                           time: _formatTime(entries[i].bestMilliseconds),
                           highlighted: playerBest != null &&
-                              entries[i].bestMilliseconds ==
-                                  playerBest.bestMilliseconds &&
-                              entries[i].displayName == playerBest.displayName,
+                              entries[i].playerId == playerBest.playerId,
                         ),
                       if (playerBest != null && !playerInTop) ...[
                         const SizedBox(height: 4),
@@ -1435,15 +1405,65 @@ class _RankRow extends StatelessWidget {
   );
 }
 
-class _ShopTab extends StatelessWidget {
+class _ShopTab extends StatefulWidget {
   const _ShopTab({
     required this.premiumUnlocked,
-    required this.onPurchase,
+    required this.signIn,
     required this.onRestore,
   });
   final bool premiumUnlocked;
-  final VoidCallback onPurchase;
+  final Future<GoogleSignInAccount?> Function() signIn;
   final VoidCallback onRestore;
+
+  @override
+  State<_ShopTab> createState() => _ShopTabState();
+}
+
+class _ShopTabState extends State<_ShopTab> {
+  GoogleSignInAccount? _account;
+  bool _signingIn = false;
+
+  Future<void> _handleSignIn() async {
+    setState(() => _signingIn = true);
+    final account = await widget.signIn();
+    if (!mounted) return;
+    if (account == null) {
+      setState(() => _signingIn = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Sign-in cancelled.'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
+    setState(() {
+      _account = account;
+      _signingIn = false;
+    });
+  }
+
+  void _handlePurchase() {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            const Icon(Icons.rocket_launch_rounded, color: _accent, size: 18),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                'Coming soon — payments aren\'t live yet. Stay tuned!',
+                style: const TextStyle(color: Colors.white),
+              ),
+            ),
+          ],
+        ),
+        backgroundColor: _panel,
+        behavior: SnackBarBehavior.floating,
+        duration: const Duration(seconds: 3),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -1463,9 +1483,12 @@ class _ShopTab extends StatelessWidget {
 
               _PremiumPackCard(
                 aircraftList: premiumAircraft,
-                unlocked: premiumUnlocked,
-                onPurchase: onPurchase,
-                onRestore: onRestore,
+                unlocked: widget.premiumUnlocked,
+                signedInAccount: _account,
+                signingIn: _signingIn,
+                onSignIn: _handleSignIn,
+                onPurchase: _handlePurchase,
+                onRestore: widget.onRestore,
               ),
 
               const SizedBox(height: 20),
@@ -1481,12 +1504,18 @@ class _PremiumPackCard extends StatelessWidget {
   const _PremiumPackCard({
     required this.aircraftList,
     required this.unlocked,
+    required this.signedInAccount,
+    required this.signingIn,
+    required this.onSignIn,
     required this.onPurchase,
     required this.onRestore,
   });
 
   final List<Aircraft> aircraftList;
   final bool unlocked;
+  final GoogleSignInAccount? signedInAccount;
+  final bool signingIn;
+  final VoidCallback onSignIn;
   final VoidCallback onPurchase;
   final VoidCallback onRestore;
 
@@ -1517,7 +1546,7 @@ class _PremiumPackCard extends StatelessWidget {
                 child: Opacity(
                   opacity: 0.08,
                   child: Image.asset(
-                    'assets/aircraft/airbus-a380-800.jpg',
+                    'assets/aircraft/a380-800.jpeg',
                     fit: BoxFit.cover,
                   ),
                 ),
@@ -1663,27 +1692,101 @@ class _PremiumPackCard extends StatelessWidget {
                   ],
                 ),
                 const SizedBox(height: 14),
-                SizedBox(
-                  width: double.infinity,
-                  child: FilledButton.icon(
-                    onPressed: onPurchase,
-                    icon: const Icon(Icons.lock_open_rounded, size: 18),
-                    label: const Text('Unlock with Google'),
-                    style: FilledButton.styleFrom(
-                      backgroundColor: _accent,
-                      foregroundColor: _navy,
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      textStyle: const TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: 0.3,
-                      ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(14),
+
+                // Step 1 — sign in (show when not yet signed in)
+                if (signedInAccount == null) ...[
+                  SizedBox(
+                    width: double.infinity,
+                    child: FilledButton.icon(
+                      onPressed: signingIn ? null : onSignIn,
+                      icon: signingIn
+                          ? const SizedBox(
+                              width: 16,
+                              height: 16,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: _navy,
+                              ),
+                            )
+                          : const Icon(Icons.login_rounded, size: 18),
+                      label: Text(signingIn ? 'Signing in…' : 'Sign in with Google'),
+                      style: FilledButton.styleFrom(
+                        backgroundColor: _accent,
+                        foregroundColor: _navy,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        textStyle: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: 0.3,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14),
+                        ),
                       ),
                     ),
                   ),
-                ),
+                ] else ...[
+                  // Step 2 — signed in, show account + purchase button
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                    decoration: BoxDecoration(
+                      color: _panelLight,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(
+                          Icons.check_circle_rounded,
+                          color: Color(0xFF66BB6A),
+                          size: 16,
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            signedInAccount!.displayName ?? signedInAccount!.email,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                        Text(
+                          'Signed in',
+                          style: TextStyle(
+                            color: Colors.white.withValues(alpha: 0.45),
+                            fontSize: 10,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  SizedBox(
+                    width: double.infinity,
+                    child: FilledButton.icon(
+                      onPressed: onPurchase,
+                      icon: const Icon(Icons.flight_takeoff_rounded, size: 18),
+                      label: const Text('CLAIM YOUR SEAT'),
+                      style: FilledButton.styleFrom(
+                        backgroundColor: _accent,
+                        foregroundColor: _navy,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        textStyle: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 0.5,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+
                 const SizedBox(height: 10),
                 Center(
                   child: TextButton(
