@@ -9,6 +9,7 @@ import 'package:razorpay_flutter/razorpay_flutter.dart';
 
 import '../audio/app_audio.dart';
 import '../boarding/boarding_game_page.dart';
+import '../boarding/levels/level_tutorial.dart';
 import 'aircraft.dart';
 import 'aircraft_level_registry.dart';
 import 'local_profile_store.dart';
@@ -107,6 +108,13 @@ class _BoardingHomeShellState extends State<BoardingHomeShell> {
       });
     }
     unawaited(AppAudio.instance.init(enabled: soundEnabled));
+
+    // Auto-launch tutorial on first ever open
+    final tutorialDone = await _store.isTutorialCompleted();
+    if (!tutorialDone) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => _launchTutorial());
+    }
+
     return profile;
   }
 
@@ -127,6 +135,10 @@ class _BoardingHomeShellState extends State<BoardingHomeShell> {
       builder: (_) => _ProfileDialog(
         initialName: current.displayName,
         initialSoundEnabled: _soundEnabled,
+        onHowToPlay: () {
+          Navigator.of(context).pop();
+          _launchTutorial();
+        },
       ),
     );
     if (result == null) return;
@@ -369,6 +381,39 @@ class _BoardingHomeShellState extends State<BoardingHomeShell> {
     setState(() => _selectedId = next.id);
   }
 
+  Future<void> _launchTutorial() async {
+    if (!mounted) return;
+    await Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => Theme(
+          data: ThemeData(
+            useMaterial3: true,
+            brightness: Brightness.dark,
+            scaffoldBackgroundColor: const Color(0xFF0A0E1A),
+            colorScheme: ColorScheme.fromSeed(
+              seedColor: const Color(0xFFFFB930),
+              brightness: Brightness.dark,
+            ),
+            fontFamily: 'sans-serif',
+          ),
+          child: AnnotatedRegion<SystemUiOverlayStyle>(
+            value: const SystemUiOverlayStyle(
+              statusBarIconBrightness: Brightness.light,
+              systemNavigationBarColor: Color(0xFF0A0E1A),
+              systemNavigationBarIconBrightness: Brightness.light,
+            ),
+            child: BoardingGamePage(
+              aircraftName: 'Tutorial Flight',
+              layout: LevelTutorial.aircraft,
+              tutorialMode: true,
+              onCompleted: (_) async => _store.setTutorialCompleted(),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   Future<void> _reloadFleetProgress() async {
     final progress = await _store.loadFleetProgress(AircraftCatalog.all);
     _applyFleetProgress(progress);
@@ -515,10 +560,12 @@ class _ProfileDialog extends StatefulWidget {
   const _ProfileDialog({
     required this.initialName,
     required this.initialSoundEnabled,
+    required this.onHowToPlay,
   });
 
   final String initialName;
   final bool initialSoundEnabled;
+  final VoidCallback onHowToPlay;
 
   @override
   State<_ProfileDialog> createState() => _ProfileDialogState();
@@ -720,6 +767,22 @@ class _ProfileDialogState extends State<_ProfileDialog> {
                         inactiveTrackColor: _panelLight,
                       ),
                     ],
+                  ),
+                ),
+                const SizedBox(height: 6),
+                // How to play link
+                TextButton.icon(
+                  onPressed: widget.onHowToPlay,
+                  icon: const Icon(Icons.school_rounded, size: 14),
+                  label: const Text('How to play'),
+                  style: TextButton.styleFrom(
+                    foregroundColor: _accent,
+                    textStyle: const TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                    ),
+                    padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                   ),
                 ),
               ],

@@ -8,6 +8,7 @@ import 'boarding_simulation.dart';
 import 'cabin_game.dart';
 import 'aircraft_layout.dart';
 import 'levels/level_one.dart';
+import 'tutorial_overlay.dart';
 
 class BoardingGamePage extends StatefulWidget {
   const BoardingGamePage({
@@ -22,6 +23,7 @@ class BoardingGamePage extends StatefulWidget {
     this.previewOnly = false,
     this.onUnlockTap,
     this.previousBestMilliseconds,
+    this.tutorialMode = false,
   });
 
   final String aircraftName;
@@ -37,6 +39,8 @@ class BoardingGamePage extends StatefulWidget {
   final VoidCallback? onUnlockTap;
   /// Personal best from previous runs, null if this is the first run.
   final int? previousBestMilliseconds;
+  /// When true, coach-bubble tutorial overlays are shown step by step.
+  final bool tutorialMode;
 
   @override
   State<BoardingGamePage> createState() => _BoardingGamePageState();
@@ -57,6 +61,8 @@ class _BoardingGamePageState extends State<BoardingGamePage> {
   double _lastPointerGlobalX = 0;
   // Tracks the running best time across replays in this session.
   int? _currentBestMilliseconds;
+  // Tutorial step index (only used when widget.tutorialMode is true).
+  int _tutorialStep = 0;
 
   static const _zones = CabinGame.zoneColors;
   static const _ink = Color(0xFFFFFFFF);
@@ -83,13 +89,26 @@ class _BoardingGamePageState extends State<BoardingGamePage> {
 
   void _refresh() {
     _saveZonesWhenChanged();
+    if (widget.tutorialMode) {
+      final step = _tutorialStep < TutorialStep.values.length
+          ? TutorialStep.values[_tutorialStep]
+          : null;
+      // Auto-advance from startBoarding once boarding begins
+      if (step == TutorialStep.startBoarding && _simulation.isBoarding) {
+        _advanceTutorial(); // → watchBoard
+      }
+      // Auto-advance from watchBoard once complete
+      if (step == TutorialStep.watchBoard && _simulation.isComplete) {
+        _advanceTutorial(); // → done
+      }
+    }
     if (_simulation.isComplete && !_reportedCompletion) {
       _reportedCompletion = true;
       final ms = (_simulation.elapsedSeconds * 1000).round();
       final prev = _currentBestMilliseconds;
       _isNewRecord = prev == null || ms < prev;
       if (_isNewRecord) _currentBestMilliseconds = ms;
-      _completionSave = widget.onCompleted?.call(ms);
+      if (!widget.tutorialMode) _completionSave = widget.onCompleted?.call(ms);
       unawaited(AppAudio.instance.stopBgMusic());
     }
     if (mounted) setState(() {});
@@ -107,6 +126,25 @@ class _BoardingGamePageState extends State<BoardingGamePage> {
     _isNewRecord = false;
     _completionSave = null;
     if (mounted) setState(() {});
+  }
+
+  void _advanceTutorial() {
+    final next = _tutorialStep + 1;
+    final step = TutorialStep.values[next < TutorialStep.values.length ? next : TutorialStep.values.length - 1];
+    setState(() => _tutorialStep = next);
+    // Unfreeze simulation once we reach watchBoard
+    if (step == TutorialStep.watchBoard) {
+      _game.paused = false;
+    }
+    // Done — pop back to fleet after brief delay
+    if (step == TutorialStep.done) {
+      // handled by the overlay's GO TO FLEET button calling onDismiss again
+    }
+  }
+
+  void _finishTutorial() {
+    widget.onCompleted?.call(0);
+    Navigator.of(context).pop();
   }
   @override
   void dispose() {
@@ -177,41 +215,57 @@ class _BoardingGamePageState extends State<BoardingGamePage> {
   @override
   Widget build(BuildContext context) {
     final complete = _simulation.isComplete;
+    final tutStep = widget.tutorialMode && _tutorialStep < TutorialStep.values.length
+        ? TutorialStep.values[_tutorialStep]
+        : null;
     return Scaffold(
       backgroundColor: _bg,
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
-          child: Column(
-            children: [
-              _buildHeader(),
-              const SizedBox(height: 12),
-              _buildStats(),
-              const SizedBox(height: 10),
-              _buildZoneLegend(),
-              const SizedBox(height: 8),
-              Expanded(child: _buildCabin(complete)),
-              const SizedBox(height: 10),
-              Row(
+        child: Stack(
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+              child: Column(
                 children: [
-                  Expanded(
-                    child: Text(
-                      _boardingStatus,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        color: _muted,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w500,
+                  _buildHeader(),
+                  const SizedBox(height: 12),
+                  _buildStats(),
+                  const SizedBox(height: 10),
+                  _buildZoneLegend(),
+                  const SizedBox(height: 8),
+                  Expanded(child: _buildCabin(complete)),
+                  const SizedBox(height: 10),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          _boardingStatus,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            color: _muted,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
                       ),
-                    ),
+                      const SizedBox(width: 12),
+                      _buildStartButton(complete),
+                    ],
                   ),
-                  const SizedBox(width: 12),
-                  _buildStartButton(complete),
                 ],
               ),
-            ],
-          ),
+            ),
+            if (tutStep != null)
+              Positioned.fill(
+                child: TutorialOverlay(
+                  step: tutStep,
+                  onDismiss: tutStep == TutorialStep.done
+                      ? _finishTutorial
+                      : _advanceTutorial,
+                ),
+              ),
+          ],
         ),
       ),
     );
@@ -345,7 +399,14 @@ class _BoardingGamePageState extends State<BoardingGamePage> {
                         zone: _zoneLabel(zone),
                         color: _zones[zone],
                         selected: zone == _selectedZone,
-                        onTap: () => setState(() => _selectedZone = zone),
+                        onTap: () {
+                          setState(() => _selectedZone = zone);
+                          // Tutorial: advance from selectZone to paintSeats on first zone tap
+                          if (widget.tutorialMode &&
+                              _tutorialStep == TutorialStep.selectZone.index) {
+                            _advanceTutorial();
+                          }
+                        },
                       ),
                     ),
                   ),
@@ -402,14 +463,24 @@ class _BoardingGamePageState extends State<BoardingGamePage> {
                           child: Listener(
                             behavior: HitTestBehavior.opaque,
                             onPointerDown: (event) {
+                              if (widget.tutorialMode &&
+                                  _tutorialStep < TutorialStep.paintSeats.index) return;
                               _paintPointerActive = _game.beginPaintingAt(
                                 event.localPosition,
                                 _selectedZone,
                               );
                               _lastPointerGlobalY = event.position.dy;
                               _lastPointerGlobalX = event.position.dx;
+                              // Tutorial: advance from paintSeats to startBoarding on first paint
+                              if (widget.tutorialMode &&
+                                  _tutorialStep == TutorialStep.paintSeats.index &&
+                                  _paintPointerActive) {
+                                _advanceTutorial();
+                              }
                             },
                             onPointerMove: (event) {
+                              if (widget.tutorialMode &&
+                                  _tutorialStep < TutorialStep.paintSeats.index) return;
                               if (_paintPointerActive) {
                                 _game.continuePaintingAt(
                                   event.localPosition,

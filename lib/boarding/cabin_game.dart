@@ -10,6 +10,8 @@ import 'aircraft_layout.dart';
 class CabinGame extends FlameGame {
   CabinGame({required this.simulation, required this.onChanged});
 
+  bool paused = false;
+
   final BoardingSimulation simulation;
   AircraftLayout get layout => simulation.layout;
   final VoidCallback onChanged;
@@ -31,7 +33,7 @@ class CabinGame extends FlameGame {
   @override
   void update(double dt) {
     super.update(dt);
-    simulation.update(dt);
+    if (!paused) simulation.update(dt);
     if (simulation.isBoarding) {
       _notifyClock += dt;
       if (_notifyClock >= 0.12) {

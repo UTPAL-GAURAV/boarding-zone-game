@@ -152,7 +152,7 @@ class RankingsService {
       try {
         final rows = await _db
             .from('leaderboard')
-            .select('display_name, best_milliseconds, run_count')
+            .select('player_id, display_name, best_milliseconds, run_count')
             .eq('aircraft_id', aircraftId)
             .eq('player_id', playerId)
             .limit(1);
