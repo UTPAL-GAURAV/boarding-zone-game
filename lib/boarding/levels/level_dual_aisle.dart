@@ -1,0 +1,81 @@
+import '../aircraft_layout.dart';
+
+/// Tupolev Tu-214 — 2+3+2 dual-aisle (7 abreast, 2 aisles), 28 rows.
+abstract final class LevelDualAisle {
+  static const AircraftLayout aircraft = AircraftLayout(
+    id: 'level_dual_aisle_232',
+    designWidth: 380,
+    designHeight: 920,
+    rowCount: 28,
+    zoneCount: 6,
+    rowStartY: 114,
+    rowSpacing: 27,
+    seatWidth: 28,
+    seatHeight: 24,
+    seatColumns: [
+      SeatColumnLayout(label: 'A', centerX: 40,  aisleIndex: 0, seatType: SeatType.window),
+      SeatColumnLayout(label: 'B', centerX: 72,  aisleIndex: 0, seatType: SeatType.aisle),
+      SeatColumnLayout(label: 'C', centerX: 130, aisleIndex: 0, seatType: SeatType.aisle),
+      SeatColumnLayout(label: 'D', centerX: 165, aisleIndex: 1, seatType: SeatType.middle),
+      SeatColumnLayout(label: 'E', centerX: 200, aisleIndex: 1, seatType: SeatType.aisle),
+      SeatColumnLayout(label: 'F', centerX: 258, aisleIndex: 1, seatType: SeatType.aisle),
+      SeatColumnLayout(label: 'G', centerX: 290, aisleIndex: 1, seatType: SeatType.window),
+    ],
+    rowDefaultZones: [
+      5, 5, 5, 5, 5, 5, 5, 5, 5, 5,
+      5, 5, 5, 5, 5, 5, 5, 5, 5, 5,
+      5, 5, 5, 5, 5, 5, 5, 5,
+    ],
+    aisles: [
+      BoardingAisleLayout(
+        id: 'left',
+        centerX: 100,
+        width: 30,
+        capacity: 50,
+        minimumSpacingRows: 0.4,
+        entryIntervalSeconds: 0.22,
+        walkingSpeedRowsPerSecond: 2.55,
+        turnDurationSeconds: 0.72,
+        entranceRow: -6.0,
+        floorTop: 89,
+      ),
+      BoardingAisleLayout(
+        id: 'right',
+        centerX: 230,
+        width: 30,
+        capacity: 50,
+        minimumSpacingRows: 0.4,
+        entryIntervalSeconds: 0.22,
+        walkingSpeedRowsPerSecond: 2.55,
+        turnDurationSeconds: 0.72,
+        entranceRow: -6.0,
+        floorTop: 89,
+      ),
+    ],
+    seatBlocks: [
+      SeatBlockLayout(left: 24, right: 88),
+      SeatBlockLayout(left: 114, right: 216),
+      SeatBlockLayout(left: 242, right: 306),
+    ],
+    windowCentersX: [12, 318],
+    cabinShell: CabinRegion(
+      left: 10,
+      top: 38,
+      width: 360,
+      height: 850,
+      cornerRadius: 56,
+    ),
+    flightDeck: CabinRegion(
+      left: 130,
+      top: 42,
+      width: 120,
+      height: 24,
+      cornerRadius: 12,
+    ),
+    gateLabelY: 24,
+    entranceDoorY: 77,
+    entranceDoorHeight: 13,
+    seatLayout: ['A', 'B', 'W', 'C', 'D', 'E', 'W', 'F', 'G'],
+    blockerRules: {'A': ['B'], 'B': [], 'C': [], 'D': ['C'], 'E': ['C', 'D'], 'F': [], 'G': ['F']},
+  );
+}

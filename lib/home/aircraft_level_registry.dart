@@ -2,6 +2,8 @@ import '../boarding/aircraft_layout.dart';
 import '../boarding/levels/level_767.dart';
 import '../boarding/levels/level_a380.dart';
 import '../boarding/levels/level_c208.dart';
+import '../boarding/levels/level_dual_aisle.dart';
+import '../boarding/levels/level_five.dart';
 import '../boarding/levels/level_one.dart';
 import '../boarding/levels/level_saab340.dart';
 import '../boarding/levels/level_skycourier.dart';
@@ -20,6 +22,8 @@ abstract final class AircraftLevelRegistry {
     'level_one': LevelOne.aircraft,
     'level_two': LevelTwo.aircraft,
     'level_three': LevelThree.aircraft,
+    'level_five': LevelFive.aircraft,
+    'level_dual_aisle': LevelDualAisle.aircraft,
     'level_767_242': Level767.aircraft,
     'level_wide_232': LevelWide232.aircraft,
     'level_wide_333': LevelWide333.aircraft,

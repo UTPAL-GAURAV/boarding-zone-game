@@ -200,7 +200,7 @@
     "description": "A high-wing regional workhorse for busy short routes.",
     "imageAsset": "assets/aircraft/atr-72-600.jpeg",
     "typicalSeats": 72,
-    "targetSeconds": 540,
+    "targetSeconds": 90,
     "unlockType": "progression",
     "unlockRequirement": "Complete CRJ-700 under 09:15",
     "cabin": {
@@ -241,7 +241,8 @@
         "C",
         "D"
       ]
-    }
+    },
+    "gameLayoutId": "level_two"
   },
   {
     "id": "dash-8-q400",
@@ -265,7 +266,8 @@
         "C",
         "D"
       ]
-    }
+    },
+    "gameLayoutId": "level_two"
   },
   {
     "id": "embraer-e175",
@@ -289,7 +291,8 @@
         "C",
         "D"
       ]
-    }
+    },
+    "gameLayoutId": "level_two"
   },
   {
     "id": "antonov-an-148",
@@ -314,7 +317,8 @@
         "D",
         "E"
       ]
-    }
+    },
+    "gameLayoutId": "level_five"
   },
   {
     "id": "comac-arj21",
@@ -339,7 +343,8 @@
         "D",
         "E"
       ]
-    }
+    },
+    "gameLayoutId": "level_five"
   },
   {
     "id": "antonov-an-158",
@@ -364,7 +369,8 @@
         "D",
         "E"
       ]
-    }
+    },
+    "gameLayoutId": "level_five"
   },
   {
     "id": "embraer-e190",
@@ -389,7 +395,8 @@
         "D",
         "E"
       ]
-    }
+    },
+    "gameLayoutId": "level_five"
   },
   {
     "id": "sukhoi-superjet-100",
@@ -414,7 +421,8 @@
       ]
     },
     "level": 17,
-    "unlockRequirement": "Complete E190 under 10:30"
+    "unlockRequirement": "Complete E190 under 10:30",
+    "gameLayoutId": "level_five"
   },
   {
     "id": "airbus-a220-100",
@@ -439,7 +447,8 @@
         "D",
         "E"
       ]
-    }
+    },
+    "gameLayoutId": "level_five"
   },
   {
     "id": "embraer-e195",
@@ -464,7 +473,8 @@
         "D",
         "E"
       ]
-    }
+    },
+    "gameLayoutId": "level_five"
   },
   {
     "id": "airbus-a319neo",
@@ -490,7 +500,8 @@
         "E",
         "F"
       ]
-    }
+    },
+    "gameLayoutId": "level_three"
   },
   {
     "id": "boeing-737-700",
@@ -516,7 +527,8 @@
         "E",
         "F"
       ]
-    }
+    },
+    "gameLayoutId": "level_three"
   },
   {
     "id": "airbus-a220-300",
@@ -541,7 +553,8 @@
         "D",
         "E"
       ]
-    }
+    },
+    "gameLayoutId": "level_five"
   },
   {
     "id": "airbus-a320",
@@ -567,7 +580,8 @@
         "E",
         "F"
       ]
-    }
+    },
+    "gameLayoutId": "level_three"
   },
   {
     "id": "comac-c919",
@@ -593,7 +607,8 @@
         "E",
         "F"
       ]
-    }
+    },
+    "gameLayoutId": "level_three"
   },
   {
     "id": "boeing-737-800",
@@ -619,7 +634,8 @@
         "E",
         "F"
       ]
-    }
+    },
+    "gameLayoutId": "level_three"
   },
   {
     "id": "airbus-a321neo",
@@ -645,7 +661,8 @@
         "E",
         "F"
       ]
-    }
+    },
+    "gameLayoutId": "level_three"
   },
   {
     "id": "boeing-737-9",
@@ -671,7 +688,8 @@
         "E",
         "F"
       ]
-    }
+    },
+    "gameLayoutId": "level_three"
   },
   {
     "id": "tupolev-tu-214",
@@ -699,7 +717,8 @@
       ]
     },
     "level": 28,
-    "unlockRequirement": "Complete 737-9 MAX under 14:15"
+    "unlockRequirement": "Complete 737-9 MAX under 14:15",
+    "gameLayoutId": "level_dual_aisle"
   },
   {
     "id": "boeing-757-200",
@@ -725,7 +744,8 @@
         "E",
         "F"
       ]
-    }
+    },
+    "gameLayoutId": "level_three"
   },
   {
     "id": "airbus-a321xlr",
@@ -751,7 +771,8 @@
         "E",
         "F"
       ]
-    }
+    },
+    "gameLayoutId": "level_three"
   },
   {
     "id": "boeing-767-300er",
