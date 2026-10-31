@@ -24,7 +24,7 @@ abstract final class LevelSaab340 {
         width: 60,
         capacity: 10,
         minimumSpacingRows: 0.85,
-        entryIntervalSeconds: 0.42,
+        entryIntervalSeconds: 0.20,
         walkingSpeedRowsPerSecond: 5.5,
         turnDurationSeconds: 0.24,
         entranceRow: -0.9,

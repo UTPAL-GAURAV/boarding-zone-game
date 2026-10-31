@@ -26,7 +26,7 @@ abstract final class LevelOne {
         width: 32,
         capacity: 12,
         minimumSpacingRows: 0.85,
-        entryIntervalSeconds: 0.36,
+        entryIntervalSeconds: 0.20,
         walkingSpeedRowsPerSecond: 5.5,
         turnDurationSeconds: 0.24,
         entranceRow: -0.9,

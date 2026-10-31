@@ -8,9 +8,9 @@ import 'local_profile_store.dart';
 import 'manufacturer_brand_assets.dart';
 
 const _navy = Color(0xFF101923);
-const _panel = Color(0xFF1A2633);
-const _panelLight = Color(0xFF223242);
-const _muted = Color(0xFF9BAAB8);
+const _panel = Color(0xFFFFFFFF);
+const _panelLight = Color(0xFFE7EDF5);
+const _muted = Color(0xFF73849A);
 const _accent = Color(0xFF5EB8E8);
 
 class BoardingHomeShell extends StatefulWidget {
@@ -49,7 +49,7 @@ class _BoardingHomeShellState extends State<BoardingHomeShell> {
     );
     final bestTimes = {
       for (final entry in progress.entries)
-        entry.key: entry.value.bestTimeSeconds,
+        entry.key: entry.value.bestTimeMilliseconds,
     };
     if (mounted) {
       setState(() {
@@ -130,7 +130,8 @@ class _BoardingHomeShellState extends State<BoardingHomeShell> {
               initialZones: initialZones,
               onZonesChanged: (zones) =>
                   _store.saveSeatZones(aircraft.id, zones),
-              onCompleted: (seconds) => _recordBestTime(aircraft, seconds),
+              onCompleted: (milliseconds) =>
+                  _recordBestTime(aircraft, milliseconds),
               onNext: () => _selectNextAircraft(aircraft),
             ),
           ),
@@ -140,10 +141,10 @@ class _BoardingHomeShellState extends State<BoardingHomeShell> {
     await _reloadFleetProgress();
   }
 
-  Future<void> _recordBestTime(Aircraft aircraft, int seconds) async {
+  Future<void> _recordBestTime(Aircraft aircraft, int milliseconds) async {
     final progress = await _store.recordBoardingCompletion(
       aircraftId: aircraft.id,
-      seconds: seconds,
+      milliseconds: milliseconds,
       fleet: AircraftCatalog.all,
     );
     _applyFleetProgress(progress);
@@ -167,7 +168,7 @@ class _BoardingHomeShellState extends State<BoardingHomeShell> {
     setState(() {
       _bestTimes = {
         for (final entry in progress.entries)
-          entry.key: entry.value.bestTimeSeconds,
+          entry.key: entry.value.bestTimeMilliseconds,
       };
       _unlockedAircraftIds = {
         for (final entry in progress.entries)
@@ -186,10 +187,7 @@ class _BoardingHomeShellState extends State<BoardingHomeShell> {
       builder: (context) => AlertDialog(
         backgroundColor: _panel,
         icon: const Icon(Icons.lock_rounded, color: _accent),
-        title: Text(
-          aircraft.displayName,
-          style: const TextStyle(color: Colors.white),
-        ),
+        title: Text(aircraft.displayName, style: const TextStyle(color: _navy)),
         content: Text(
           aircraft.unlockRequirement ?? 'Complete the previous mission.',
           style: const TextStyle(color: _muted),
@@ -210,10 +208,7 @@ class _BoardingHomeShellState extends State<BoardingHomeShell> {
       builder: (context) => AlertDialog(
         backgroundColor: _panel,
         icon: const Icon(Icons.construction_rounded, color: _accent),
-        title: Text(
-          aircraft.displayName,
-          style: const TextStyle(color: Colors.white),
-        ),
+        title: Text(aircraft.displayName, style: const TextStyle(color: _navy)),
         content: const Text(
           'This aircraft is unlocked. Its boarding level is coming soon.',
           style: TextStyle(color: _muted),
@@ -235,13 +230,13 @@ class _BoardingHomeShellState extends State<BoardingHomeShell> {
       if (snapshot.connectionState != ConnectionState.done ||
           _profile == null) {
         return const Scaffold(
-          backgroundColor: _navy,
+          backgroundColor: Color(0xFFF2F4F8),
           body: Center(child: CircularProgressIndicator(color: _accent)),
         );
       }
       final crewMember = _profile!;
       return Scaffold(
-        backgroundColor: _navy,
+        backgroundColor: Color(0xFFF2F4F8),
         body: SafeArea(
           child: IndexedStack(
             index: _destination,
@@ -281,7 +276,7 @@ class _BoardingHomeShellState extends State<BoardingHomeShell> {
           ),
         ),
         bottomNavigationBar: NavigationBar(
-          backgroundColor: const Color(0xFF151F2A),
+          backgroundColor: Colors.white,
           indicatorColor: _accent.withValues(alpha: 0.18),
           selectedIndex: _destination,
           onDestinationSelected: (value) =>
@@ -336,12 +331,12 @@ class _ProfileDialogState extends State<_ProfileDialog> {
   @override
   Widget build(BuildContext context) => AlertDialog(
     backgroundColor: _panel,
-    title: const Text('Crew profile', style: TextStyle(color: Colors.white)),
+    title: const Text('Crew profile', style: TextStyle(color: _navy)),
     content: TextField(
       controller: _controller,
       autofocus: true,
       maxLength: 24,
-      style: const TextStyle(color: Colors.white),
+      style: const TextStyle(color: _navy),
       decoration: const InputDecoration(
         labelText: 'Display name',
         labelStyle: TextStyle(color: _muted),
@@ -471,7 +466,7 @@ class _HomeTabState extends State<_HomeTab> {
                     aircraft: aircraft,
                     selected: aircraft.id == widget.selected.id,
                     unlocked: unlocked,
-                    bestSeconds: widget.bestTimes[aircraft.id],
+                    bestMilliseconds: widget.bestTimes[aircraft.id],
                     onTap: () {
                       if (aircraft.unlockType == AircraftUnlockType.premium &&
                           !unlocked) {
@@ -493,7 +488,7 @@ class _HomeTabState extends State<_HomeTab> {
               decoration: BoxDecoration(
                 color: _panel,
                 borderRadius: BorderRadius.circular(18),
-                border: Border.all(color: Colors.white.withValues(alpha: 0.07)),
+                border: Border.all(color: _navy.withValues(alpha: 0.08)),
               ),
               child: Row(
                 children: [
@@ -516,7 +511,7 @@ class _HomeTabState extends State<_HomeTab> {
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: const TextStyle(
-                            color: Colors.white,
+                            color: _navy,
                             fontSize: 14,
                             fontWeight: FontWeight.w800,
                           ),
@@ -530,7 +525,7 @@ class _HomeTabState extends State<_HomeTab> {
                         ? () => widget.onPlay(widget.selected)
                         : null,
                     icon: const Icon(Icons.play_arrow_rounded, size: 20),
-                    label: const Text('START FLIGHT'),
+                    label: const Text('START ONBOARDING'),
                     style: FilledButton.styleFrom(
                       backgroundColor: _accent,
                       foregroundColor: _navy,
@@ -587,7 +582,7 @@ class _HomeHeader extends StatelessWidget {
         child: Text(
           'Boarding Zone',
           style: TextStyle(
-            color: Colors.white,
+            color: _navy,
             fontSize: 20,
             fontWeight: FontWeight.w800,
             letterSpacing: -0.4,
@@ -629,14 +624,14 @@ class _AircraftTile extends StatelessWidget {
     required this.aircraft,
     required this.selected,
     required this.unlocked,
-    required this.bestSeconds,
+    required this.bestMilliseconds,
     required this.onTap,
   });
 
   final Aircraft aircraft;
   final bool selected;
   final bool unlocked;
-  final int? bestSeconds;
+  final int? bestMilliseconds;
   final VoidCallback onTap;
 
   @override
@@ -651,7 +646,7 @@ class _AircraftTile extends StatelessWidget {
         ? 'LOCKED'
         : !hasLevel
         ? 'COMING SOON'
-        : bestSeconds != null
+        : bestMilliseconds != null
         ? 'COMPLETED'
         : 'AVAILABLE';
     final statusColor = premium ? const Color(0xFFF0B963) : _accent;
@@ -659,9 +654,9 @@ class _AircraftTile extends StatelessWidget {
         ? aircraft.unlockRequirement ?? aircraft.priceLabel ?? 'Locked aircraft'
         : !hasLevel
         ? 'LEVEL ${aircraft.level}  ·  ${aircraft.typicalSeats} SEATS  ·  IN DEVELOPMENT'
-        : bestSeconds != null
-        ? 'PERSONAL BEST  ${_formatTime(bestSeconds!)}'
-        : 'LEVEL ${aircraft.level}  ·  ${aircraft.typicalSeats} SEATS  ·  TARGET ${_formatTime(aircraft.targetSeconds)}';
+        : bestMilliseconds != null
+        ? 'PERSONAL BEST  ${_formatTime(bestMilliseconds!)}'
+        : 'LEVEL ${aircraft.level}  ·  ${aircraft.typicalSeats} SEATS  ·  TARGET ${_formatTime(aircraft.targetSeconds * 1000)}';
 
     return SizedBox(
       width: 300,
@@ -674,9 +669,7 @@ class _AircraftTile extends StatelessWidget {
           child: Container(
             decoration: BoxDecoration(
               border: Border.all(
-                color: selected
-                    ? _accent
-                    : Colors.white.withValues(alpha: 0.08),
+                color: selected ? _accent : _navy.withValues(alpha: 0.08),
                 width: selected ? 2 : 1,
               ),
               borderRadius: BorderRadius.circular(22),
@@ -701,7 +694,7 @@ class _AircraftTile extends StatelessWidget {
                               ? Icons.workspace_premium_rounded
                               : !unlocked
                               ? Icons.lock_rounded
-                              : bestSeconds != null
+                              : bestMilliseconds != null
                               ? Icons.check_rounded
                               : Icons.flight_takeoff_rounded,
                           color: premium
@@ -753,7 +746,7 @@ class _AircraftTile extends StatelessWidget {
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: const TextStyle(
-                            color: Colors.white,
+                            color: _navy,
                             fontSize: 19,
                             fontWeight: FontWeight.w800,
                           ),
@@ -789,7 +782,7 @@ class _AircraftTile extends StatelessWidget {
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
                           style: TextStyle(
-                            color: unlocked ? _accent : Colors.white70,
+                            color: unlocked ? _accent : _muted,
                             fontSize: 9,
                             fontWeight: FontWeight.w800,
                             letterSpacing: 0.4,
@@ -924,22 +917,22 @@ class _RankingsTabState extends State<_RankingsTab> {
 
   static const _sampleRows = <String, List<(String, String)>>{
     'airbus-a320': [
-      ('CloudRunner', '07:42'),
-      ('JetLagZero', '08:06'),
-      ('AeroAce', '08:19'),
-      ('SkywardSam', '08:44'),
+      ('CloudRunner', '462.000'),
+      ('JetLagZero', '486.000'),
+      ('AeroAce', '499.000'),
+      ('SkywardSam', '524.000'),
     ],
     'boeing-737': [
-      ('RunwayRanger', '07:35'),
-      ('NorthStar', '08:12'),
-      ('WingSpan', '08:27'),
-      ('TaxiwayTom', '08:58'),
+      ('RunwayRanger', '455.000'),
+      ('NorthStar', '492.000'),
+      ('WingSpan', '507.000'),
+      ('TaxiwayTom', '538.000'),
     ],
     'airbus-a350': [
-      ('LongHaulLee', '11:08'),
-      ('CloudRunner', '11:31'),
-      ('SeatbeltSam', '11:57'),
-      ('AeroAce', '12:20'),
+      ('LongHaulLee', '668.000'),
+      ('CloudRunner', '691.000'),
+      ('SeatbeltSam', '717.000'),
+      ('AeroAce', '740.000'),
     ],
   };
 
@@ -949,10 +942,10 @@ class _RankingsTabState extends State<_RankingsTab> {
     final samples =
         _sampleRows[_selectedId] ??
         const [
-          ('SkywardSam', '09:12'),
-          ('CloudRunner', '09:38'),
-          ('AeroAce', '10:04'),
-          ('RunwayRanger', '10:27'),
+          ('SkywardSam', '552.000'),
+          ('CloudRunner', '578.000'),
+          ('AeroAce', '604.000'),
+          ('RunwayRanger', '627.000'),
         ];
     final localTime = widget.bestTimes[_selectedId];
     return CustomScrollView(
@@ -972,7 +965,7 @@ class _RankingsTabState extends State<_RankingsTab> {
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF23384A),
+                  color: const Color(0xFFE8F2FB),
                   borderRadius: BorderRadius.circular(13),
                 ),
                 child: const Row(
@@ -983,7 +976,7 @@ class _RankingsTabState extends State<_RankingsTab> {
                       child: Text(
                         'PREVIEW DATA · Sample rankings only, not live results',
                         style: TextStyle(
-                          color: Colors.white70,
+                          color: _muted,
                           fontSize: 10,
                           fontWeight: FontWeight.w700,
                         ),
@@ -1009,7 +1002,7 @@ class _RankingsTabState extends State<_RankingsTab> {
                       selectedColor: _accent,
                       backgroundColor: _panel,
                       labelStyle: TextStyle(
-                        color: active ? _navy : Colors.white70,
+                        color: active ? Colors.white : _muted,
                         fontSize: 11,
                         fontWeight: FontWeight.w700,
                       ),
@@ -1120,7 +1113,7 @@ class _RankRow extends StatelessWidget {
     margin: const EdgeInsets.only(bottom: 8),
     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 13),
     decoration: BoxDecoration(
-      color: highlighted ? const Color(0xFF244257) : _panel,
+      color: highlighted ? const Color(0xFFE5F3FB) : _panel,
       borderRadius: BorderRadius.circular(14),
       border: highlighted
           ? Border.all(color: _accent.withValues(alpha: 0.5))
@@ -1145,7 +1138,7 @@ class _RankRow extends StatelessWidget {
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: TextStyle(
-              color: highlighted ? Colors.white : Colors.white70,
+              color: highlighted ? _navy : _muted,
               fontSize: 12,
               fontWeight: highlighted ? FontWeight.w800 : FontWeight.w600,
             ),
@@ -1154,7 +1147,7 @@ class _RankRow extends StatelessWidget {
         Text(
           time,
           style: const TextStyle(
-            color: Colors.white,
+            color: _navy,
             fontSize: 13,
             fontWeight: FontWeight.w800,
             fontFeatures: [],
@@ -1228,7 +1221,7 @@ void _showPhotoCredits(BuildContext context) {
           'Airbus A350-900 — pjs2005, CC BY-SA 2.0.\n'
           'commons.wikimedia.org/wiki/File:Airbus_A350_(28227541585).jpg\n\n'
           'The A320 and A350 photo files were resized for the game. Full license details are in assets/aircraft/ATTRIBUTION.md.',
-          style: TextStyle(color: Colors.white70, fontSize: 12, height: 1.5),
+          style: TextStyle(color: _muted, fontSize: 12, height: 1.5),
         ),
       ),
       actions: [
@@ -1285,7 +1278,7 @@ class _ShopAircraftCard extends StatelessWidget {
               Text(
                 aircraft.displayName,
                 style: const TextStyle(
-                  color: Colors.white,
+                  color: _navy,
                   fontSize: 17,
                   fontWeight: FontWeight.w800,
                 ),
@@ -1314,8 +1307,8 @@ class _ShopAircraftCard extends StatelessWidget {
                     icon: const Icon(Icons.lock_outline_rounded, size: 15),
                     label: const Text('Unlock'),
                     style: OutlinedButton.styleFrom(
-                      foregroundColor: Colors.white,
-                      side: const BorderSide(color: Colors.white24),
+                      foregroundColor: _navy,
+                      side: const BorderSide(color: Color(0xFFCCD6E2)),
                     ),
                   ),
                 ],
@@ -1350,7 +1343,7 @@ class _PageTitle extends StatelessWidget {
       Text(
         title,
         style: const TextStyle(
-          color: Colors.white,
+          color: _navy,
           fontSize: 25,
           fontWeight: FontWeight.w800,
           letterSpacing: -0.5,
@@ -1393,5 +1386,8 @@ class _Pill extends StatelessWidget {
   );
 }
 
-String _formatTime(int seconds) =>
-    '${(seconds ~/ 60).toString().padLeft(2, '0')}:${(seconds % 60).toString().padLeft(2, '0')}';
+String _formatTime(int milliseconds) {
+  final seconds = milliseconds ~/ 1000;
+  final fraction = milliseconds % 1000;
+  return '${seconds.toString().padLeft(3, '0')}.${fraction.toString().padLeft(3, '0')}';
+}

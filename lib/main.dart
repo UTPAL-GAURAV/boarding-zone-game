@@ -17,11 +17,11 @@ class BoardingZoneApp extends StatelessWidget {
     debugShowCheckedModeBanner: false,
     theme: ThemeData(
       useMaterial3: true,
-      brightness: Brightness.dark,
-      scaffoldBackgroundColor: const Color(0xFF101923),
+      brightness: Brightness.light,
+      scaffoldBackgroundColor: const Color(0xFFF2F4F8),
       colorScheme: ColorScheme.fromSeed(
         seedColor: const Color(0xFF5EB8E8),
-        brightness: Brightness.dark,
+        brightness: Brightness.light,
       ),
       fontFamily: 'sans-serif',
     ),
@@ -29,9 +29,9 @@ class BoardingZoneApp extends StatelessWidget {
     builder: (context, child) => AnnotatedRegion<SystemUiOverlayStyle>(
       value: const SystemUiOverlayStyle(
         statusBarColor: Colors.transparent,
-        statusBarIconBrightness: Brightness.light,
-        systemNavigationBarColor: Color(0xFF101923),
-        systemNavigationBarIconBrightness: Brightness.light,
+        statusBarIconBrightness: Brightness.dark,
+        systemNavigationBarColor: Color(0xFFF2F4F8),
+        systemNavigationBarIconBrightness: Brightness.dark,
       ),
       child: child!,
     ),

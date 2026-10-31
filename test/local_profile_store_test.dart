@@ -15,14 +15,35 @@ void main() {
     expect(first.displayName, startsWith('Crew '));
 
     await store.saveDisplayName('Captain Nova');
-    await store.saveBestTime('airbus-a320', 487);
-    await store.saveBestTime('airbus-a320', 512);
+    await store.saveBestTime('airbus-a320', 487000);
+    await store.saveBestTime('airbus-a320', 512000);
 
     final restored = await store.loadProfile();
     expect(restored.internalId, first.internalId);
     expect(restored.displayName, 'Captain Nova');
-    expect(await store.bestTimeSeconds('airbus-a320'), 487);
+    expect(await store.bestTimeMilliseconds('airbus-a320'), 487000);
   });
+
+  test(
+    'migrates legacy second scores into millisecond personal bests',
+    () async {
+      SharedPreferences.setMockInitialValues({
+        'aircraft.best_seconds.cessna-grand-caravan-ex': 299,
+      });
+      final store = LocalProfileStore();
+      await AircraftCatalog.load();
+      final progress = await store.loadFleetProgress(AircraftCatalog.all);
+      expect(
+        await store.bestTimeMilliseconds(AircraftCatalog.all.first.id),
+        299000,
+      );
+      expect(
+        progress[AircraftCatalog.all.first.id]!.bestTimeMilliseconds,
+        299000,
+      );
+      expect(progress[AircraftCatalog.all[1].id]!.unlocked, isTrue);
+    },
+  );
 
   test('persists per-aircraft seat boarding zones locally', () async {
     SharedPreferences.setMockInitialValues({});
@@ -78,23 +99,23 @@ void main() {
 
       final afterQualifyingRun = await store.recordBoardingCompletion(
         aircraftId: first.id,
-        seconds: first.targetSeconds - 1,
+        milliseconds: first.targetSeconds * 1000 - 1,
         fleet: fleet,
       );
       expect(
-        afterQualifyingRun[first.id]!.bestTimeSeconds,
-        first.targetSeconds - 1,
+        afterQualifyingRun[first.id]!.bestTimeMilliseconds,
+        first.targetSeconds * 1000 - 1,
       );
       expect(afterQualifyingRun[second.id]!.unlocked, isTrue);
 
       final afterSlowerRun = await store.recordBoardingCompletion(
         aircraftId: first.id,
-        seconds: first.targetSeconds + 20,
+        milliseconds: (first.targetSeconds + 20) * 1000,
         fleet: fleet,
       );
       expect(
-        afterSlowerRun[first.id]!.bestTimeSeconds,
-        first.targetSeconds - 1,
+        afterSlowerRun[first.id]!.bestTimeMilliseconds,
+        first.targetSeconds * 1000 - 1,
       );
       expect(afterSlowerRun[second.id]!.unlocked, isTrue);
 

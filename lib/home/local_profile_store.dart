@@ -22,28 +22,28 @@ class AircraftProgressRecord {
     required this.aircraftId,
     required this.unlocked,
     required this.premiumOwned,
-    this.bestTimeSeconds,
+    this.bestTimeMilliseconds,
   });
 
   final String aircraftId;
-  final int? bestTimeSeconds;
+  final int? bestTimeMilliseconds;
   final bool unlocked;
   final bool premiumOwned;
 
   AircraftProgressRecord copyWith({
-    int? bestTimeSeconds,
+    int? bestTimeMilliseconds,
     bool? unlocked,
     bool? premiumOwned,
   }) => AircraftProgressRecord(
     aircraftId: aircraftId,
-    bestTimeSeconds: bestTimeSeconds ?? this.bestTimeSeconds,
+    bestTimeMilliseconds: bestTimeMilliseconds ?? this.bestTimeMilliseconds,
     unlocked: unlocked ?? this.unlocked,
     premiumOwned: premiumOwned ?? this.premiumOwned,
   );
 
   Map<String, Object?> toJson() => {
     'aircraftId': aircraftId,
-    'bestTimeSeconds': bestTimeSeconds,
+    'bestTimeMilliseconds': bestTimeMilliseconds,
     'unlocked': unlocked,
     'premiumOwned': premiumOwned,
   };
@@ -51,7 +51,11 @@ class AircraftProgressRecord {
   factory AircraftProgressRecord.fromJson(Map<String, dynamic> json) =>
       AircraftProgressRecord(
         aircraftId: json['aircraftId'] as String,
-        bestTimeSeconds: json['bestTimeSeconds'] as int?,
+        bestTimeMilliseconds:
+            (json['bestTimeMilliseconds'] as int?) ??
+            ((json['bestTimeSeconds'] as int?) == null
+                ? null
+                : (json['bestTimeSeconds'] as int) * 1000),
         unlocked: json['unlocked'] as bool? ?? false,
         premiumOwned: json['premiumOwned'] as bool? ?? false,
       );
@@ -65,7 +69,8 @@ class LocalProfileStore {
   final SharedPreferences? _providedPreferences;
   static const _playerIdKey = 'player.internal_id';
   static const _displayNameKey = 'player.display_name';
-  static const _bestPrefix = 'aircraft.best_seconds.';
+  static const _bestPrefix = 'aircraft.best_milliseconds.';
+  static const _legacyBestPrefix = 'aircraft.best_seconds.';
   static const _seatZonesPrefix = 'aircraft.seat_zones.v1.';
   static const _fleetProgressKey = 'fleet.aircraft_progress.v1';
   static const _crewNames = [
@@ -105,18 +110,25 @@ class LocalProfileStore {
     await (await _preferences).setString(_displayNameKey, name.trim());
   }
 
-  Future<int?> bestTimeSeconds(String aircraftId) async =>
-      (await _preferences).getInt('$_bestPrefix$aircraftId');
-
-  Future<void> saveBestTime(String aircraftId, int seconds) async {
+  Future<int?> bestTimeMilliseconds(String aircraftId) async {
     final preferences = await _preferences;
-    final previous = preferences.getInt('$_bestPrefix$aircraftId');
-    if (previous == null || seconds < previous) {
-      await preferences.setInt('$_bestPrefix$aircraftId', seconds);
+    final stored = preferences.getInt('$_bestPrefix$aircraftId');
+    if (stored != null) return stored;
+    final legacySeconds = preferences.getInt('$_legacyBestPrefix$aircraftId');
+    return legacySeconds == null ? null : legacySeconds * 1000;
+  }
+
+  Future<void> saveBestTime(String aircraftId, int milliseconds) async {
+    final preferences = await _preferences;
+    final previous = await bestTimeMilliseconds(aircraftId);
+    if (previous == null || milliseconds < previous) {
+      await preferences.setInt('$_bestPrefix$aircraftId', milliseconds);
       final progress = await loadFleetProgress(AircraftCatalog.all);
       final record = progress[aircraftId];
       if (record != null) {
-        progress[aircraftId] = record.copyWith(bestTimeSeconds: seconds);
+        progress[aircraftId] = record.copyWith(
+          bestTimeMilliseconds: milliseconds,
+        );
         await _saveFleetProgress(progress.values);
       }
     }
@@ -176,12 +188,20 @@ class LocalProfileStore {
     final progress = <String, AircraftProgressRecord>{};
     for (final aircraft in fleet) {
       final oldRecord = saved[aircraft.id];
-      final legacyBest = preferences.getInt('$_bestPrefix${aircraft.id}');
-      final best = oldRecord?.bestTimeSeconds ?? legacyBest;
+      final legacyMilliseconds = preferences.getInt(
+        '$_bestPrefix${aircraft.id}',
+      );
+      final legacySeconds = preferences.getInt(
+        '$_legacyBestPrefix${aircraft.id}',
+      );
+      final best =
+          oldRecord?.bestTimeMilliseconds ??
+          legacyMilliseconds ??
+          (legacySeconds == null ? null : legacySeconds * 1000);
       final premiumOwned = oldRecord?.premiumOwned ?? false;
       progress[aircraft.id] = AircraftProgressRecord(
         aircraftId: aircraft.id,
-        bestTimeSeconds: best,
+        bestTimeMilliseconds: best,
         unlocked:
             oldRecord?.unlocked == true ||
             aircraft.unlockType == AircraftUnlockType.free ||
@@ -202,8 +222,9 @@ class LocalProfileStore {
       final previous = fleet[previousIndex];
       final previousProgress = progress[previous.id]!;
       if (previousProgress.unlocked &&
-          previousProgress.bestTimeSeconds != null &&
-          previousProgress.bestTimeSeconds! < previous.targetSeconds) {
+          previousProgress.bestTimeMilliseconds != null &&
+          previousProgress.bestTimeMilliseconds! <
+              previous.targetSeconds * 1000) {
         progress[aircraft.id] = progress[aircraft.id]!.copyWith(unlocked: true);
       }
     }
@@ -216,19 +237,20 @@ class LocalProfileStore {
   /// the best time meets this aircraft's target.
   Future<Map<String, AircraftProgressRecord>> recordBoardingCompletion({
     required String aircraftId,
-    required int seconds,
+    required int milliseconds,
     required List<Aircraft> fleet,
   }) async {
     final progress = await loadFleetProgress(fleet);
     final aircraft = fleet.firstWhere((item) => item.id == aircraftId);
     final record = progress[aircraftId]!;
     final best =
-        record.bestTimeSeconds == null || seconds < record.bestTimeSeconds!
-        ? seconds
-        : record.bestTimeSeconds!;
-    progress[aircraftId] = record.copyWith(bestTimeSeconds: best);
+        record.bestTimeMilliseconds == null ||
+            milliseconds < record.bestTimeMilliseconds!
+        ? milliseconds
+        : record.bestTimeMilliseconds!;
+    progress[aircraftId] = record.copyWith(bestTimeMilliseconds: best);
     final index = fleet.indexOf(aircraft);
-    if (best < aircraft.targetSeconds) {
+    if (best < aircraft.targetSeconds * 1000) {
       final nextIndex = _nextProgressionIndex(fleet, index + 1);
       if (nextIndex != null) {
         final next = fleet[nextIndex];

@@ -24,7 +24,7 @@ abstract final class LevelC208 {
         width: 60,
         capacity: 6,
         minimumSpacingRows: 0.85,
-        entryIntervalSeconds: 0.55,
+        entryIntervalSeconds: 0.20,
         walkingSpeedRowsPerSecond: 5.5,
         turnDurationSeconds: 0.24,
         entranceRow: -0.9,

@@ -23,7 +23,7 @@ class BoardingGamePage extends StatefulWidget {
   final AircraftLayout layout;
   final List<int>? initialZones;
   final Future<void> Function(List<int> zones)? onZonesChanged;
-  final Future<void> Function(int seconds)? onCompleted;
+  final Future<void> Function(int milliseconds)? onCompleted;
   final Future<void> Function()? onNext;
 
   @override
@@ -39,6 +39,7 @@ class _BoardingGamePageState extends State<BoardingGamePage> {
   int _selectedZone = 5;
   bool _reportedCompletion = false;
   bool _paintPointerActive = false;
+  double _lastPointerGlobalY = 0;
 
   static const _zones = CabinGame.zoneColors;
   static const _ink = Color(0xFF172B45);
@@ -62,7 +63,7 @@ class _BoardingGamePageState extends State<BoardingGamePage> {
     if (_simulation.isComplete && !_reportedCompletion) {
       _reportedCompletion = true;
       _completionSave = widget.onCompleted?.call(
-        _simulation.elapsedSeconds.floor(),
+        (_simulation.elapsedSeconds * 1000).round(),
       );
     }
     if (mounted) setState(() {});
@@ -113,10 +114,10 @@ class _BoardingGamePageState extends State<BoardingGamePage> {
   String _zoneLabel(int index) => String.fromCharCode(65 + index);
 
   String get _timer {
-    final seconds = _simulation.elapsedSeconds.floor();
-    final minutes = (seconds ~/ 60).toString().padLeft(2, '0');
-    final remainder = (seconds % 60).toString().padLeft(2, '0');
-    return '$minutes:$remainder';
+    final milliseconds = (_simulation.elapsedSeconds * 1000).floor();
+    final seconds = milliseconds ~/ 1000;
+    final fraction = milliseconds % 1000;
+    return '${seconds.toString().padLeft(3, '0')}.${fraction.toString().padLeft(3, '0')}';
   }
 
   String get _boardingStatus {
@@ -328,6 +329,7 @@ class _BoardingGamePageState extends State<BoardingGamePage> {
                   thumbVisibility: scrollable,
                   child: SingleChildScrollView(
                     controller: _cabinScrollController,
+                    physics: const NeverScrollableScrollPhysics(),
                     child: SizedBox(
                       width: double.infinity,
                       height: contentHeight,
@@ -338,6 +340,7 @@ class _BoardingGamePageState extends State<BoardingGamePage> {
                             event.localPosition,
                             _selectedZone,
                           );
+                          _lastPointerGlobalY = event.position.dy;
                         },
                         onPointerMove: (event) {
                           if (_paintPointerActive) {
@@ -345,7 +348,18 @@ class _BoardingGamePageState extends State<BoardingGamePage> {
                               event.localPosition,
                               _selectedZone,
                             );
+                          } else if (scrollable &&
+                              _cabinScrollController.hasClients) {
+                            final delta =
+                                _lastPointerGlobalY - event.position.dy;
+                            _cabinScrollController.jumpTo(
+                              (_cabinScrollController.offset + delta).clamp(
+                                0.0,
+                                _cabinScrollController.position.maxScrollExtent,
+                              ),
+                            );
                           }
+                          _lastPointerGlobalY = event.position.dy;
                         },
                         onPointerUp: (_) {
                           _paintPointerActive = false;

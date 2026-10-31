@@ -24,7 +24,7 @@ abstract final class LevelSkyCourier {
         width: 60,
         capacity: 7,
         minimumSpacingRows: 0.85,
-        entryIntervalSeconds: 0.5,
+        entryIntervalSeconds: 0.20,
         walkingSpeedRowsPerSecond: 5.5,
         turnDurationSeconds: 0.24,
         entranceRow: -0.9,
