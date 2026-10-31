@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flame/game.dart';
 import 'package:flutter/material.dart';
 
+import '../audio/app_audio.dart';
 import 'boarding_simulation.dart';
 import 'cabin_game.dart';
 import 'aircraft_layout.dart';
@@ -89,6 +90,7 @@ class _BoardingGamePageState extends State<BoardingGamePage> {
       _isNewRecord = prev == null || ms < prev;
       if (_isNewRecord) _currentBestMilliseconds = ms;
       _completionSave = widget.onCompleted?.call(ms);
+      unawaited(AppAudio.instance.stopBgMusic());
     }
     if (mounted) setState(() {});
   }
@@ -106,11 +108,11 @@ class _BoardingGamePageState extends State<BoardingGamePage> {
     _completionSave = null;
     if (mounted) setState(() {});
   }
-
   @override
   void dispose() {
     _cabinScrollController.dispose();
     _cabinHScrollController.dispose();
+    unawaited(AppAudio.instance.stopBgMusic());
     super.dispose();
   }
 
@@ -668,6 +670,8 @@ class _BoardingGamePageState extends State<BoardingGamePage> {
                   : null)
               : () {
                   _simulation.start();
+                  unawaited(AppAudio.instance.playBleep());
+                  unawaited(AppAudio.instance.startBgMusic());
                   _refresh();
                 },
           icon: Icon(

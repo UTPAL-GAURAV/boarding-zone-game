@@ -227,7 +227,7 @@
     "description": "A regional jet with a roomy four-abreast cabin.",
     "imageAsset": "assets/aircraft/embraer-e170.jpeg",
     "typicalSeats": 72,
-    "targetSeconds": 555,
+    "targetSeconds": 78,
     "unlockType": "progression",
     "unlockRequirement": "Complete 72-600 under 09:00",
     "cabin": {

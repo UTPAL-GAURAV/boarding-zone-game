@@ -73,6 +73,7 @@ class LocalProfileStore {
   static const _legacyBestPrefix = 'aircraft.best_seconds.';
   static const _seatZonesPrefix = 'aircraft.seat_zones.v1.';
   static const _fleetProgressKey = 'fleet.aircraft_progress.v1';
+  static const _soundEnabledKey = 'settings.sound_enabled';
   static const _crewNames = [
     'Falcon',
     'Skyhawk',
@@ -119,6 +120,14 @@ class LocalProfileStore {
 
   Future<void> saveDisplayName(String name) async {
     await (await _preferences).setString(_displayNameKey, name.trim());
+  }
+
+  Future<bool> loadSoundEnabled() async {
+    return (await _preferences).getBool(_soundEnabledKey) ?? true;
+  }
+
+  Future<void> saveSoundEnabled(bool value) async {
+    await (await _preferences).setBool(_soundEnabledKey, value);
   }
 
   Future<int?> bestTimeMilliseconds(String aircraftId) async {

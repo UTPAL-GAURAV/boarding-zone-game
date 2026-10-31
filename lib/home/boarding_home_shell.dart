@@ -7,6 +7,7 @@ import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:razorpay_flutter/razorpay_flutter.dart';
 
+import '../audio/app_audio.dart';
 import '../boarding/boarding_game_page.dart';
 import 'aircraft.dart';
 import 'aircraft_level_registry.dart';
@@ -42,6 +43,7 @@ class _BoardingHomeShellState extends State<BoardingHomeShell> {
   Set<String> _unlockedAircraftIds = {};
   Set<String> _premiumOwnedAircraftIds = {};
   bool _premiumUnlocked = false;
+  bool _soundEnabled = true;
   String _selectedId = 'cessna-grand-caravan-ex';
   int _destination = 0;
 
@@ -67,6 +69,7 @@ class _BoardingHomeShellState extends State<BoardingHomeShell> {
     await AircraftCatalog.load();
     final profile = await _store.loadProfile();
     final progress = await _store.loadFleetProgress(AircraftCatalog.all);
+    final soundEnabled = await _store.loadSoundEnabled();
     bool premiumUnlocked = await _shop.isPremiumUnlocked();
 
     // Auto-restore: if premium is not locally cached but a Google ID is stored,
@@ -92,6 +95,7 @@ class _BoardingHomeShellState extends State<BoardingHomeShell> {
         _selectedId = newestUnlocked.id;
         _bestTimes = bestTimes;
         _premiumUnlocked = premiumUnlocked;
+        _soundEnabled = soundEnabled;
         _unlockedAircraftIds = {
           for (final entry in progress.entries)
             if (entry.value.unlocked) entry.key,
@@ -102,6 +106,7 @@ class _BoardingHomeShellState extends State<BoardingHomeShell> {
         };
       });
     }
+    unawaited(AppAudio.instance.init(enabled: soundEnabled));
     return profile;
   }
 
@@ -117,24 +122,36 @@ class _BoardingHomeShellState extends State<BoardingHomeShell> {
   Future<void> _editCrewName() async {
     final current = _profile;
     if (current == null) return;
-    final name = await showDialog<String>(
+    final result = await showDialog<({String name, bool soundEnabled})>(
       context: context,
-      builder: (_) => _ProfileDialog(initialName: current.displayName),
-    );
-    if (name == null || name.trim().isEmpty) return;
-    await _store.saveDisplayName(name);
-    if (mounted) setState(() => _profile = current.copyWith(displayName: name));
-    Sentry.addBreadcrumb(Breadcrumb(
-      message: 'Display name updated',
-      category: 'profile',
-      level: SentryLevel.info,
-    ));
-    unawaited(
-      _rankings.upsertProfile(
-        playerId: current.internalId,
-        displayName: name.trim(),
+      builder: (_) => _ProfileDialog(
+        initialName: current.displayName,
+        initialSoundEnabled: _soundEnabled,
       ),
     );
+    if (result == null) return;
+    final name = result.name.trim();
+    final newSound = result.soundEnabled;
+    if (name.isNotEmpty) {
+      await _store.saveDisplayName(name);
+      if (mounted) setState(() => _profile = current.copyWith(displayName: name));
+      Sentry.addBreadcrumb(Breadcrumb(
+        message: 'Display name updated',
+        category: 'profile',
+        level: SentryLevel.info,
+      ));
+      unawaited(
+        _rankings.upsertProfile(
+          playerId: current.internalId,
+          displayName: name,
+        ),
+      );
+    }
+    if (newSound != _soundEnabled) {
+      await _store.saveSoundEnabled(newSound);
+      AppAudio.instance.setEnabled(newSound);
+      if (mounted) setState(() => _soundEnabled = newSound);
+    }
   }
 
   Future<GoogleSignInAccount?> _signInForShop() => _shop.signIn();
@@ -495,9 +512,13 @@ class _BoardingHomeShellState extends State<BoardingHomeShell> {
 }
 
 class _ProfileDialog extends StatefulWidget {
-  const _ProfileDialog({required this.initialName});
+  const _ProfileDialog({
+    required this.initialName,
+    required this.initialSoundEnabled,
+  });
 
   final String initialName;
+  final bool initialSoundEnabled;
 
   @override
   State<_ProfileDialog> createState() => _ProfileDialogState();
@@ -505,11 +526,13 @@ class _ProfileDialog extends StatefulWidget {
 
 class _ProfileDialogState extends State<_ProfileDialog> {
   late final TextEditingController _controller;
+  late bool _soundEnabled;
 
   @override
   void initState() {
     super.initState();
     _controller = TextEditingController(text: widget.initialName);
+    _soundEnabled = widget.initialSoundEnabled;
   }
 
   @override
@@ -519,40 +542,241 @@ class _ProfileDialogState extends State<_ProfileDialog> {
   }
 
   @override
-  Widget build(BuildContext context) => AlertDialog(
-    backgroundColor: _panel,
-    title: const Text('Crew profile', style: TextStyle(color: Colors.white)),
-    content: TextField(
-      controller: _controller,
-      autofocus: true,
-      maxLength: 12,
-      style: const TextStyle(color: Colors.white),
-      decoration: InputDecoration(
-        labelText: 'Display name',
-        labelStyle: const TextStyle(color: _muted),
-        counterStyle: const TextStyle(color: _muted),
-        enabledBorder: const UnderlineInputBorder(
-          borderSide: BorderSide(color: _accent),
-        ),
-        focusedBorder: const UnderlineInputBorder(
-          borderSide: BorderSide(color: _accent, width: 2),
-        ),
+  Widget build(BuildContext context) => Dialog(
+    backgroundColor: Colors.transparent,
+    insetPadding: const EdgeInsets.symmetric(horizontal: 28, vertical: 24),
+    child: Container(
+      decoration: BoxDecoration(
+        color: _panel,
+        borderRadius: BorderRadius.circular(28),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.5),
+            blurRadius: 40,
+            offset: const Offset(0, 16),
+          ),
+        ],
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Header
+          Container(
+            padding: const EdgeInsets.fromLTRB(24, 24, 24, 20),
+            decoration: BoxDecoration(
+              border: Border(
+                bottom: BorderSide(color: Colors.white.withValues(alpha: 0.07)),
+              ),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: _accent.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Icon(
+                    Icons.airline_seat_recline_normal_rounded,
+                    color: _accent,
+                    size: 20,
+                  ),
+                ),
+                const SizedBox(width: 14),
+                const Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'CREW PROFILE',
+                        style: TextStyle(
+                          color: _accent,
+                          fontSize: 9,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: 1.4,
+                        ),
+                      ),
+                      SizedBox(height: 2),
+                      Text(
+                        'Your callsign & settings',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 15,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          // Body
+          Padding(
+            padding: const EdgeInsets.fromLTRB(24, 20, 24, 8),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'CALLSIGN',
+                  style: TextStyle(
+                    color: _muted,
+                    fontSize: 9,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 1.1,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: _controller,
+                  autofocus: true,
+                  maxLength: 12,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                  ),
+                  decoration: InputDecoration(
+                    hintText: 'Enter callsign…',
+                    hintStyle: TextStyle(
+                      color: Colors.white.withValues(alpha: 0.25),
+                      fontWeight: FontWeight.w500,
+                    ),
+                    counterStyle: const TextStyle(color: _muted, fontSize: 10),
+                    filled: true,
+                    fillColor: _panelLight,
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 14,
+                    ),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(14),
+                      borderSide: BorderSide.none,
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(14),
+                      borderSide: BorderSide(
+                        color: Colors.white.withValues(alpha: 0.08),
+                      ),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(14),
+                      borderSide: const BorderSide(color: _accent, width: 1.5),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                // Sound toggle row
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  decoration: BoxDecoration(
+                    color: _panelLight,
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        _soundEnabled
+                            ? Icons.volume_up_rounded
+                            : Icons.volume_off_rounded,
+                        color: _soundEnabled ? _accent : _muted,
+                        size: 20,
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'Sound',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 13,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                            Text(
+                              _soundEnabled
+                                  ? 'Music & effects on'
+                                  : 'Music & effects off',
+                              style: const TextStyle(
+                                color: _muted,
+                                fontSize: 11,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Switch(
+                        value: _soundEnabled,
+                        onChanged: (value) =>
+                            setState(() => _soundEnabled = value),
+                        activeThumbColor: _accent,
+                        activeTrackColor: _accent.withValues(alpha: 0.3),
+                        inactiveThumbColor: _muted,
+                        inactiveTrackColor: _panelLight,
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          // Actions
+          Padding(
+            padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
+            child: Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: () => Navigator.pop(context),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: _muted,
+                      side: BorderSide(color: Colors.white.withValues(alpha: 0.15)),
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      textStyle: const TextStyle(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 13,
+                      ),
+                    ),
+                    child: const Text('Cancel'),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: FilledButton(
+                    onPressed: () => Navigator.pop(
+                      context,
+                      (name: _controller.text.trim(), soundEnabled: _soundEnabled),
+                    ),
+                    style: FilledButton.styleFrom(
+                      backgroundColor: _accent,
+                      foregroundColor: _navy,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      textStyle: const TextStyle(
+                        fontWeight: FontWeight.w900,
+                        fontSize: 13,
+                        letterSpacing: 0.3,
+                      ),
+                    ),
+                    child: const Text('Save'),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     ),
-    actions: [
-      TextButton(
-        onPressed: () => Navigator.pop(context),
-        child: const Text('Cancel', style: TextStyle(color: _muted)),
-      ),
-      FilledButton(
-        onPressed: () => Navigator.pop(context, _controller.text.trim()),
-        style: FilledButton.styleFrom(
-          backgroundColor: _accent,
-          foregroundColor: _navy,
-        ),
-        child: const Text('Save'),
-      ),
-    ],
   );
 }
 
@@ -819,10 +1043,13 @@ class _HomeHeader extends StatelessWidget {
                   shape: BoxShape.circle,
                   border: Border.all(color: _accent.withValues(alpha: 0.4)),
                 ),
-                child: const Icon(
-                  Icons.airline_seat_recline_normal_rounded,
-                  color: _accent,
-                  size: 18,
+                child: ClipOval(
+                  child: Image.asset(
+                    'assets/passenger_avatar.png',
+                    width: 38,
+                    height: 38,
+                    fit: BoxFit.contain,
+                  ),
                 ),
               ),
             ],
