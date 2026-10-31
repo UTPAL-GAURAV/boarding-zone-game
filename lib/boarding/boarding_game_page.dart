@@ -17,6 +17,8 @@ class BoardingGamePage extends StatefulWidget {
     this.onZonesChanged,
     this.onCompleted,
     this.onNext,
+    this.previewOnly = false,
+    this.onUnlockTap,
   });
 
   final String aircraftName;
@@ -25,6 +27,10 @@ class BoardingGamePage extends StatefulWidget {
   final Future<void> Function(List<int> zones)? onZonesChanged;
   final Future<void> Function(int milliseconds)? onCompleted;
   final Future<void> Function()? onNext;
+  /// When true the seat layout is visible but boarding cannot be started.
+  final bool previewOnly;
+  /// Called when the user taps "PREMIUM — UNLOCK TO BOARD" in preview mode.
+  final VoidCallback? onUnlockTap;
 
   @override
   State<BoardingGamePage> createState() => _BoardingGamePageState();
@@ -34,12 +40,14 @@ class _BoardingGamePageState extends State<BoardingGamePage> {
   late final BoardingSimulation _simulation;
   late final CabinGame _game;
   late final ScrollController _cabinScrollController;
+  late final ScrollController _cabinHScrollController;
   late List<int> _lastSavedZones;
   Future<void>? _completionSave;
   int _selectedZone = 5;
   bool _reportedCompletion = false;
   bool _paintPointerActive = false;
   double _lastPointerGlobalY = 0;
+  double _lastPointerGlobalX = 0;
 
   static const _zones = CabinGame.zoneColors;
   static const _ink = Color(0xFF172B45);
@@ -50,6 +58,7 @@ class _BoardingGamePageState extends State<BoardingGamePage> {
     super.initState();
     _selectedZone = widget.layout.zoneCount - 1;
     _cabinScrollController = ScrollController();
+    _cabinHScrollController = ScrollController();
     _simulation = BoardingSimulation(
       layout: widget.layout,
       initialZones: widget.initialZones,
@@ -78,6 +87,7 @@ class _BoardingGamePageState extends State<BoardingGamePage> {
   @override
   void dispose() {
     _cabinScrollController.dispose();
+    _cabinHScrollController.dispose();
     super.dispose();
   }
 
@@ -217,7 +227,7 @@ class _BoardingGamePageState extends State<BoardingGamePage> {
               onTap: _reset,
               borderRadius: BorderRadius.circular(14),
               child: const Tooltip(
-                message: 'Reset seats to Zone F',
+                message: 'Reset to default zones',
                 child: SizedBox(
                   width: 42,
                   height: 42,
@@ -311,65 +321,96 @@ class _BoardingGamePageState extends State<BoardingGamePage> {
         ),
         child: LayoutBuilder(
           builder: (context, constraints) {
-            final designScale =
-                constraints.maxWidth / _simulation.layout.designWidth;
-            final naturalHeight = _simulation.layout.designHeight * designScale;
-            final shouldScroll =
-                _simulation.layout.rowCount > 12 &&
-                naturalHeight > constraints.maxHeight;
-            final contentHeight = shouldScroll
-                ? naturalHeight
-                : constraints.maxHeight;
-            final scrollable = contentHeight > constraints.maxHeight + 1;
+            final designW = _simulation.layout.designWidth;
+            final designH = _simulation.layout.designHeight;
+            // For narrow layouts fit to screen width; for wide ones use native
+            // design width so seats stay the same physical size.
+            final scale = designW > constraints.maxWidth
+                ? 1.0
+                : constraints.maxWidth / designW;
+            final contentW = designW * scale;
+            final contentH = designH * scale;
+            final needsHScroll = contentW > constraints.maxWidth + 1;
+            final needsVScroll = contentH > constraints.maxHeight + 1;
             return Stack(
               fit: StackFit.expand,
               children: [
-                Scrollbar(
-                  controller: _cabinScrollController,
-                  thumbVisibility: scrollable,
-                  child: SingleChildScrollView(
-                    controller: _cabinScrollController,
-                    physics: const NeverScrollableScrollPhysics(),
-                    child: SizedBox(
-                      width: double.infinity,
-                      height: contentHeight,
-                      child: Listener(
-                        behavior: HitTestBehavior.opaque,
-                        onPointerDown: (event) {
-                          _paintPointerActive = _game.beginPaintingAt(
-                            event.localPosition,
-                            _selectedZone,
-                          );
-                          _lastPointerGlobalY = event.position.dy;
-                        },
-                        onPointerMove: (event) {
-                          if (_paintPointerActive) {
-                            _game.continuePaintingAt(
-                              event.localPosition,
-                              _selectedZone,
-                            );
-                          } else if (scrollable &&
-                              _cabinScrollController.hasClients) {
-                            final delta =
-                                _lastPointerGlobalY - event.position.dy;
-                            _cabinScrollController.jumpTo(
-                              (_cabinScrollController.offset + delta).clamp(
-                                0.0,
-                                _cabinScrollController.position.maxScrollExtent,
-                              ),
-                            );
-                          }
-                          _lastPointerGlobalY = event.position.dy;
-                        },
-                        onPointerUp: (_) {
-                          _paintPointerActive = false;
-                          _game.endPainting();
-                        },
-                        onPointerCancel: (_) {
-                          _paintPointerActive = false;
-                          _game.endPainting();
-                        },
-                        child: GameWidget(game: _game),
+                // Horizontal scroll wraps vertical scroll.
+                SingleChildScrollView(
+                  controller: _cabinHScrollController,
+                  scrollDirection: Axis.horizontal,
+                  // Physics controlled via pointer handling below.
+                  physics: const NeverScrollableScrollPhysics(),
+                  child: SizedBox(
+                    width: contentW,
+                    child: Scrollbar(
+                      controller: _cabinScrollController,
+                      thumbVisibility: needsVScroll,
+                      child: SingleChildScrollView(
+                        controller: _cabinScrollController,
+                        physics: const NeverScrollableScrollPhysics(),
+                        child: SizedBox(
+                          width: contentW,
+                          height: contentH,
+                          child: Listener(
+                            behavior: HitTestBehavior.opaque,
+                            onPointerDown: (event) {
+                              _paintPointerActive = _game.beginPaintingAt(
+                                event.localPosition,
+                                _selectedZone,
+                              );
+                              _lastPointerGlobalY = event.position.dy;
+                              _lastPointerGlobalX = event.position.dx;
+                            },
+                            onPointerMove: (event) {
+                              if (_paintPointerActive) {
+                                _game.continuePaintingAt(
+                                  event.localPosition,
+                                  _selectedZone,
+                                );
+                              } else {
+                                // Vertical scroll
+                                if (needsVScroll &&
+                                    _cabinScrollController.hasClients) {
+                                  final dy =
+                                      _lastPointerGlobalY - event.position.dy;
+                                  _cabinScrollController.jumpTo(
+                                    (_cabinScrollController.offset + dy).clamp(
+                                      0.0,
+                                      _cabinScrollController
+                                          .position.maxScrollExtent,
+                                    ),
+                                  );
+                                }
+                                // Horizontal scroll
+                                if (needsHScroll &&
+                                    _cabinHScrollController.hasClients) {
+                                  final dx =
+                                      _lastPointerGlobalX - event.position.dx;
+                                  _cabinHScrollController.jumpTo(
+                                    (_cabinHScrollController.offset + dx)
+                                        .clamp(
+                                          0.0,
+                                          _cabinHScrollController
+                                              .position.maxScrollExtent,
+                                        ),
+                                  );
+                                }
+                              }
+                              _lastPointerGlobalY = event.position.dy;
+                              _lastPointerGlobalX = event.position.dx;
+                            },
+                            onPointerUp: (_) {
+                              _paintPointerActive = false;
+                              _game.endPainting();
+                            },
+                            onPointerCancel: (_) {
+                              _paintPointerActive = false;
+                              _game.endPainting();
+                            },
+                            child: GameWidget(game: _game),
+                          ),
+                        ),
                       ),
                     ),
                   ),
@@ -469,22 +510,26 @@ class _BoardingGamePageState extends State<BoardingGamePage> {
 
   Widget _buildStartButton(bool complete) {
     final boarding = _simulation.isBoarding;
-    final label = complete
+    final preview = widget.previewOnly;
+    final label = preview
+        ? 'PREMIUM — UNLOCK TO BOARD'
+        : complete
         ? 'FLIGHT COMPLETE'
         : boarding
         ? 'BOARDING…'
         : 'START BOARDING';
+    final inactive = boarding || complete;
     return SizedBox(
       height: 48,
       child: DecoratedBox(
         decoration: BoxDecoration(
           gradient: LinearGradient(
-            colors: boarding || complete
+            colors: inactive
                 ? [const Color(0xFF7E8FA4), const Color(0xFF61758E)]
                 : [const Color(0xFF3479D0), const Color(0xFF245BB1)],
           ),
           borderRadius: BorderRadius.circular(16),
-          boxShadow: boarding || complete
+          boxShadow: inactive
               ? const []
               : const [
                   BoxShadow(
@@ -495,14 +540,21 @@ class _BoardingGamePageState extends State<BoardingGamePage> {
                 ],
         ),
         child: ElevatedButton.icon(
-          onPressed: boarding
-              ? null
+          onPressed: boarding || preview
+              ? (preview
+                  ? () {
+                      Navigator.of(context).pop();
+                      widget.onUnlockTap?.call();
+                    }
+                  : null)
               : () {
                   _simulation.start();
                   _refresh();
                 },
           icon: Icon(
-            complete
+            preview
+                ? Icons.lock_rounded
+                : complete
                 ? Icons.check_circle_outline_rounded
                 : Icons.flight_takeoff_rounded,
             size: 18,

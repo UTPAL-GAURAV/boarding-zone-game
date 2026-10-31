@@ -1,0 +1,80 @@
+import '../aircraft_layout.dart';
+
+/// Shared 3-3-3 wide-body cabin (9 abreast, 2 aisles) for A350/777-300ER/747/A380 family.
+abstract final class LevelWide333 {
+  static const AircraftLayout aircraft = AircraftLayout(
+    id: 'level_wide_333',
+    designWidth: 400,
+    designHeight: 750,
+    rowCount: 20,
+    zoneCount: 6,
+    rowStartY: 114,
+    rowSpacing: 29,
+    seatWidth: 24,
+    seatHeight: 24,
+    seatColumns: [
+      SeatColumnLayout(label: 'A', centerX: 30,  aisleIndex: 0, seatType: SeatType.window),
+      SeatColumnLayout(label: 'B', centerX: 58,  aisleIndex: 0, seatType: SeatType.middle),
+      SeatColumnLayout(label: 'C', centerX: 86,  aisleIndex: 0, seatType: SeatType.aisle),
+      SeatColumnLayout(label: 'D', centerX: 140, aisleIndex: 1, seatType: SeatType.aisle),
+      SeatColumnLayout(label: 'E', centerX: 168, aisleIndex: 1, seatType: SeatType.middle),
+      SeatColumnLayout(label: 'F', centerX: 196, aisleIndex: 1, seatType: SeatType.aisle),
+      SeatColumnLayout(label: 'G', centerX: 250, aisleIndex: 2, seatType: SeatType.aisle),
+      SeatColumnLayout(label: 'H', centerX: 278, aisleIndex: 2, seatType: SeatType.middle),
+      SeatColumnLayout(label: 'J', centerX: 306, aisleIndex: 2, seatType: SeatType.window),
+    ],
+    rowDefaultZones: [
+      5, 5, 5, 5, 5, 5, 5, 5, 5, 5,
+      5, 5, 5, 5, 5, 5, 5, 5, 5, 5,
+    ],
+    aisles: [
+      BoardingAisleLayout(
+        id: 'left',
+        centerX: 112,
+        width: 30,
+        capacity: 10,
+        minimumSpacingRows: 0.85,
+        entryIntervalSeconds: 0.24,
+        walkingSpeedRowsPerSecond: 5.0,
+        turnDurationSeconds: 0.26,
+        entranceRow: -0.9,
+        floorTop: 89,
+      ),
+      BoardingAisleLayout(
+        id: 'right',
+        centerX: 224,
+        width: 30,
+        capacity: 10,
+        minimumSpacingRows: 0.85,
+        entryIntervalSeconds: 0.24,
+        walkingSpeedRowsPerSecond: 5.0,
+        turnDurationSeconds: 0.26,
+        entranceRow: -0.9,
+        floorTop: 89,
+      ),
+    ],
+    seatBlocks: [
+      SeatBlockLayout(left: 16, right: 100),
+      SeatBlockLayout(left: 126, right: 210),
+      SeatBlockLayout(left: 236, right: 320),
+    ],
+    windowCentersX: [8, 328],
+    cabinShell: CabinRegion(
+      left: 8,
+      top: 38,
+      width: 384,
+      height: 680,
+      cornerRadius: 60,
+    ),
+    flightDeck: CabinRegion(
+      left: 140,
+      top: 42,
+      width: 120,
+      height: 24,
+      cornerRadius: 12,
+    ),
+    gateLabelY: 24,
+    entranceDoorY: 77,
+    entranceDoorHeight: 13,
+  );
+}

@@ -177,7 +177,7 @@ App never crashes on network failure — errors are swallowed after 3 retries an
 
 ## Android config
 
-- **Min SDK:** flutter default (set in `flutter.minSdkVersion`)
+- **Min SDK:** 26 (raised from flutter default to satisfy `sentry_flutter ^10.x` and `google_sign_in ^7.x`)
 - **OAuth client ID:** `284949944908-2j3p30poivtnbpn6f2q55i6hsru54ijo.apps.googleusercontent.com`
 - **Debug SHA-1:** `08:6C:AA:5A:DE:68:A0:93:64:BF:3F:1E:C8:1C:E1:AB:DF:55:D6:C9`
 - ProGuard enabled for release builds (`proguard-rules.pro`)

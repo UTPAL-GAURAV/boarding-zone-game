@@ -13,12 +13,12 @@ abstract final class LevelTwo {
     seatWidth: 29,
     seatHeight: 29,
     seatColumns: [
-      SeatColumnLayout(label: 'A', centerX: 55, aisleIndex: 0),
-      SeatColumnLayout(label: 'B', centerX: 94, aisleIndex: 0),
-      SeatColumnLayout(label: 'C', centerX: 133, aisleIndex: 0),
-      SeatColumnLayout(label: 'D', centerX: 227, aisleIndex: 0),
-      SeatColumnLayout(label: 'E', centerX: 266, aisleIndex: 0),
-      SeatColumnLayout(label: 'F', centerX: 305, aisleIndex: 0),
+      SeatColumnLayout(label: 'A', centerX: 55, aisleIndex: 0, seatType: SeatType.window),
+      SeatColumnLayout(label: 'B', centerX: 94, aisleIndex: 0, seatType: SeatType.middle),
+      SeatColumnLayout(label: 'C', centerX: 133, aisleIndex: 0, seatType: SeatType.aisle),
+      SeatColumnLayout(label: 'D', centerX: 227, aisleIndex: 0, seatType: SeatType.aisle),
+      SeatColumnLayout(label: 'E', centerX: 266, aisleIndex: 0, seatType: SeatType.middle),
+      SeatColumnLayout(label: 'F', centerX: 305, aisleIndex: 0, seatType: SeatType.window),
     ],
     rowDefaultZones: [5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5],
     aisles: [

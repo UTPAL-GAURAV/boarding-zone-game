@@ -13,10 +13,10 @@ abstract final class LevelOne {
     seatWidth: 37,
     seatHeight: 29,
     seatColumns: [
-      SeatColumnLayout(label: 'A', centerX: 70, aisleIndex: 0),
-      SeatColumnLayout(label: 'B', centerX: 116, aisleIndex: 0),
-      SeatColumnLayout(label: 'C', centerX: 244, aisleIndex: 0),
-      SeatColumnLayout(label: 'D', centerX: 290, aisleIndex: 0),
+      SeatColumnLayout(label: 'A', centerX: 70, aisleIndex: 0, seatType: SeatType.window),
+      SeatColumnLayout(label: 'B', centerX: 116, aisleIndex: 0, seatType: SeatType.aisle),
+      SeatColumnLayout(label: 'C', centerX: 244, aisleIndex: 0, seatType: SeatType.aisle),
+      SeatColumnLayout(label: 'D', centerX: 290, aisleIndex: 0, seatType: SeatType.window),
     ],
     rowDefaultZones: [5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5],
     aisles: [

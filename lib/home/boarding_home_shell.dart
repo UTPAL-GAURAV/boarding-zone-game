@@ -238,7 +238,41 @@ class _BoardingHomeShellState extends State<BoardingHomeShell> {
     final layout = AircraftLevelRegistry.resolve(aircraft);
     if (!_isUnlocked(aircraft)) {
       if (aircraft.unlockType == AircraftUnlockType.premium) {
-        setState(() => _destination = 2);
+        if (layout == null) {
+          // No layout yet for this premium aircraft — nothing to preview.
+          _showComingSoon(aircraft);
+          return;
+        }
+        // Show seat layout in preview mode; boarding is disabled.
+        if (!mounted) return;
+        await Navigator.of(context).push(
+          MaterialPageRoute<void>(
+            builder: (_) => Theme(
+              data: ThemeData(
+                useMaterial3: true,
+                scaffoldBackgroundColor: const Color(0xFFF2F4F8),
+                colorScheme: ColorScheme.fromSeed(
+                  seedColor: const Color(0xFF3676CF),
+                ),
+                fontFamily: 'sans-serif',
+              ),
+              child: AnnotatedRegion<SystemUiOverlayStyle>(
+                value: const SystemUiOverlayStyle(
+                  statusBarIconBrightness: Brightness.dark,
+                  systemNavigationBarColor: Color(0xFFF2F4F8),
+                  systemNavigationBarIconBrightness: Brightness.dark,
+                ),
+                child: BoardingGamePage(
+                  aircraftName: aircraft.displayName,
+                  layout: layout,
+                  previewOnly: true,
+                  onUnlockTap: () => setState(() => _destination = 2),
+                ),
+              ),
+            ),
+          ),
+        );
+        return;
       } else {
         _showLockedRequirement(aircraft);
       }
@@ -420,7 +454,7 @@ class _BoardingHomeShellState extends State<BoardingHomeShell> {
                 onPlay: _launchAircraft,
                 onLockedTap: (aircraft) {
                   if (aircraft.unlockType == AircraftUnlockType.premium) {
-                    setState(() => _destination = 2);
+                    unawaited(_launchAircraft(aircraft));
                   } else {
                     _showLockedRequirement(aircraft);
                   }
@@ -852,7 +886,7 @@ class _AircraftTile extends StatelessWidget {
                     fit: StackFit.expand,
                     children: [
                       AircraftPhoto(aircraft: aircraft),
-                      if (!unlocked) const _LockedPhotoOverlay(),
+                      if (!unlocked && !premium) const _LockedPhotoOverlay(),
                       Positioned(
                         left: 12,
                         top: 12,
@@ -872,7 +906,7 @@ class _AircraftTile extends StatelessWidget {
                               : _accent,
                         ),
                       ),
-                      if (!unlocked)
+                      if (!unlocked && !premium)
                         const Center(
                           child: Icon(
                             Icons.lock_rounded,

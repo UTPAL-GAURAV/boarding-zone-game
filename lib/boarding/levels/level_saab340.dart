@@ -13,8 +13,8 @@ abstract final class LevelSaab340 {
     seatWidth: 39,
     seatHeight: 30,
     seatColumns: [
-      SeatColumnLayout(label: 'A', centerX: 111, aisleIndex: 0),
-      SeatColumnLayout(label: 'B', centerX: 249, aisleIndex: 0),
+      SeatColumnLayout(label: 'A', centerX: 111, aisleIndex: 0, seatType: SeatType.aisle),
+      SeatColumnLayout(label: 'B', centerX: 249, aisleIndex: 0, seatType: SeatType.aisle),
     ],
     rowDefaultZones: [5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5],
     aisles: [

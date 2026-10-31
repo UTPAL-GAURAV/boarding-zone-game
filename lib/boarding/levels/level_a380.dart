@@ -1,0 +1,81 @@
+import '../aircraft_layout.dart';
+
+/// Airbus A380-800 — 3-4-3 economy cabin (10 abreast, 2 aisles), 20 rows.
+abstract final class LevelA380 {
+  static const AircraftLayout aircraft = AircraftLayout(
+    id: 'level_a380_343',
+    designWidth: 420,
+    designHeight: 750,
+    rowCount: 20,
+    zoneCount: 6,
+    rowStartY: 114,
+    rowSpacing: 29,
+    seatWidth: 22,
+    seatHeight: 24,
+    seatColumns: [
+      SeatColumnLayout(label: 'A', centerX: 24,  aisleIndex: 0, seatType: SeatType.window),
+      SeatColumnLayout(label: 'B', centerX: 50,  aisleIndex: 0, seatType: SeatType.middle),
+      SeatColumnLayout(label: 'C', centerX: 76,  aisleIndex: 0, seatType: SeatType.aisle),
+      SeatColumnLayout(label: 'D', centerX: 128, aisleIndex: 1, seatType: SeatType.aisle),
+      SeatColumnLayout(label: 'E', centerX: 154, aisleIndex: 1, seatType: SeatType.middle),
+      SeatColumnLayout(label: 'F', centerX: 180, aisleIndex: 1, seatType: SeatType.middle),
+      SeatColumnLayout(label: 'G', centerX: 206, aisleIndex: 1, seatType: SeatType.aisle),
+      SeatColumnLayout(label: 'H', centerX: 258, aisleIndex: 2, seatType: SeatType.aisle),
+      SeatColumnLayout(label: 'J', centerX: 284, aisleIndex: 2, seatType: SeatType.middle),
+      SeatColumnLayout(label: 'K', centerX: 310, aisleIndex: 2, seatType: SeatType.window),
+    ],
+    rowDefaultZones: [
+      5, 5, 5, 5, 5, 5, 5, 5, 5, 5,
+      5, 5, 5, 5, 5, 5, 5, 5, 5, 5,
+    ],
+    aisles: [
+      BoardingAisleLayout(
+        id: 'left',
+        centerX: 101,
+        width: 30,
+        capacity: 10,
+        minimumSpacingRows: 0.85,
+        entryIntervalSeconds: 0.24,
+        walkingSpeedRowsPerSecond: 5.0,
+        turnDurationSeconds: 0.26,
+        entranceRow: -0.9,
+        floorTop: 89,
+      ),
+      BoardingAisleLayout(
+        id: 'right',
+        centerX: 231,
+        width: 30,
+        capacity: 10,
+        minimumSpacingRows: 0.85,
+        entryIntervalSeconds: 0.24,
+        walkingSpeedRowsPerSecond: 5.0,
+        turnDurationSeconds: 0.26,
+        entranceRow: -0.9,
+        floorTop: 89,
+      ),
+    ],
+    seatBlocks: [
+      SeatBlockLayout(left: 12, right: 88),
+      SeatBlockLayout(left: 116, right: 218),
+      SeatBlockLayout(left: 246, right: 322),
+    ],
+    windowCentersX: [6, 334],
+    cabinShell: CabinRegion(
+      left: 6,
+      top: 38,
+      width: 408,
+      height: 680,
+      cornerRadius: 62,
+    ),
+    flightDeck: CabinRegion(
+      left: 150,
+      top: 42,
+      width: 120,
+      height: 24,
+      cornerRadius: 12,
+    ),
+    gateLabelY: 24,
+    entranceDoorY: 77,
+    entranceDoorHeight: 13,
+  );
+}

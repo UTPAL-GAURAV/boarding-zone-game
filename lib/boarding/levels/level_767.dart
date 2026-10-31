@@ -1,0 +1,80 @@
+import '../aircraft_layout.dart';
+
+/// Boeing 767-300ER — 2-4-2 wide-body (8 abreast, 2 aisles), 31 rows.
+abstract final class Level767 {
+  static const AircraftLayout aircraft = AircraftLayout(
+    id: 'level_767_242',
+    designWidth: 400,
+    designHeight: 750,
+    rowCount: 20,
+    zoneCount: 6,
+    rowStartY: 114,
+    rowSpacing: 29,
+    seatWidth: 26,
+    seatHeight: 24,
+    seatColumns: [
+      SeatColumnLayout(label: 'A', centerX: 38,  aisleIndex: 0, seatType: SeatType.window),
+      SeatColumnLayout(label: 'B', centerX: 68,  aisleIndex: 0, seatType: SeatType.aisle),
+      SeatColumnLayout(label: 'C', centerX: 116, aisleIndex: 1, seatType: SeatType.aisle),
+      SeatColumnLayout(label: 'D', centerX: 146, aisleIndex: 1, seatType: SeatType.middle),
+      SeatColumnLayout(label: 'E', centerX: 176, aisleIndex: 1, seatType: SeatType.middle),
+      SeatColumnLayout(label: 'F', centerX: 206, aisleIndex: 1, seatType: SeatType.middle),
+      SeatColumnLayout(label: 'G', centerX: 236, aisleIndex: 2, seatType: SeatType.aisle),
+      SeatColumnLayout(label: 'H', centerX: 284, aisleIndex: 2, seatType: SeatType.aisle),
+      SeatColumnLayout(label: 'J', centerX: 314, aisleIndex: 2, seatType: SeatType.window),
+    ],
+    rowDefaultZones: [
+      5, 5, 5, 5, 5, 5, 5, 5, 5, 5,
+      5, 5, 5, 5, 5, 5, 5, 5, 5, 5,
+    ],
+    aisles: [
+      BoardingAisleLayout(
+        id: 'left',
+        centerX: 90,
+        width: 30,
+        capacity: 10,
+        minimumSpacingRows: 0.85,
+        entryIntervalSeconds: 0.24,
+        walkingSpeedRowsPerSecond: 5.0,
+        turnDurationSeconds: 0.26,
+        entranceRow: -0.9,
+        floorTop: 89,
+      ),
+      BoardingAisleLayout(
+        id: 'right',
+        centerX: 263,
+        width: 30,
+        capacity: 10,
+        minimumSpacingRows: 0.85,
+        entryIntervalSeconds: 0.24,
+        walkingSpeedRowsPerSecond: 5.0,
+        turnDurationSeconds: 0.26,
+        entranceRow: -0.9,
+        floorTop: 89,
+      ),
+    ],
+    seatBlocks: [
+      SeatBlockLayout(left: 22, right: 84),
+      SeatBlockLayout(left: 102, right: 222),
+      SeatBlockLayout(left: 249, right: 330),
+    ],
+    windowCentersX: [14, 346],
+    cabinShell: CabinRegion(
+      left: 10,
+      top: 38,
+      width: 380,
+      height: 680,
+      cornerRadius: 58,
+    ),
+    flightDeck: CabinRegion(
+      left: 140,
+      top: 42,
+      width: 120,
+      height: 24,
+      cornerRadius: 12,
+    ),
+    gateLabelY: 24,
+    entranceDoorY: 77,
+    entranceDoorHeight: 13,
+  );
+}

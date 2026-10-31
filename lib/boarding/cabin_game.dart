@@ -382,11 +382,15 @@ class CabinGame extends FlameGame {
     if (passenger == null) return;
     final seatRect = _seatRect(passenger.seat.row, passenger.seat.column);
     final seated = passenger.phase == PassengerPhase.seated;
-    final aisleX = layout.aisles[passenger.seat.aisleIndex].centerX;
+    final waiting = passenger.phase == PassengerPhase.shuffleWait;
+    final aisleLayout = layout.aisles[passenger.seat.aisleIndex];
+    final aisleX = aisleLayout.centerX;
     final rowY = layout.rowStartY + passenger.rowPosition * layout.rowSpacing;
-    var x = seated ? seatRect.center.dx : aisleX;
-    var y = seated ? seatRect.center.dy + 1 : rowY;
-    if (!seated &&
+    var x = (seated || waiting) ? seatRect.center.dx : aisleX;
+    var y = (seated || waiting) ? seatRect.center.dy + 1 : rowY;
+
+    // Smooth slide from aisle to seat during turning/stowing.
+    if (!seated && !waiting &&
         (passenger.phase == PassengerPhase.turning ||
             passenger.phase == PassengerPhase.stowing)) {
       final eased =
@@ -396,12 +400,25 @@ class CabinGame extends FlameGame {
       x = ui.lerpDouble(aisleX, seatRect.center.dx, eased)!;
       y = ui.lerpDouble(rowY, seatRect.center.dy + 10, eased)!;
     }
-    final bob = !seated && passenger.phase == PassengerPhase.walking
+
+    // Shuffle animation: seated blocker slides toward aisle then returns.
+    double shuffleOffsetX = 0;
+    if (passenger.isShuffling) {
+      // sin(0→π) gives 0→1→0 arc; scale by distance to aisle.
+      final arc = math.sin(passenger.shuffleProgress * math.pi);
+      final toAisle = aisleX - seatRect.center.dx;
+      shuffleOffsetX = toAisle * arc * 0.55;
+    }
+
+    final bob = !seated && !waiting && passenger.phase == PassengerPhase.walking
         ? math.sin(passenger.animationTime * 16) * 1.6
         : 0.0;
-    final center = Offset(x, y + bob);
+    final center = Offset(x + shuffleOffsetX, y + bob);
 
-    final shadow = Paint()..color = const Color(0x300D2238);
+    // Dim passengers who are waiting in their seat for blockers to move.
+    final alpha = waiting ? 0.45 : 1.0;
+
+    final shadow = Paint()..color = Color.fromRGBO(13, 34, 56, 0.19 * alpha);
     canvas.drawOval(
       Rect.fromCenter(
         center: center + const Offset(0, 10),
@@ -410,7 +427,7 @@ class CabinGame extends FlameGame {
       ),
       shadow,
     );
-    final bag = Paint()..color = const Color(0xFFCA704E);
+    final bag = Paint()..color = Color.fromRGBO(202, 112, 78, alpha);
     canvas.drawRRect(
       RRect.fromRectAndRadius(
         Rect.fromCenter(
@@ -422,7 +439,7 @@ class CabinGame extends FlameGame {
       ),
       bag,
     );
-    final bodyColor = zoneColors[passenger.seat.zone];
+    final bodyColor = zoneColors[passenger.seat.zone].withValues(alpha: alpha);
     canvas.drawRRect(
       RRect.fromRectAndRadius(
         Rect.fromCenter(center: center, width: 12, height: 16),
@@ -433,23 +450,23 @@ class CabinGame extends FlameGame {
     canvas.drawCircle(
       center + const Offset(0, -9),
       5.2,
-      Paint()..color = const Color(0xFFFFD5B3),
+      Paint()..color = Color.fromRGBO(255, 213, 179, alpha),
     );
     canvas.drawCircle(
       center + const Offset(-1.8, -10),
       0.7,
-      Paint()..color = const Color(0xFF513B32),
+      Paint()..color = Color.fromRGBO(81, 59, 50, alpha),
     );
     canvas.drawCircle(
       center + const Offset(1.8, -10),
       0.7,
-      Paint()..color = const Color(0xFF513B32),
+      Paint()..color = Color.fromRGBO(81, 59, 50, alpha),
     );
     final legs = Paint()
-      ..color = const Color(0xFF405168)
+      ..color = Color.fromRGBO(64, 81, 104, alpha)
       ..strokeWidth = 2.2
       ..strokeCap = StrokeCap.round;
-    final stride = !seated && passenger.phase == PassengerPhase.walking
+    final stride = !seated && !waiting && passenger.phase == PassengerPhase.walking
         ? math.sin(passenger.animationTime * 16) * 2
         : 0.0;
     canvas.drawLine(

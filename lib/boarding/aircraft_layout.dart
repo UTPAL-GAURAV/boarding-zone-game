@@ -1,3 +1,5 @@
+enum SeatType { aisle, middle, window }
+
 class CabinRegion {
   const CabinRegion({
     required this.left,
@@ -19,11 +21,13 @@ class SeatColumnLayout {
     required this.label,
     required this.centerX,
     required this.aisleIndex,
+    required this.seatType,
   });
 
   final String label;
   final double centerX;
   final int aisleIndex;
+  final SeatType seatType;
 }
 
 class BoardingAisleLayout {
@@ -66,6 +70,7 @@ class SeatLayoutSpec {
     required this.label,
     required this.aisleIndex,
     required this.defaultZone,
+    required this.seatType,
   });
 
   final int row;
@@ -73,6 +78,7 @@ class SeatLayoutSpec {
   final String label;
   final int aisleIndex;
   final int defaultZone;
+  final SeatType seatType;
 }
 
 /// Immutable, source-authored geometry and rules for one aircraft level.
@@ -137,6 +143,7 @@ class AircraftLayout {
           label: column.label,
           aisleIndex: column.aisleIndex,
           defaultZone: rowDefaultZones[row],
+          seatType: column.seatType,
         );
       }
     }
