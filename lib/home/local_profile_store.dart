@@ -78,8 +78,22 @@ class LocalProfileStore {
     'Skyhawk',
     'Comet',
     'Orion',
-    'Jetstream',
     'Bluebird',
+    'Jetstar',
+    'Nimbus',
+    'Zephyr',
+    'Stratos',
+    'Vortex',
+    'Cirrus',
+    'Altair',
+    'Solaris',
+    'Tempest',
+    'Quasar',
+    'Aether',
+    'Boreal',
+    'Cygnus',
+    'Dawnjet',
+    'Equinox',
   ];
   static final Random _random = Random.secure();
 
@@ -96,11 +110,8 @@ class LocalProfileStore {
     var name = preferences.getString(_displayNameKey);
     if (name == null || name.trim().isEmpty) {
       name =
-          'Crew ${_crewNames[_random.nextInt(_crewNames.length)]}'
-          '${1000 + _random.nextInt(9000)}';
-      await preferences.setString(_displayNameKey, name);
-    } else if (name.startsWith('Pilot ')) {
-      name = 'Crew${name.substring('Pilot'.length)}';
+          '${_crewNames[_random.nextInt(_crewNames.length)]}'
+          '${100 + _random.nextInt(900)}';
       await preferences.setString(_displayNameKey, name);
     }
     return PlayerProfile(internalId: playerId, displayName: name);

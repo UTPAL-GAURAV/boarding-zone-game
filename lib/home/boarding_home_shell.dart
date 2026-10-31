@@ -1,11 +1,15 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:sentry_flutter/sentry_flutter.dart';
 
 import '../boarding/boarding_game_page.dart';
 import 'aircraft.dart';
 import 'aircraft_level_registry.dart';
 import 'local_profile_store.dart';
 import 'manufacturer_brand_assets.dart';
+import 'rankings_service.dart';
 
 const _navy = Color(0xFF101923);
 const _panel = Color(0xFFFFFFFF);
@@ -24,6 +28,7 @@ class BoardingHomeShell extends StatefulWidget {
 
 class _BoardingHomeShellState extends State<BoardingHomeShell> {
   late final LocalProfileStore _store;
+  late final RankingsService _rankings;
   late final Future<PlayerProfile> _profileFuture;
   PlayerProfile? _profile;
   Map<String, int?> _bestTimes = {};
@@ -36,6 +41,7 @@ class _BoardingHomeShellState extends State<BoardingHomeShell> {
   void initState() {
     super.initState();
     _store = widget.store ?? LocalProfileStore();
+    _rankings = RankingsService();
     _profileFuture = _loadProfile();
   }
 
@@ -85,6 +91,17 @@ class _BoardingHomeShellState extends State<BoardingHomeShell> {
     if (name == null || name.trim().isEmpty) return;
     await _store.saveDisplayName(name);
     if (mounted) setState(() => _profile = current.copyWith(displayName: name));
+    Sentry.addBreadcrumb(Breadcrumb(
+      message: 'Display name updated',
+      category: 'profile',
+      level: SentryLevel.info,
+    ));
+    unawaited(
+      _rankings.upsertProfile(
+        playerId: current.internalId,
+        displayName: name.trim(),
+      ),
+    );
   }
 
   Future<void> _launchAircraft(Aircraft aircraft) async {
@@ -142,12 +159,33 @@ class _BoardingHomeShellState extends State<BoardingHomeShell> {
   }
 
   Future<void> _recordBestTime(Aircraft aircraft, int milliseconds) async {
+    Sentry.addBreadcrumb(Breadcrumb(
+      message: 'Boarding completed: ${aircraft.id} ${milliseconds}ms',
+      category: 'game',
+      level: SentryLevel.info,
+      data: {
+        'aircraft_id': aircraft.id,
+        'milliseconds': milliseconds,
+        'has_profile': _profile != null,
+      },
+    ));
     final progress = await _store.recordBoardingCompletion(
       aircraftId: aircraft.id,
       milliseconds: milliseconds,
       fleet: AircraftCatalog.all,
     );
     _applyFleetProgress(progress);
+    final profile = _profile;
+    if (profile != null) {
+      unawaited(
+        _rankings.submitScore(
+          playerId: profile.internalId,
+          displayName: profile.displayName,
+          aircraftId: aircraft.id,
+          milliseconds: milliseconds,
+        ),
+      );
+    }
   }
 
   Future<void> _selectNextAircraft(Aircraft aircraft) async {
@@ -260,7 +298,8 @@ class _BoardingHomeShellState extends State<BoardingHomeShell> {
               ),
               _RankingsTab(
                 crewName: crewMember.displayName,
-                bestTimes: _bestTimes,
+                playerId: crewMember.internalId,
+                rankings: _rankings,
               ),
               _ShopTab(
                 onPurchaseTap: (aircraft) {
@@ -335,7 +374,7 @@ class _ProfileDialogState extends State<_ProfileDialog> {
     content: TextField(
       controller: _controller,
       autofocus: true,
-      maxLength: 24,
+      maxLength: 12,
       style: const TextStyle(color: _navy),
       decoration: const InputDecoration(
         labelText: 'Display name',
@@ -601,14 +640,18 @@ class _HomeHeader extends StatelessWidget {
                 crewName,
                 style: const TextStyle(color: _muted, fontSize: 11),
               ),
-              const SizedBox(width: 8),
-              CircleAvatar(
-                radius: 19,
-                backgroundColor: _panelLight,
+              const SizedBox(width: 6),
+              Container(
+                width: 38,
+                height: 38,
+                decoration: BoxDecoration(
+                  color: _panelLight,
+                  shape: BoxShape.circle,
+                ),
                 child: const Icon(
-                  Icons.person_rounded,
+                  Icons.edit_rounded,
                   color: _accent,
-                  size: 21,
+                  size: 18,
                 ),
               ),
             ],
@@ -904,9 +947,14 @@ class _ManufacturerLogoBadge extends StatelessWidget {
 }
 
 class _RankingsTab extends StatefulWidget {
-  const _RankingsTab({required this.crewName, required this.bestTimes});
+  const _RankingsTab({
+    required this.crewName,
+    required this.playerId,
+    required this.rankings,
+  });
   final String crewName;
-  final Map<String, int?> bestTimes;
+  final String playerId;
+  final RankingsService rankings;
 
   @override
   State<_RankingsTab> createState() => _RankingsTabState();
@@ -914,40 +962,33 @@ class _RankingsTab extends StatefulWidget {
 
 class _RankingsTabState extends State<_RankingsTab> {
   String _selectedId = 'cessna-grand-caravan-ex';
+  late Future<(List<LeaderboardEntry>, LeaderboardEntry?)> _dataFuture;
 
-  static const _sampleRows = <String, List<(String, String)>>{
-    'airbus-a320': [
-      ('CloudRunner', '462.000'),
-      ('JetLagZero', '486.000'),
-      ('AeroAce', '499.000'),
-      ('SkywardSam', '524.000'),
-    ],
-    'boeing-737': [
-      ('RunwayRanger', '455.000'),
-      ('NorthStar', '492.000'),
-      ('WingSpan', '507.000'),
-      ('TaxiwayTom', '538.000'),
-    ],
-    'airbus-a350': [
-      ('LongHaulLee', '668.000'),
-      ('CloudRunner', '691.000'),
-      ('SeatbeltSam', '717.000'),
-      ('AeroAce', '740.000'),
-    ],
-  };
+  @override
+  void initState() {
+    super.initState();
+    _dataFuture = _fetch(_selectedId);
+  }
+
+  Future<(List<LeaderboardEntry>, LeaderboardEntry?)> _fetch(String id) =>
+      Future.wait([
+        widget.rankings.fetchLeaderboard(id),
+        widget.rankings.fetchPlayerBest(id, widget.playerId),
+      ]).then((results) => (
+            results[0] as List<LeaderboardEntry>,
+            results[1] as LeaderboardEntry?,
+          ));
+
+  void _selectAircraft(String id) {
+    setState(() {
+      _selectedId = id;
+      _dataFuture = _fetch(id);
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     final aircraft = AircraftCatalog.byId(_selectedId);
-    final samples =
-        _sampleRows[_selectedId] ??
-        const [
-          ('SkywardSam', '552.000'),
-          ('CloudRunner', '578.000'),
-          ('AeroAce', '604.000'),
-          ('RunwayRanger', '627.000'),
-        ];
-    final localTime = widget.bestTimes[_selectedId];
     return CustomScrollView(
       key: const PageStorageKey('rankings-scroll'),
       slivers: [
@@ -956,35 +997,6 @@ class _RankingsTabState extends State<_RankingsTab> {
           sliver: SliverList.list(
             children: [
               const _PageTitle(kicker: 'COMPETE', title: 'World Rankings'),
-              const SizedBox(height: 8),
-              const Text(
-                'Boarding times are ranked separately for every aircraft.',
-                style: TextStyle(color: _muted, fontSize: 12),
-              ),
-              const SizedBox(height: 18),
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFE8F2FB),
-                  borderRadius: BorderRadius.circular(13),
-                ),
-                child: const Row(
-                  children: [
-                    Icon(Icons.info_outline_rounded, color: _accent, size: 17),
-                    SizedBox(width: 9),
-                    Expanded(
-                      child: Text(
-                        'PREVIEW DATA · Sample rankings only, not live results',
-                        style: TextStyle(
-                          color: _muted,
-                          fontSize: 10,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
               const SizedBox(height: 18),
               SizedBox(
                 height: 40,
@@ -998,7 +1010,7 @@ class _RankingsTabState extends State<_RankingsTab> {
                     return ChoiceChip(
                       label: Text(item.model),
                       selected: active,
-                      onSelected: (_) => setState(() => _selectedId = item.id),
+                      onSelected: (_) => _selectAircraft(item.id),
                       selectedColor: _accent,
                       backgroundColor: _panel,
                       labelStyle: TextStyle(
@@ -1052,7 +1064,7 @@ class _RankingsTabState extends State<_RankingsTab> {
                 children: [
                   Expanded(
                     child: Text(
-                      'PREVIEW LIST',
+                      'WORLD RANKINGS',
                       style: TextStyle(
                         color: _muted,
                         fontSize: 9,
@@ -1073,21 +1085,78 @@ class _RankingsTabState extends State<_RankingsTab> {
                 ],
               ),
               const SizedBox(height: 8),
-              for (var index = 0; index < samples.length; index++)
-                _RankRow(
-                  rank: index + 1,
-                  name: samples[index].$1,
-                  time: samples[index].$2,
-                ),
-              if (localTime != null) ...[
-                const SizedBox(height: 10),
-                _RankRow(
-                  rank: null,
-                  name: '${widget.crewName} · Your local best',
-                  time: _formatTime(localTime),
-                  highlighted: true,
-                ),
-              ],
+              FutureBuilder<(List<LeaderboardEntry>, LeaderboardEntry?)>(
+                future: _dataFuture,
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 32),
+                      child: Center(
+                        child: CircularProgressIndicator(
+                          color: _accent,
+                          strokeWidth: 2,
+                        ),
+                      ),
+                    );
+                  }
+                  if (snapshot.hasError) {
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 24),
+                      child: Center(
+                        child: TextButton.icon(
+                          onPressed: () => setState(
+                            () => _dataFuture = _fetch(_selectedId),
+                          ),
+                          icon: const Icon(Icons.refresh_rounded, color: _accent),
+                          label: const Text(
+                            'Retry',
+                            style: TextStyle(color: _accent),
+                          ),
+                        ),
+                      ),
+                    );
+                  }
+                  final entries = snapshot.data?.$1 ?? const [];
+                  final playerBest = snapshot.data?.$2;
+                  final playerInTop =
+                      playerBest != null &&
+                      entries.any((e) => e.displayName == playerBest.displayName);
+                  if (entries.isEmpty && playerBest == null) {
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 24),
+                      child: Center(
+                        child: Text(
+                          'No scores yet — be the first!',
+                          style: TextStyle(color: _muted, fontSize: 13),
+                        ),
+                      ),
+                    );
+                  }
+                  return Column(
+                    children: [
+                      for (var i = 0; i < entries.length; i++)
+                        _RankRow(
+                          rank: i + 1,
+                          name: entries[i].displayName,
+                          time: _formatTime(entries[i].bestMilliseconds),
+                          highlighted: playerBest != null &&
+                              entries[i].bestMilliseconds ==
+                                  playerBest.bestMilliseconds &&
+                              entries[i].displayName == playerBest.displayName,
+                        ),
+                      if (playerBest != null && !playerInTop) ...[
+                        const SizedBox(height: 4),
+                        _RankRow(
+                          rank: entries.length + 1,
+                          name: playerBest.displayName,
+                          time: _formatTime(playerBest.bestMilliseconds),
+                          highlighted: true,
+                        ),
+                      ],
+                    ],
+                  );
+                },
+              ),
             ],
           ),
         ),
@@ -1127,7 +1196,7 @@ class _RankRow extends StatelessWidget {
             rank == null ? 'YOU' : '#${rank!}',
             style: TextStyle(
               color: highlighted ? _accent : _muted,
-              fontSize: rank == null ? 9 : 12,
+              fontSize: 12,
               fontWeight: FontWeight.w800,
             ),
           ),

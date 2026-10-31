@@ -647,7 +647,7 @@
     "imageAsset": "assets/aircraft/767-300er.jpg",
     "typicalSeats": 218,
     "targetSeconds": 900,
-    "unlockType": "progression",
+    "unlockType": "premium",
     "unlockRequirement": "Complete A321XLR under 14:45",
     "cabin": {
       "rows": 31,
@@ -658,7 +658,8 @@
       ],
       "aisleCount": 2,
       "aisleCapacity": 28
-    }
+    },
+    "priceLabel": "Premium aircraft"
   },
   {
     "id": "airbus-a330-200",
@@ -669,7 +670,7 @@
     "imageAsset": "assets/aircraft/a330-200.jpg",
     "typicalSeats": 247,
     "targetSeconds": 960,
-    "unlockType": "progression",
+    "unlockType": "premium",
     "unlockRequirement": "Complete 767-300ER under 15:00",
     "cabin": {
       "rows": 35,
@@ -680,7 +681,8 @@
       ],
       "aisleCount": 2,
       "aisleCapacity": 30
-    }
+    },
+    "priceLabel": "Premium aircraft"
   },
   {
     "id": "boeing-787-8",
@@ -691,7 +693,7 @@
     "imageAsset": "assets/aircraft/787-8.jpg",
     "typicalSeats": 248,
     "targetSeconds": 960,
-    "unlockType": "progression",
+    "unlockType": "premium",
     "unlockRequirement": "Complete A330-200 under 16:00",
     "cabin": {
       "rows": 35,
@@ -702,7 +704,8 @@
       ],
       "aisleCount": 2,
       "aisleCapacity": 30
-    }
+    },
+    "priceLabel": "Premium aircraft"
   },
   {
     "id": "ilyushin-il-96-300",
@@ -712,7 +715,7 @@
     "imageAsset": "assets/aircraft/ilyushin-il-96-300.jpg",
     "typicalSeats": 252,
     "targetSeconds": 990,
-    "unlockType": "progression",
+    "unlockType": "premium",
     "cabin": {
       "rows": 36,
       "seatBlocks": [
@@ -724,7 +727,8 @@
       "aisleCapacity": 32
     },
     "level": 34,
-    "unlockRequirement": "Complete 787-8 Dreamliner under 16:00"
+    "unlockRequirement": "Complete 787-8 Dreamliner under 16:00",
+    "priceLabel": "Premium aircraft"
   },
   {
     "id": "airbus-a330-300",
@@ -735,7 +739,7 @@
     "imageAsset": "assets/aircraft/a330-300.jpg",
     "typicalSeats": 277,
     "targetSeconds": 1020,
-    "unlockType": "progression",
+    "unlockType": "premium",
     "unlockRequirement": "Complete Il-96-300 under 16:30",
     "cabin": {
       "rows": 40,
@@ -746,7 +750,8 @@
       ],
       "aisleCount": 2,
       "aisleCapacity": 32
-    }
+    },
+    "priceLabel": "Premium aircraft"
   },
   {
     "id": "boeing-787-9",
@@ -757,7 +762,7 @@
     "imageAsset": "assets/aircraft/787-9.jpg",
     "typicalSeats": 296,
     "targetSeconds": 1050,
-    "unlockType": "progression",
+    "unlockType": "premium",
     "unlockRequirement": "Complete A330-300 under 17:00",
     "cabin": {
       "rows": 42,
@@ -768,7 +773,8 @@
       ],
       "aisleCount": 2,
       "aisleCapacity": 34
-    }
+    },
+    "priceLabel": "Premium aircraft"
   },
   {
     "id": "boeing-777-200er",
@@ -779,7 +785,7 @@
     "imageAsset": "assets/aircraft/777-200er.jpg",
     "typicalSeats": 313,
     "targetSeconds": 1080,
-    "unlockType": "progression",
+    "unlockType": "premium",
     "unlockRequirement": "Complete 787-9 Dreamliner under 17:30",
     "cabin": {
       "rows": 45,
@@ -790,7 +796,8 @@
       ],
       "aisleCount": 2,
       "aisleCapacity": 36
-    }
+    },
+    "priceLabel": "Premium aircraft"
   },
   {
     "id": "airbus-a350-900",
@@ -803,11 +810,11 @@
     "targetSeconds": 1080,
     "unlockType": "premium",
     "cabin": {
-      "rows": 45,
+      "rows": 35,
       "seatBlocks": [
-        2,
         3,
-        2
+        3,
+        3
       ],
       "aisleCount": 2,
       "aisleCapacity": 36
@@ -823,18 +830,19 @@
     "imageAsset": "assets/aircraft/a350-1000.jpg",
     "typicalSeats": 369,
     "targetSeconds": 1170,
-    "unlockType": "progression",
+    "unlockType": "premium",
     "unlockRequirement": "Complete 777-200ER under 18:00",
     "cabin": {
-      "rows": 53,
+      "rows": 41,
       "seatBlocks": [
-        2,
         3,
-        2
+        3,
+        3
       ],
       "aisleCount": 2,
       "aisleCapacity": 40
-    }
+    },
+    "priceLabel": "Premium aircraft"
   },
   {
     "id": "boeing-777-300er",
@@ -845,18 +853,19 @@
     "imageAsset": "assets/aircraft/777-300er.jpg",
     "typicalSeats": 396,
     "targetSeconds": 1230,
-    "unlockType": "progression",
+    "unlockType": "premium",
     "unlockRequirement": "Complete A350-1000 under 19:30",
     "cabin": {
-      "rows": 57,
+      "rows": 44,
       "seatBlocks": [
-        2,
         3,
-        2
+        3,
+        3
       ],
       "aisleCount": 2,
       "aisleCapacity": 42
-    }
+    },
+    "priceLabel": "Premium aircraft"
   },
   {
     "id": "boeing-747-8",
@@ -870,11 +879,11 @@
     "unlockType": "premium",
     "priceLabel": "Premium aircraft",
     "cabin": {
-      "rows": 67,
+      "rows": 52,
       "seatBlocks": [
-        2,
         3,
-        2
+        3,
+        3
       ],
       "aisleCount": 2,
       "aisleCapacity": 46
@@ -892,11 +901,11 @@
     "unlockType": "premium",
     "priceLabel": "Premium aircraft",
     "cabin": {
-      "rows": 75,
+      "rows": 59,
       "seatBlocks": [
-        2,
         3,
-        2
+        3,
+        3
       ],
       "aisleCount": 2,
       "aisleCapacity": 50
