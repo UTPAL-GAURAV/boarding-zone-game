@@ -1,8 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'package:boarding_zone_game/home/aircraft.dart';
-import 'package:boarding_zone_game/home/local_profile_store.dart';
+import 'package:boarding_bluster/home/aircraft.dart';
+import 'package:boarding_bluster/home/local_profile_store.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();

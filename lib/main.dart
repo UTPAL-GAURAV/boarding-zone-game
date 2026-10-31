@@ -19,7 +19,7 @@ Future<void> main() async {
         'FLUTTER_ENV',
         defaultValue: 'production',
       );
-      options.release = 'boarding-zone-game@1.0.0';
+      options.release = 'boarding-bluster@1.0.0';
       options.tracesSampleRate = 0.2;
       options.attachScreenshot = false;
       options.sendDefaultPii = false;
@@ -67,7 +67,7 @@ class BoardingZoneApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => MaterialApp(
-    title: 'Boarding Zone',
+    title: 'Boarding Bluster',
     debugShowCheckedModeBanner: false,
     theme: ThemeData(
       useMaterial3: true,

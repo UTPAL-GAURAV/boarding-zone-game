@@ -4,12 +4,17 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
 
+import 'package:razorpay_flutter/razorpay_flutter.dart';
+import 'package:url_launcher/url_launcher.dart';
+
 import '../boarding/boarding_game_page.dart';
+import '../config/secrets.dart';
 import 'aircraft.dart';
 import 'aircraft_level_registry.dart';
 import 'local_profile_store.dart';
 import 'manufacturer_brand_assets.dart';
 import 'rankings_service.dart';
+import 'shop_service.dart';
 
 const _navy = Color(0xFF101923);
 const _panel = Color(0xFFFFFFFF);
@@ -29,11 +34,14 @@ class BoardingHomeShell extends StatefulWidget {
 class _BoardingHomeShellState extends State<BoardingHomeShell> {
   late final LocalProfileStore _store;
   late final RankingsService _rankings;
+  late final ShopService _shop;
+  late final Razorpay _razorpay;
   late final Future<PlayerProfile> _profileFuture;
   PlayerProfile? _profile;
   Map<String, int?> _bestTimes = {};
   Set<String> _unlockedAircraftIds = {};
   Set<String> _premiumOwnedAircraftIds = {};
+  bool _premiumUnlocked = false;
   String _selectedId = 'cessna-grand-caravan-ex';
   int _destination = 0;
 
@@ -42,13 +50,24 @@ class _BoardingHomeShellState extends State<BoardingHomeShell> {
     super.initState();
     _store = widget.store ?? LocalProfileStore();
     _rankings = RankingsService();
+    _shop = ShopService();
+    _razorpay = Razorpay();
+    _razorpay.on(Razorpay.EVENT_PAYMENT_SUCCESS, _onPaymentSuccess);
+    _razorpay.on(Razorpay.EVENT_PAYMENT_ERROR, _onPaymentError);
     _profileFuture = _loadProfile();
+  }
+
+  @override
+  void dispose() {
+    _razorpay.clear();
+    super.dispose();
   }
 
   Future<PlayerProfile> _loadProfile() async {
     await AircraftCatalog.load();
     final profile = await _store.loadProfile();
     final progress = await _store.loadFleetProgress(AircraftCatalog.all);
+    final premiumUnlocked = await _shop.isPremiumUnlocked();
     final newestUnlocked = AircraftCatalog.all.lastWhere(
       (aircraft) => progress[aircraft.id]?.unlocked == true,
       orElse: () => AircraftCatalog.all.first,
@@ -62,6 +81,7 @@ class _BoardingHomeShellState extends State<BoardingHomeShell> {
         _profile = profile;
         _selectedId = newestUnlocked.id;
         _bestTimes = bestTimes;
+        _premiumUnlocked = premiumUnlocked;
         _unlockedAircraftIds = {
           for (final entry in progress.entries)
             if (entry.value.unlocked) entry.key,
@@ -76,8 +96,11 @@ class _BoardingHomeShellState extends State<BoardingHomeShell> {
   }
 
   bool _isUnlocked(Aircraft aircraft) {
-    return aircraft.unlockType == AircraftUnlockType.free ||
-        _unlockedAircraftIds.contains(aircraft.id) ||
+    if (aircraft.unlockType == AircraftUnlockType.free) return true;
+    if (aircraft.unlockType == AircraftUnlockType.premium && _premiumUnlocked) {
+      return true;
+    }
+    return _unlockedAircraftIds.contains(aircraft.id) ||
         _premiumOwnedAircraftIds.contains(aircraft.id);
   }
 
@@ -103,6 +126,113 @@ class _BoardingHomeShellState extends State<BoardingHomeShell> {
       ),
     );
   }
+
+  Future<void> _startPurchase() async {
+    // 1. Google Sign-In
+    final account = await _shop.signIn();
+    if (!mounted) return;
+    if (account == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Sign-in cancelled. Purchase not started.'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
+
+    // 2. Open Razorpay checkout
+    _razorpay.open({
+      'key': razorpayKey,
+      'amount': 49900, // paise — ₹499
+      'name': 'Boarding Bluster',
+      'description': 'Unlock All Premium Aircraft',
+      'prefill': {'email': account.email, 'name': account.displayName ?? ''},
+      'external': {
+        'wallets': ['paytm'],
+      },
+    });
+  }
+
+  Future<void> _onPaymentSuccess(PaymentSuccessResponse response) async {
+    final paymentId = response.paymentId ?? 'unknown';
+    final googleId = (await _shop.cachedGoogleId()) ?? '';
+    Sentry.addBreadcrumb(Breadcrumb(
+      message: 'Payment success: $paymentId',
+      category: 'shop',
+      level: SentryLevel.info,
+    ));
+
+    // Re-get google ID from sign-in account if cache is empty
+    String resolvedGoogleId = googleId;
+    if (resolvedGoogleId.isEmpty) {
+      final account = await _shop.signIn();
+      resolvedGoogleId = account?.id ?? '';
+    }
+
+    if (resolvedGoogleId.isNotEmpty) {
+      await _shop.recordPurchase(
+        googleId: resolvedGoogleId,
+        paymentId: paymentId,
+      );
+    }
+
+    if (mounted) {
+      setState(() => _premiumUnlocked = true);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('All premium aircraft unlocked!'),
+          behavior: SnackBarBehavior.floating,
+          backgroundColor: Color(0xFF2E7D32),
+        ),
+      );
+    }
+  }
+
+  void _onPaymentError(PaymentFailureResponse response) {
+    Sentry.addBreadcrumb(Breadcrumb(
+      message: 'Payment error: ${response.code} ${response.message}',
+      category: 'shop',
+      level: SentryLevel.warning,
+    ));
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          response.message?.isNotEmpty == true
+              ? response.message!
+              : 'Payment failed. Please try again.',
+        ),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+
+  Future<void> _restorePurchase() async {
+    final account = await _shop.signIn();
+    if (!mounted) return;
+    if (account == null) return;
+    final restored = await _shop.restorePurchase(account.id);
+    if (!mounted) return;
+    if (restored) {
+      setState(() => _premiumUnlocked = true);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Purchase restored successfully!'),
+          behavior: SnackBarBehavior.floating,
+          backgroundColor: Color(0xFF2E7D32),
+        ),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('No purchase found for this account.'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
+  }
+
 
   Future<void> _launchAircraft(Aircraft aircraft) async {
     final layout = AircraftLevelRegistry.resolve(aircraft);
@@ -302,14 +432,9 @@ class _BoardingHomeShellState extends State<BoardingHomeShell> {
                 rankings: _rankings,
               ),
               _ShopTab(
-                onPurchaseTap: (aircraft) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Purchases are not available yet.'),
-                      behavior: SnackBarBehavior.floating,
-                    ),
-                  );
-                },
+                premiumUnlocked: _premiumUnlocked,
+                onPurchase: _startPurchase,
+                onRestore: _restorePurchase,
               ),
             ],
           ),
@@ -619,7 +744,7 @@ class _HomeHeader extends StatelessWidget {
       const SizedBox(width: 11),
       const Expanded(
         child: Text(
-          'Boarding Zone',
+          'Boarding Bluster',
           style: TextStyle(
             color: _navy,
             fontSize: 20,
@@ -1228,50 +1353,387 @@ class _RankRow extends StatelessWidget {
 }
 
 class _ShopTab extends StatelessWidget {
-  const _ShopTab({required this.onPurchaseTap});
-  final ValueChanged<Aircraft> onPurchaseTap;
+  const _ShopTab({
+    required this.premiumUnlocked,
+    required this.onPurchase,
+    required this.onRestore,
+  });
+  final bool premiumUnlocked;
+  final VoidCallback onPurchase;
+  final VoidCallback onRestore;
 
   @override
-  Widget build(BuildContext context) => CustomScrollView(
-    key: const PageStorageKey('shop-scroll'),
-    slivers: [
-      SliverPadding(
-        padding: const EdgeInsets.fromLTRB(20, 22, 20, 28),
-        sliver: SliverList.list(
+  Widget build(BuildContext context) {
+    final premiumAircraft = AircraftCatalog.all
+        .where((a) => a.unlockType == AircraftUnlockType.premium)
+        .toList();
+
+    return CustomScrollView(
+      key: const PageStorageKey('shop-scroll'),
+      slivers: [
+        SliverPadding(
+          padding: const EdgeInsets.fromLTRB(20, 22, 20, 28),
+          sliver: SliverList.list(
+            children: [
+              const _PageTitle(kicker: 'HANGAR STORE', title: 'Shop'),
+              const SizedBox(height: 20),
+
+              // ── Premium pack card ──────────────────────────────────────────
+              _PremiumPackCard(
+                aircraftList: premiumAircraft,
+                unlocked: premiumUnlocked,
+                onPurchase: onPurchase,
+                onRestore: onRestore,
+              ),
+
+              const SizedBox(height: 28),
+
+              // ── Promo banner placeholder ───────────────────────────────────
+              _PromoBanner(),
+
+              const SizedBox(height: 20),
+              Center(
+                child: TextButton.icon(
+                  onPressed: () => _showPhotoCredits(context),
+                  icon: const Icon(Icons.copyright_rounded, size: 15),
+                  label: const Text('Aircraft photo credits'),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _PremiumPackCard extends StatelessWidget {
+  const _PremiumPackCard({
+    required this.aircraftList,
+    required this.unlocked,
+    required this.onPurchase,
+    required this.onRestore,
+  });
+
+  final List<Aircraft> aircraftList;
+  final bool unlocked;
+  final VoidCallback onPurchase;
+  final VoidCallback onRestore;
+
+  @override
+  Widget build(BuildContext context) => Container(
+    decoration: BoxDecoration(
+      color: _navy,
+      borderRadius: BorderRadius.circular(24),
+    ),
+    clipBehavior: Clip.antiAlias,
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        // Header gradient banner
+        Container(
+          height: 120,
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              colors: [Color(0xFF1A3A5C), Color(0xFF0D1E2E)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+          ),
+          child: Stack(
+            children: [
+              // Subtle aircraft silhouette strip
+              Positioned.fill(
+                child: Opacity(
+                  opacity: 0.08,
+                  child: Image.asset(
+                    'assets/aircraft/airbus-a380-800.jpg',
+                    fit: BoxFit.cover,
+                  ),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 22, 20, 18),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        const Icon(
+                          Icons.workspace_premium_rounded,
+                          color: Color(0xFFF0B963),
+                          size: 18,
+                        ),
+                        const SizedBox(width: 7),
+                        const Text(
+                          'PREMIUM FLEET PASS',
+                          style: TextStyle(
+                            color: Color(0xFFF0B963),
+                            fontSize: 10,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: 1.2,
+                          ),
+                        ),
+                        const Spacer(),
+                        if (unlocked)
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 5,
+                            ),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF2E7D32),
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: const Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.check_circle_rounded,
+                                  color: Colors.white,
+                                  size: 13,
+                                ),
+                                SizedBox(width: 5),
+                                Text(
+                                  'UNLOCKED',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 9,
+                                    fontWeight: FontWeight.w800,
+                                    letterSpacing: 0.8,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+                    Text(
+                      'Unlock All ${aircraftList.length} Premium Aircraft',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 18,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: -0.3,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+
+        // Aircraft thumbnail strip
+        SizedBox(
+          height: 72,
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            itemCount: aircraftList.length,
+            separatorBuilder: (_, _) => const SizedBox(width: 8),
+            itemBuilder: (context, index) => ClipRRect(
+              borderRadius: BorderRadius.circular(10),
+              child: SizedBox(
+                width: 88,
+                child: AircraftPhoto(aircraft: aircraftList[index]),
+              ),
+            ),
+          ),
+        ),
+
+        // Perks list
+        Padding(
+          padding: const EdgeInsets.fromLTRB(20, 4, 20, 20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _Perk(
+                icon: Icons.all_inclusive_rounded,
+                label: 'One-time payment — yours forever',
+              ),
+              const SizedBox(height: 8),
+              _Perk(
+                icon: Icons.devices_rounded,
+                label: 'Linked to your Google account',
+              ),
+              const SizedBox(height: 8),
+              _Perk(
+                icon: Icons.restore_rounded,
+                label: 'Restore anytime after reinstall',
+              ),
+              const SizedBox(height: 20),
+
+              // Price + CTA
+              if (!unlocked) ...[
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    const Text(
+                      '₹499',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 30,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: -1,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 5),
+                      child: Text(
+                        'one-time',
+                        style: TextStyle(
+                          color: Colors.white.withValues(alpha: 0.5),
+                          fontSize: 12,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 14),
+                SizedBox(
+                  width: double.infinity,
+                  child: FilledButton.icon(
+                    onPressed: onPurchase,
+                    icon: const Icon(Icons.lock_open_rounded, size: 18),
+                    label: const Text('Unlock with Google'),
+                    style: FilledButton.styleFrom(
+                      backgroundColor: _accent,
+                      foregroundColor: _navy,
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      textStyle: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: 0.3,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 10),
+                Center(
+                  child: TextButton(
+                    onPressed: onRestore,
+                    child: Text(
+                      'Restore purchase',
+                      style: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.55),
+                        fontSize: 12,
+                      ),
+                    ),
+                  ),
+                ),
+              ] else ...[
+                const Center(
+                  child: Column(
+                    children: [
+                      Icon(
+                        Icons.check_circle_rounded,
+                        color: Color(0xFF66BB6A),
+                        size: 38,
+                      ),
+                      SizedBox(height: 8),
+                      Text(
+                        'You own all premium aircraft.',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ],
+    ),
+  );
+}
+
+class _Perk extends StatelessWidget {
+  const _Perk({required this.icon, required this.label});
+  final IconData icon;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) => Row(
+    children: [
+      Icon(icon, color: _accent, size: 16),
+      const SizedBox(width: 10),
+      Text(
+        label,
+        style: TextStyle(
+          color: Colors.white.withValues(alpha: 0.8),
+          fontSize: 12,
+          fontWeight: FontWeight.w500,
+        ),
+      ),
+    ],
+  );
+}
+
+class _PromoBanner extends StatelessWidget {
+  const _PromoBanner();
+
+  @override
+  Widget build(BuildContext context) => Container(
+    padding: const EdgeInsets.all(18),
+    decoration: BoxDecoration(
+      color: _panel,
+      borderRadius: BorderRadius.circular(18),
+      border: Border.all(color: _navy.withValues(alpha: 0.08)),
+    ),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
           children: [
-            const _PageTitle(kicker: 'HANGAR STORE', title: 'Aircraft Shop'),
-            const SizedBox(height: 8),
-            const Text(
-              'Premium aircraft are optional. Purchases are not enabled in this build.',
-              style: TextStyle(color: _muted, fontSize: 12, height: 1.4),
-            ),
-            const SizedBox(height: 20),
-            for (final aircraft in AircraftCatalog.all.where(
-              (item) => item.unlockType == AircraftUnlockType.premium,
-            ))
-              _ShopAircraftCard(
-                aircraft: aircraft,
-                onTap: () => onPurchaseTap(aircraft),
+            Container(
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(
+                color: _accent.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(10),
               ),
-            const SizedBox(height: 12),
-            const Center(
+              child: const Icon(Icons.link_rounded, color: _accent, size: 20),
+            ),
+            const SizedBox(width: 12),
+            const Expanded(
               child: Text(
-                'Purchased aircraft will appear as Owned here.',
-                style: TextStyle(color: _muted, fontSize: 11),
-              ),
-            ),
-            const SizedBox(height: 10),
-            Center(
-              child: TextButton.icon(
-                onPressed: () => _showPhotoCredits(context),
-                icon: const Icon(Icons.copyright_rounded, size: 15),
-                label: const Text('Aircraft photo credits'),
+                'FROM THE DEVELOPER',
+                style: TextStyle(
+                  color: _muted,
+                  fontSize: 9,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: 1,
+                ),
               ),
             ),
           ],
         ),
-      ),
-    ],
+        const SizedBox(height: 12),
+        const Text(
+          'More coming soon',
+          style: TextStyle(
+            color: _navy,
+            fontSize: 15,
+            fontWeight: FontWeight.w800,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          'Check back here for links to other apps and projects.',
+          style: const TextStyle(color: _muted, fontSize: 12, height: 1.4),
+        ),
+      ],
+    ),
   );
 }
 
@@ -1297,93 +1759,6 @@ void _showPhotoCredits(BuildContext context) {
         TextButton(
           onPressed: () => Navigator.pop(context),
           child: const Text('Close'),
-        ),
-      ],
-    ),
-  );
-}
-
-class _ShopAircraftCard extends StatelessWidget {
-  const _ShopAircraftCard({required this.aircraft, required this.onTap});
-  final Aircraft aircraft;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) => Container(
-    margin: const EdgeInsets.only(bottom: 14),
-    decoration: BoxDecoration(
-      color: _panel,
-      borderRadius: BorderRadius.circular(20),
-    ),
-    clipBehavior: Clip.antiAlias,
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        SizedBox(
-          height: 174,
-          width: double.infinity,
-          child: Stack(
-            fit: StackFit.expand,
-            children: [
-              AircraftPhoto(aircraft: aircraft),
-              const _LockedPhotoOverlay(),
-              Positioned(
-                top: 13,
-                right: 13,
-                child: _Pill(
-                  label: 'PREMIUM',
-                  icon: Icons.workspace_premium_rounded,
-                  color: Colors.white,
-                ),
-              ),
-            ],
-          ),
-        ),
-        Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                aircraft.displayName,
-                style: const TextStyle(
-                  color: _navy,
-                  fontSize: 17,
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-              const SizedBox(height: 5),
-              Text(
-                aircraft.subtitle,
-                style: const TextStyle(color: _muted, fontSize: 12),
-              ),
-              const SizedBox(height: 13),
-              Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      aircraft.priceLabel ?? 'PRICE NOT SET',
-                      style: const TextStyle(
-                        color: _accent,
-                        fontSize: 10,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: 0.7,
-                      ),
-                    ),
-                  ),
-                  OutlinedButton.icon(
-                    onPressed: onTap,
-                    icon: const Icon(Icons.lock_outline_rounded, size: 15),
-                    label: const Text('Unlock'),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: _navy,
-                      side: const BorderSide(color: Color(0xFFCCD6E2)),
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
         ),
       ],
     ),

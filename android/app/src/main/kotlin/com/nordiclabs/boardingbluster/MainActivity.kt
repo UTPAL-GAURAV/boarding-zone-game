@@ -1,4 +1,4 @@
-package com.example.boarding_zone_game
+package com.nordiclabs.boardingbluster
 
 import io.flutter.embedding.android.FlutterActivity
 

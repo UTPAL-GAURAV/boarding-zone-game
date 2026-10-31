@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'package:boarding_zone_game/boarding/boarding_game_page.dart';
-import 'package:boarding_zone_game/boarding/levels/level_saab340.dart';
-import 'package:boarding_zone_game/main.dart';
+import 'package:boarding_bluster/boarding/boarding_game_page.dart';
+import 'package:boarding_bluster/boarding/levels/level_saab340.dart';
+import 'package:boarding_bluster/main.dart';
 
 void main() {
   setUp(() => SharedPreferences.setMockInitialValues({}));
@@ -20,7 +20,7 @@ void main() {
     await tester.pumpWidget(const BoardingZoneApp());
     await tester.pumpAndSettle();
 
-    expect(find.text('Boarding Zone'), findsOneWidget);
+    expect(find.text('Boarding Bluster'), findsOneWidget);
     expect(find.text('Cessna Grand Caravan EX'), findsAtLeastNWidgets(1));
     expect(
       find.bySemanticsLabel('Cessna manufacturer logo'),

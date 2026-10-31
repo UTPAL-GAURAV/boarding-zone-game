@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:boarding_zone_game/boarding/boarding_simulation.dart';
+import 'package:boarding_bluster/boarding/boarding_simulation.dart';
 
 void main() {
   group('BoardingSimulation', () {
