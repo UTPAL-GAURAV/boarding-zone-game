@@ -25,10 +25,10 @@ abstract final class LevelOne {
         centerX: 180,
         width: 32,
         capacity: 12,
-        minimumSpacingRows: 0.85,
+        minimumSpacingRows: 0.4,
         entryIntervalSeconds: 0.20,
-        walkingSpeedRowsPerSecond: 5.5,
-        turnDurationSeconds: 0.24,
+        walkingSpeedRowsPerSecond: 2.66,
+        turnDurationSeconds: 0.68,
         entranceRow: -0.9,
         floorTop: 89,
       ),
@@ -55,5 +55,6 @@ abstract final class LevelOne {
     gateLabelY: 24,
     entranceDoorY: 77,
     entranceDoorHeight: 13,
+    seatLayout: ['A', 'B', 'W', 'C', 'D'],
   );
 }

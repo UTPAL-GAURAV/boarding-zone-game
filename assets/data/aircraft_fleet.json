@@ -11,12 +11,13 @@
     "gameLayoutId": "level_c208",
     "cabin": {
       "rows": 7,
-      "seatBlocks": [
-        1,
-        1
-      ],
       "aisleCount": 1,
-      "aisleCapacity": 6
+      "aisleCapacity": 6,
+      "seatLayout": [
+        "A",
+        "W",
+        "B"
+      ]
     },
     "level": 1
   },
@@ -32,12 +33,13 @@
     "gameLayoutId": "level_skycourier",
     "cabin": {
       "rows": 10,
-      "seatBlocks": [
-        1,
-        1
-      ],
       "aisleCount": 1,
-      "aisleCapacity": 7
+      "aisleCapacity": 7,
+      "seatLayout": [
+        "A",
+        "W",
+        "B"
+      ]
     },
     "level": 2,
     "unlockRequirement": "Complete Grand Caravan EX under 05:00"
@@ -54,12 +56,13 @@
     "gameLayoutId": "level_saab340",
     "cabin": {
       "rows": 17,
-      "seatBlocks": [
-        1,
-        1
-      ],
       "aisleCount": 1,
-      "aisleCapacity": 10
+      "aisleCapacity": 10,
+      "seatLayout": [
+        "A",
+        "W",
+        "B"
+      ]
     },
     "level": 3,
     "unlockRequirement": "Complete SkyCourier under 06:00"
@@ -76,12 +79,15 @@
     "unlockType": "progression",
     "cabin": {
       "rows": 12,
-      "seatBlocks": [
-        2,
-        2
-      ],
       "aisleCount": 1,
-      "aisleCapacity": 12
+      "aisleCapacity": 12,
+      "seatLayout": [
+        "A",
+        "B",
+        "W",
+        "C",
+        "D"
+      ]
     },
     "gameLayoutId": "level_one",
     "unlockRequirement": "Complete 340B under 07:00"
@@ -99,12 +105,15 @@
     "unlockRequirement": "Complete 42-600 under 08:00",
     "cabin": {
       "rows": 13,
-      "seatBlocks": [
-        2,
-        2
-      ],
       "aisleCount": 1,
-      "aisleCapacity": 12
+      "aisleCapacity": 12,
+      "seatLayout": [
+        "A",
+        "B",
+        "W",
+        "C",
+        "D"
+      ]
     },
     "gameLayoutId": "level_one"
   },
@@ -120,12 +129,15 @@
     "gameLayoutId": "level_one",
     "cabin": {
       "rows": 13,
-      "seatBlocks": [
-        2,
-        2
-      ],
       "aisleCount": 1,
-      "aisleCapacity": 14
+      "aisleCapacity": 14,
+      "seatLayout": [
+        "A",
+        "B",
+        "W",
+        "C",
+        "D"
+      ]
     },
     "level": 6,
     "unlockRequirement": "Complete ERJ-145 under 08:30"
@@ -142,12 +154,15 @@
     "gameLayoutId": "level_two",
     "cabin": {
       "rows": 17,
-      "seatBlocks": [
-        2,
-        2
-      ],
       "aisleCount": 1,
-      "aisleCapacity": 16
+      "aisleCapacity": 16,
+      "seatLayout": [
+        "A",
+        "B",
+        "W",
+        "C",
+        "D"
+      ]
     },
     "level": 7,
     "unlockRequirement": "Complete 2000 under 08:30"
@@ -165,12 +180,15 @@
     "unlockRequirement": "Complete Il-114-300 under 09:00",
     "cabin": {
       "rows": 18,
-      "seatBlocks": [
-        2,
-        2
-      ],
       "aisleCount": 1,
-      "aisleCapacity": 13
+      "aisleCapacity": 13,
+      "seatLayout": [
+        "A",
+        "B",
+        "W",
+        "C",
+        "D"
+      ]
     },
     "gameLayoutId": "level_two"
   },
@@ -187,12 +205,17 @@
     "unlockRequirement": "Complete CRJ-700 under 09:15",
     "cabin": {
       "rows": 12,
-      "seatBlocks": [
-        3,
-        3
-      ],
       "aisleCount": 1,
-      "aisleCapacity": 14
+      "aisleCapacity": 14,
+      "seatLayout": [
+        "A",
+        "B",
+        "C",
+        "W",
+        "D",
+        "E",
+        "F"
+      ]
     },
     "gameLayoutId": "level_two"
   },
@@ -209,12 +232,15 @@
     "unlockRequirement": "Complete 72-600 under 09:00",
     "cabin": {
       "rows": 18,
-      "seatBlocks": [
-        2,
-        2
-      ],
       "aisleCount": 1,
-      "aisleCapacity": 14
+      "aisleCapacity": 14,
+      "seatLayout": [
+        "A",
+        "B",
+        "W",
+        "C",
+        "D"
+      ]
     }
   },
   {
@@ -230,12 +256,15 @@
     "unlockRequirement": "Complete E170 under 09:15",
     "cabin": {
       "rows": 20,
-      "seatBlocks": [
-        2,
-        2
-      ],
       "aisleCount": 1,
-      "aisleCapacity": 12
+      "aisleCapacity": 12,
+      "seatLayout": [
+        "A",
+        "B",
+        "W",
+        "C",
+        "D"
+      ]
     }
   },
   {
@@ -251,12 +280,15 @@
     "unlockRequirement": "Complete Dash 8-400 under 09:30",
     "cabin": {
       "rows": 20,
-      "seatBlocks": [
-        2,
-        2
-      ],
       "aisleCount": 1,
-      "aisleCapacity": 14
+      "aisleCapacity": 14,
+      "seatLayout": [
+        "A",
+        "B",
+        "W",
+        "C",
+        "D"
+      ]
     }
   },
   {
@@ -272,12 +304,16 @@
     "unlockRequirement": "Complete E175 under 09:30",
     "cabin": {
       "rows": 17,
-      "seatBlocks": [
-        2,
-        3
-      ],
       "aisleCount": 1,
-      "aisleCapacity": 15
+      "aisleCapacity": 15,
+      "seatLayout": [
+        "A",
+        "B",
+        "W",
+        "C",
+        "D",
+        "E"
+      ]
     }
   },
   {
@@ -293,12 +329,16 @@
     "unlockRequirement": "Complete An-148 under 10:00",
     "cabin": {
       "rows": 18,
-      "seatBlocks": [
-        2,
-        3
-      ],
       "aisleCount": 1,
-      "aisleCapacity": 15
+      "aisleCapacity": 15,
+      "seatLayout": [
+        "A",
+        "B",
+        "W",
+        "C",
+        "D",
+        "E"
+      ]
     }
   },
   {
@@ -314,12 +354,16 @@
     "unlockRequirement": "Complete ARJ21-700 under 10:15",
     "cabin": {
       "rows": 20,
-      "seatBlocks": [
-        2,
-        3
-      ],
       "aisleCount": 1,
-      "aisleCapacity": 16
+      "aisleCapacity": 16,
+      "seatLayout": [
+        "A",
+        "B",
+        "W",
+        "C",
+        "D",
+        "E"
+      ]
     }
   },
   {
@@ -335,12 +379,16 @@
     "unlockRequirement": "Complete An-158 under 10:30",
     "cabin": {
       "rows": 20,
-      "seatBlocks": [
-        2,
-        3
-      ],
       "aisleCount": 1,
-      "aisleCapacity": 16
+      "aisleCapacity": 16,
+      "seatLayout": [
+        "A",
+        "B",
+        "W",
+        "C",
+        "D",
+        "E"
+      ]
     }
   },
   {
@@ -354,12 +402,16 @@
     "unlockType": "progression",
     "cabin": {
       "rows": 20,
-      "seatBlocks": [
-        2,
-        3
-      ],
       "aisleCount": 1,
-      "aisleCapacity": 20
+      "aisleCapacity": 20,
+      "seatLayout": [
+        "A",
+        "B",
+        "W",
+        "C",
+        "D",
+        "E"
+      ]
     },
     "level": 17,
     "unlockRequirement": "Complete E190 under 10:30"
@@ -377,12 +429,16 @@
     "unlockRequirement": "Complete Superjet 100 under 10:30",
     "cabin": {
       "rows": 25,
-      "seatBlocks": [
-        2,
-        3
-      ],
       "aisleCount": 1,
-      "aisleCapacity": 18
+      "aisleCapacity": 18,
+      "seatLayout": [
+        "A",
+        "B",
+        "W",
+        "C",
+        "D",
+        "E"
+      ]
     }
   },
   {
@@ -398,12 +454,16 @@
     "unlockRequirement": "Complete A220-100 under 11:15",
     "cabin": {
       "rows": 26,
-      "seatBlocks": [
-        2,
-        3
-      ],
       "aisleCount": 1,
-      "aisleCapacity": 17
+      "aisleCapacity": 17,
+      "seatLayout": [
+        "A",
+        "B",
+        "W",
+        "C",
+        "D",
+        "E"
+      ]
     }
   },
   {
@@ -419,12 +479,17 @@
     "unlockRequirement": "Complete E195-E2 under 11:30",
     "cabin": {
       "rows": 23,
-      "seatBlocks": [
-        3,
-        3
-      ],
       "aisleCount": 1,
-      "aisleCapacity": 20
+      "aisleCapacity": 20,
+      "seatLayout": [
+        "A",
+        "B",
+        "C",
+        "W",
+        "D",
+        "E",
+        "F"
+      ]
     }
   },
   {
@@ -440,12 +505,17 @@
     "unlockRequirement": "Complete A319neo under 12:00",
     "cabin": {
       "rows": 23,
-      "seatBlocks": [
-        3,
-        3
-      ],
       "aisleCount": 1,
-      "aisleCapacity": 20
+      "aisleCapacity": 20,
+      "seatLayout": [
+        "A",
+        "B",
+        "C",
+        "W",
+        "D",
+        "E",
+        "F"
+      ]
     }
   },
   {
@@ -461,12 +531,16 @@
     "unlockRequirement": "Complete 737-700 under 12:00",
     "cabin": {
       "rows": 29,
-      "seatBlocks": [
-        2,
-        3
-      ],
       "aisleCount": 1,
-      "aisleCapacity": 18
+      "aisleCapacity": 18,
+      "seatLayout": [
+        "A",
+        "B",
+        "W",
+        "C",
+        "D",
+        "E"
+      ]
     }
   },
   {
@@ -482,12 +556,17 @@
     "unlockRequirement": "Complete A220-300 under 12:00",
     "cabin": {
       "rows": 25,
-      "seatBlocks": [
-        3,
-        3
-      ],
       "aisleCount": 1,
-      "aisleCapacity": 20
+      "aisleCapacity": 20,
+      "seatLayout": [
+        "A",
+        "B",
+        "C",
+        "W",
+        "D",
+        "E",
+        "F"
+      ]
     }
   },
   {
@@ -503,12 +582,17 @@
     "unlockRequirement": "Complete A320 under 12:30",
     "cabin": {
       "rows": 26,
-      "seatBlocks": [
-        3,
-        3
-      ],
       "aisleCount": 1,
-      "aisleCapacity": 21
+      "aisleCapacity": 21,
+      "seatLayout": [
+        "A",
+        "B",
+        "C",
+        "W",
+        "D",
+        "E",
+        "F"
+      ]
     }
   },
   {
@@ -524,12 +608,17 @@
     "unlockRequirement": "Complete C919 under 12:45",
     "cabin": {
       "rows": 29,
-      "seatBlocks": [
-        3,
-        3
-      ],
       "aisleCount": 1,
-      "aisleCapacity": 22
+      "aisleCapacity": 22,
+      "seatLayout": [
+        "A",
+        "B",
+        "C",
+        "W",
+        "D",
+        "E",
+        "F"
+      ]
     }
   },
   {
@@ -545,12 +634,17 @@
     "unlockRequirement": "Complete 737-800 under 13:30",
     "cabin": {
       "rows": 31,
-      "seatBlocks": [
-        3,
-        3
-      ],
       "aisleCount": 1,
-      "aisleCapacity": 23
+      "aisleCapacity": 23,
+      "seatLayout": [
+        "A",
+        "B",
+        "C",
+        "W",
+        "D",
+        "E",
+        "F"
+      ]
     }
   },
   {
@@ -566,12 +660,17 @@
     "unlockRequirement": "Complete A321neo under 14:00",
     "cabin": {
       "rows": 32,
-      "seatBlocks": [
-        3,
-        3
-      ],
       "aisleCount": 1,
-      "aisleCapacity": 23
+      "aisleCapacity": 23,
+      "seatLayout": [
+        "A",
+        "B",
+        "C",
+        "W",
+        "D",
+        "E",
+        "F"
+      ]
     }
   },
   {
@@ -585,13 +684,19 @@
     "unlockType": "progression",
     "cabin": {
       "rows": 28,
-      "seatBlocks": [
-        2,
-        3,
-        2
-      ],
       "aisleCount": 2,
-      "aisleCapacity": 28
+      "aisleCapacity": 28,
+      "seatLayout": [
+        "A",
+        "B",
+        "W",
+        "C",
+        "D",
+        "E",
+        "W",
+        "F",
+        "G"
+      ]
     },
     "level": 28,
     "unlockRequirement": "Complete 737-9 MAX under 14:15"
@@ -609,12 +714,17 @@
     "unlockRequirement": "Complete Tu-214 under 14:30",
     "cabin": {
       "rows": 33,
-      "seatBlocks": [
-        3,
-        3
-      ],
       "aisleCount": 1,
-      "aisleCapacity": 24
+      "aisleCapacity": 24,
+      "seatLayout": [
+        "A",
+        "B",
+        "C",
+        "W",
+        "D",
+        "E",
+        "F"
+      ]
     }
   },
   {
@@ -630,12 +740,17 @@
     "unlockRequirement": "Complete 757-200 under 14:30",
     "cabin": {
       "rows": 34,
-      "seatBlocks": [
-        3,
-        3
-      ],
       "aisleCount": 1,
-      "aisleCapacity": 24
+      "aisleCapacity": 24,
+      "seatLayout": [
+        "A",
+        "B",
+        "C",
+        "W",
+        "D",
+        "E",
+        "F"
+      ]
     }
   },
   {
@@ -651,13 +766,20 @@
     "unlockRequirement": "Complete A321XLR under 14:45",
     "cabin": {
       "rows": 31,
-      "seatBlocks": [
-        2,
-        4,
-        2
-      ],
       "aisleCount": 2,
-      "aisleCapacity": 28
+      "aisleCapacity": 28,
+      "seatLayout": [
+        "A",
+        "B",
+        "W",
+        "C",
+        "D",
+        "E",
+        "F",
+        "W",
+        "G",
+        "H"
+      ]
     },
     "priceLabel": "Premium aircraft",
     "gameLayoutId": "level_767_242"
@@ -675,13 +797,19 @@
     "unlockRequirement": "Complete 767-300ER under 15:00",
     "cabin": {
       "rows": 35,
-      "seatBlocks": [
-        2,
-        3,
-        2
-      ],
       "aisleCount": 2,
-      "aisleCapacity": 30
+      "aisleCapacity": 30,
+      "seatLayout": [
+        "A",
+        "B",
+        "W",
+        "C",
+        "D",
+        "E",
+        "W",
+        "F",
+        "G"
+      ]
     },
     "priceLabel": "Premium aircraft",
     "gameLayoutId": "level_wide_232"
@@ -699,13 +827,19 @@
     "unlockRequirement": "Complete A330-200 under 16:00",
     "cabin": {
       "rows": 35,
-      "seatBlocks": [
-        2,
-        3,
-        2
-      ],
       "aisleCount": 2,
-      "aisleCapacity": 30
+      "aisleCapacity": 30,
+      "seatLayout": [
+        "A",
+        "B",
+        "W",
+        "C",
+        "D",
+        "E",
+        "W",
+        "F",
+        "G"
+      ]
     },
     "priceLabel": "Premium aircraft",
     "gameLayoutId": "level_wide_232"
@@ -721,13 +855,19 @@
     "unlockType": "premium",
     "cabin": {
       "rows": 36,
-      "seatBlocks": [
-        2,
-        3,
-        2
-      ],
       "aisleCount": 2,
-      "aisleCapacity": 32
+      "aisleCapacity": 32,
+      "seatLayout": [
+        "A",
+        "B",
+        "W",
+        "C",
+        "D",
+        "E",
+        "W",
+        "F",
+        "G"
+      ]
     },
     "level": 34,
     "unlockRequirement": "Complete 787-8 Dreamliner under 16:00",
@@ -747,13 +887,19 @@
     "unlockRequirement": "Complete Il-96-300 under 16:30",
     "cabin": {
       "rows": 40,
-      "seatBlocks": [
-        2,
-        3,
-        2
-      ],
       "aisleCount": 2,
-      "aisleCapacity": 32
+      "aisleCapacity": 32,
+      "seatLayout": [
+        "A",
+        "B",
+        "W",
+        "C",
+        "D",
+        "E",
+        "W",
+        "F",
+        "G"
+      ]
     },
     "priceLabel": "Premium aircraft",
     "gameLayoutId": "level_wide_232"
@@ -771,13 +917,19 @@
     "unlockRequirement": "Complete A330-300 under 17:00",
     "cabin": {
       "rows": 42,
-      "seatBlocks": [
-        2,
-        3,
-        2
-      ],
       "aisleCount": 2,
-      "aisleCapacity": 34
+      "aisleCapacity": 34,
+      "seatLayout": [
+        "A",
+        "B",
+        "W",
+        "C",
+        "D",
+        "E",
+        "W",
+        "F",
+        "G"
+      ]
     },
     "priceLabel": "Premium aircraft",
     "gameLayoutId": "level_wide_232"
@@ -795,13 +947,19 @@
     "unlockRequirement": "Complete 787-9 Dreamliner under 17:30",
     "cabin": {
       "rows": 45,
-      "seatBlocks": [
-        2,
-        3,
-        2
-      ],
       "aisleCount": 2,
-      "aisleCapacity": 36
+      "aisleCapacity": 36,
+      "seatLayout": [
+        "A",
+        "B",
+        "W",
+        "C",
+        "D",
+        "E",
+        "W",
+        "F",
+        "G"
+      ]
     },
     "priceLabel": "Premium aircraft",
     "gameLayoutId": "level_wide_232"
@@ -818,13 +976,21 @@
     "unlockType": "premium",
     "cabin": {
       "rows": 35,
-      "seatBlocks": [
-        3,
-        3,
-        3
-      ],
       "aisleCount": 2,
-      "aisleCapacity": 36
+      "aisleCapacity": 36,
+      "seatLayout": [
+        "A",
+        "B",
+        "C",
+        "W",
+        "D",
+        "E",
+        "F",
+        "W",
+        "G",
+        "H",
+        "J"
+      ]
     },
     "priceLabel": "Premium aircraft",
     "gameLayoutId": "level_wide_333"
@@ -842,13 +1008,21 @@
     "unlockRequirement": "Complete 777-200ER under 18:00",
     "cabin": {
       "rows": 41,
-      "seatBlocks": [
-        3,
-        3,
-        3
-      ],
       "aisleCount": 2,
-      "aisleCapacity": 40
+      "aisleCapacity": 40,
+      "seatLayout": [
+        "A",
+        "B",
+        "C",
+        "W",
+        "D",
+        "E",
+        "F",
+        "W",
+        "G",
+        "H",
+        "J"
+      ]
     },
     "priceLabel": "Premium aircraft",
     "gameLayoutId": "level_wide_333"
@@ -866,13 +1040,21 @@
     "unlockRequirement": "Complete A350-1000 under 19:30",
     "cabin": {
       "rows": 44,
-      "seatBlocks": [
-        3,
-        3,
-        3
-      ],
       "aisleCount": 2,
-      "aisleCapacity": 42
+      "aisleCapacity": 42,
+      "seatLayout": [
+        "A",
+        "B",
+        "C",
+        "W",
+        "D",
+        "E",
+        "F",
+        "W",
+        "G",
+        "H",
+        "J"
+      ]
     },
     "priceLabel": "Premium aircraft",
     "gameLayoutId": "level_wide_333"
@@ -890,13 +1072,21 @@
     "priceLabel": "Premium aircraft",
     "cabin": {
       "rows": 52,
-      "seatBlocks": [
-        3,
-        3,
-        3
-      ],
       "aisleCount": 2,
-      "aisleCapacity": 46
+      "aisleCapacity": 46,
+      "seatLayout": [
+        "A",
+        "B",
+        "C",
+        "W",
+        "D",
+        "E",
+        "F",
+        "W",
+        "G",
+        "H",
+        "J"
+      ]
     },
     "gameLayoutId": "level_wide_333"
   },
@@ -913,13 +1103,22 @@
     "priceLabel": "Premium aircraft",
     "cabin": {
       "rows": 59,
-      "seatBlocks": [
-        3,
-        4,
-        3
-      ],
       "aisleCount": 2,
-      "aisleCapacity": 50
+      "aisleCapacity": 50,
+      "seatLayout": [
+        "A",
+        "B",
+        "C",
+        "W",
+        "D",
+        "E",
+        "F",
+        "G",
+        "W",
+        "H",
+        "J",
+        "K"
+      ]
     },
     "gameLayoutId": "level_a380_343"
   }

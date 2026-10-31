@@ -1,6 +1,6 @@
 import '../aircraft_layout.dart';
 
-/// Boeing 767-300ER — 2-4-2 wide-body (8 abreast, 2 aisles), 31 rows.
+/// Boeing 767-300ER — 2-4-2 wide-body (8 abreast, 2 aisles), 20 rows.
 abstract final class Level767 {
   static const AircraftLayout aircraft = AircraftLayout(
     id: 'level_767_242',
@@ -10,18 +10,17 @@ abstract final class Level767 {
     zoneCount: 6,
     rowStartY: 114,
     rowSpacing: 29,
-    seatWidth: 26,
+    seatWidth: 28,
     seatHeight: 24,
     seatColumns: [
-      SeatColumnLayout(label: 'A', centerX: 38,  aisleIndex: 0, seatType: SeatType.window),
+      SeatColumnLayout(label: 'A', centerX: 36,  aisleIndex: 0, seatType: SeatType.window),
       SeatColumnLayout(label: 'B', centerX: 68,  aisleIndex: 0, seatType: SeatType.aisle),
-      SeatColumnLayout(label: 'C', centerX: 116, aisleIndex: 1, seatType: SeatType.aisle),
-      SeatColumnLayout(label: 'D', centerX: 146, aisleIndex: 1, seatType: SeatType.middle),
-      SeatColumnLayout(label: 'E', centerX: 176, aisleIndex: 1, seatType: SeatType.middle),
-      SeatColumnLayout(label: 'F', centerX: 206, aisleIndex: 1, seatType: SeatType.middle),
-      SeatColumnLayout(label: 'G', centerX: 236, aisleIndex: 2, seatType: SeatType.aisle),
-      SeatColumnLayout(label: 'H', centerX: 284, aisleIndex: 2, seatType: SeatType.aisle),
-      SeatColumnLayout(label: 'J', centerX: 314, aisleIndex: 2, seatType: SeatType.window),
+      SeatColumnLayout(label: 'C', centerX: 120, aisleIndex: 1, seatType: SeatType.aisle),
+      SeatColumnLayout(label: 'D', centerX: 152, aisleIndex: 1, seatType: SeatType.middle),
+      SeatColumnLayout(label: 'E', centerX: 184, aisleIndex: 1, seatType: SeatType.middle),
+      SeatColumnLayout(label: 'F', centerX: 216, aisleIndex: 1, seatType: SeatType.aisle),
+      SeatColumnLayout(label: 'G', centerX: 268, aisleIndex: 2, seatType: SeatType.aisle),
+      SeatColumnLayout(label: 'H', centerX: 300, aisleIndex: 2, seatType: SeatType.window),
     ],
     rowDefaultZones: [
       5, 5, 5, 5, 5, 5, 5, 5, 5, 5,
@@ -30,39 +29,39 @@ abstract final class Level767 {
     aisles: [
       BoardingAisleLayout(
         id: 'left',
-        centerX: 90,
+        centerX: 92,
         width: 30,
         capacity: 10,
-        minimumSpacingRows: 0.85,
+        minimumSpacingRows: 0.4,
         entryIntervalSeconds: 0.24,
-        walkingSpeedRowsPerSecond: 5.0,
-        turnDurationSeconds: 0.26,
+        walkingSpeedRowsPerSecond: 2.45,
+        turnDurationSeconds: 0.74,
         entranceRow: -0.9,
         floorTop: 89,
       ),
       BoardingAisleLayout(
         id: 'right',
-        centerX: 263,
+        centerX: 244,
         width: 30,
         capacity: 10,
-        minimumSpacingRows: 0.85,
+        minimumSpacingRows: 0.4,
         entryIntervalSeconds: 0.24,
-        walkingSpeedRowsPerSecond: 5.0,
-        turnDurationSeconds: 0.26,
+        walkingSpeedRowsPerSecond: 2.45,
+        turnDurationSeconds: 0.74,
         entranceRow: -0.9,
         floorTop: 89,
       ),
     ],
     seatBlocks: [
-      SeatBlockLayout(left: 22, right: 84),
-      SeatBlockLayout(left: 102, right: 222),
-      SeatBlockLayout(left: 249, right: 330),
+      SeatBlockLayout(left: 20, right: 84),
+      SeatBlockLayout(left: 104, right: 232),
+      SeatBlockLayout(left: 252, right: 316),
     ],
-    windowCentersX: [14, 346],
+    windowCentersX: [10, 326],
     cabinShell: CabinRegion(
-      left: 10,
+      left: 8,
       top: 38,
-      width: 380,
+      width: 384,
       height: 680,
       cornerRadius: 58,
     ),
@@ -76,5 +75,6 @@ abstract final class Level767 {
     gateLabelY: 24,
     entranceDoorY: 77,
     entranceDoorHeight: 13,
+    seatLayout: ['A', 'B', 'W', 'C', 'D', 'E', 'F', 'W', 'G', 'H'],
   );
 }

@@ -382,41 +382,59 @@ class CabinGame extends FlameGame {
     if (passenger == null) return;
     final seatRect = _seatRect(passenger.seat.row, passenger.seat.column);
     final seated = passenger.phase == PassengerPhase.seated;
-    final waiting = passenger.phase == PassengerPhase.shuffleWait;
+    final sliding = passenger.phase == PassengerPhase.seatSliding ||
+        passenger.phase == PassengerPhase.shuffleWait;
     final aisleLayout = layout.aisles[passenger.seat.aisleIndex];
     final aisleX = aisleLayout.centerX;
     final rowY = layout.rowStartY + passenger.rowPosition * layout.rowSpacing;
-    var x = (seated || waiting) ? seatRect.center.dx : aisleX;
-    var y = (seated || waiting) ? seatRect.center.dy + 1 : rowY;
 
-    // Smooth slide from aisle to seat during turning/stowing.
-    if (!seated && !waiting &&
-        (passenger.phase == PassengerPhase.turning ||
-            passenger.phase == PassengerPhase.stowing)) {
-      final eased =
-          passenger.turnProgress *
-          passenger.turnProgress *
-          (3 - 2 * passenger.turnProgress);
-      x = ui.lerpDouble(aisleX, seatRect.center.dx, eased)!;
-      y = ui.lerpDouble(rowY, seatRect.center.dy + 10, eased)!;
-    }
-
-    // Shuffle animation: seated blocker slides toward aisle then returns.
+    // Blocker offset: seated passengers slide out and back during shuffle phases.
     double shuffleOffsetX = 0;
-    if (passenger.isShuffling) {
-      // sin(0→π) gives 0→1→0 arc; scale by distance to aisle.
-      final arc = math.sin(passenger.shuffleProgress * math.pi);
+    if (passenger.shufflePhase != ShufflePhase.none) {
       final toAisle = aisleX - seatRect.center.dx;
-      shuffleOffsetX = toAisle * arc * 0.55;
+      final double fraction;
+      switch (passenger.shufflePhase) {
+        case ShufflePhase.exitingToAisle:
+          fraction = passenger.shufflePhaseProgress;
+        case ShufflePhase.waitingInAisle:
+          fraction = 1.0;
+        case ShufflePhase.returningToSeat:
+          fraction = 1.0 - passenger.shufflePhaseProgress;
+        case ShufflePhase.none:
+          fraction = 0;
+      }
+      shuffleOffsetX = toAisle * fraction * 0.7;
     }
 
-    final bob = !seated && !waiting && passenger.phase == PassengerPhase.walking
-        ? math.sin(passenger.animationTime * 16) * 1.6
-        : 0.0;
+    double x;
+    double y;
+    if (seated) {
+      // Fully seated at seat center.
+      x = seatRect.center.dx;
+      y = seatRect.center.dy + 1;
+    } else if (sliding) {
+      // Sliding from aisle into seat (seatSliding or shuffleWait with blockers cleared).
+      final eased = passenger.seatSlideProgress * passenger.seatSlideProgress *
+          (3 - 2 * passenger.seatSlideProgress);
+      x = ui.lerpDouble(aisleX, seatRect.center.dx, eased)!;
+      y = ui.lerpDouble(rowY, seatRect.center.dy + 1, eased)!;
+    } else {
+      // Walking, turning, stowing, shuffleWait-waiting — all stay at aisle X.
+      x = aisleX;
+      y = rowY;
+    }
+
+    final isWalking = passenger.phase == PassengerPhase.walking;
+    final bob = isWalking ? math.sin(passenger.animationTime * 16) * 1.6 : 0.0;
     final center = Offset(x + shuffleOffsetX, y + bob);
 
-    // Dim passengers who are waiting in their seat for blockers to move.
-    final alpha = waiting ? 0.45 : 1.0;
+    // Dim shuffleWait passengers who haven't started sliding yet.
+    final alpha = (passenger.phase == PassengerPhase.shuffleWait &&
+            passenger.seatSlideProgress == 0)
+        ? 0.55
+        : sliding
+            ? ui.lerpDouble(0.55, 1.0, passenger.seatSlideProgress)!
+            : 1.0;
 
     final shadow = Paint()..color = Color.fromRGBO(13, 34, 56, 0.19 * alpha);
     canvas.drawOval(
@@ -466,9 +484,7 @@ class CabinGame extends FlameGame {
       ..color = Color.fromRGBO(64, 81, 104, alpha)
       ..strokeWidth = 2.2
       ..strokeCap = StrokeCap.round;
-    final stride = !seated && !waiting && passenger.phase == PassengerPhase.walking
-        ? math.sin(passenger.animationTime * 16) * 2
-        : 0.0;
+    final stride = isWalking ? math.sin(passenger.animationTime * 16) * 2 : 0.0;
     canvas.drawLine(
       center + const Offset(-3, 7),
       center + Offset(-4 - stride, 11),

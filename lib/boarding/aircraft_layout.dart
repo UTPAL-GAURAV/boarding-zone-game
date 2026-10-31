@@ -103,6 +103,7 @@ class AircraftLayout {
     required this.gateLabelY,
     required this.entranceDoorY,
     required this.entranceDoorHeight,
+    required this.seatLayout,
   }) : assert(rowCount > 0),
        assert(zoneCount > 0);
 
@@ -125,6 +126,11 @@ class AircraftLayout {
   final double gateLabelY;
   final double entranceDoorY;
   final double entranceDoorHeight;
+
+  /// Seat columns and walking aisles from left to right.
+  /// Seat labels are letter strings (e.g. "A", "B"); walking aisles are "W".
+  /// Example 2-4-2: ["A","B","W","C","D","E","F","W","G","H"]
+  final List<String> seatLayout;
 
   int get seatsPerRow => seatColumns.length;
   int get passengerCount => rowCount * seatsPerRow;

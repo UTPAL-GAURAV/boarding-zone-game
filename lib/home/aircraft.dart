@@ -7,24 +7,29 @@ enum AircraftUnlockType { free, progression, premium }
 class CabinLayoutData {
   const CabinLayoutData({
     required this.rows,
-    required this.seatBlocks,
+    required this.seatLayout,
     required this.aisleCount,
     required this.aisleCapacity,
   });
 
   final int rows;
 
-  /// Seat columns in each block, listed from left to right.
-  final List<int> seatBlocks;
+  /// Seat columns and walking aisles from left to right.
+  /// Seat labels are letter strings (e.g. "A", "B"); walking aisles are "W".
+  /// Example 2-4-2: ["A","B","W","C","D","E","F","W","G","H"]
+  final List<String> seatLayout;
   final int aisleCount;
 
   /// Maximum passengers occupying the walking aisle, for level tuning.
   final int aisleCapacity;
 
+  /// Just the seat labels, no "W" entries.
+  List<String> get seatLabels => seatLayout.where((s) => s != 'W').toList();
+
   factory CabinLayoutData.fromJson(Map<String, dynamic> json) =>
       CabinLayoutData(
         rows: json['rows'] as int,
-        seatBlocks: (json['seatBlocks'] as List).cast<int>(),
+        seatLayout: (json['seatLayout'] as List).cast<String>(),
         aisleCount: json['aisleCount'] as int,
         aisleCapacity: json['aisleCapacity'] as int,
       );
@@ -125,7 +130,7 @@ abstract final class AircraftCatalog {
         throw FormatException('Fleet is not ordered by typical seat count');
       }
       if (item.cabin.rows < 1 ||
-          item.cabin.seatBlocks.isEmpty ||
+          item.cabin.seatLabels.isEmpty ||
           item.cabin.aisleCount < 1 ||
           item.cabin.aisleCapacity < 1) {
         throw FormatException('Invalid cabin data for ${item.displayName}');
