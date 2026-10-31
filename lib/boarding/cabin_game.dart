@@ -26,7 +26,7 @@ class CabinGame extends FlameGame {
   ];
 
   @override
-  Color backgroundColor() => const Color(0xFFF0F3F7);
+  Color backgroundColor() => const Color(0xFF1E2840);
 
   @override
   void update(double dt) {
@@ -133,7 +133,7 @@ class CabinGame extends FlameGame {
       shadow,
     );
 
-    final shell = Paint()..color = Colors.white;
+    final shell = Paint()..color = const Color(0xFF1A2438);
     canvas.drawRRect(
       RRect.fromRectAndRadius(
         Rect.fromLTWH(
@@ -147,7 +147,7 @@ class CabinGame extends FlameGame {
       shell,
     );
     final outline = Paint()
-      ..color = const Color(0xFFD8E0E9)
+      ..color = const Color(0xFF2E3F5C)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 2;
     canvas.drawRRect(
@@ -171,7 +171,7 @@ class CabinGame extends FlameGame {
   }
 
   void _drawCockpit(Canvas canvas) {
-    final fill = Paint()..color = const Color(0xFFEAF3FA);
+    final fill = Paint()..color = const Color(0xFF0F1828);
     canvas.drawRRect(
       RRect.fromRectAndRadius(
         Rect.fromLTWH(
@@ -192,7 +192,7 @@ class CabinGame extends FlameGame {
         layout.flightDeck.top + layout.flightDeck.height / 2,
       ),
       9,
-      const Color(0xFF72869B),
+      const Color(0xFF7A9BBF),
       bold: true,
     );
   }
@@ -231,11 +231,11 @@ class CabinGame extends FlameGame {
       'BOARDING GATE',
       Offset(layout.designWidth / 2, layout.gateLabelY),
       10,
-      const Color(0xFF536B83),
+      const Color(0xFF7A9BBF),
       bold: true,
     );
     final arrow = Paint()
-      ..color = const Color(0xFF82A0B8)
+      ..color = const Color(0xFF7A9BBF)
       ..strokeWidth = 1.6
       ..strokeCap = StrokeCap.round;
     for (final lane in layout.aisles) {
@@ -259,7 +259,7 @@ class CabinGame extends FlameGame {
   }
 
   void _drawAisle(Canvas canvas) {
-    final aisle = Paint()..color = const Color(0xFFF2F5F7);
+    final aisle = Paint()..color = const Color(0xFF0F1828);
     for (final lane in layout.aisles) {
       canvas.drawRRect(
         RRect.fromRectAndRadius(
@@ -278,7 +278,7 @@ class CabinGame extends FlameGame {
       );
     }
     final dash = Paint()
-      ..color = const Color(0xFFDCE4EA)
+      ..color = const Color(0xFF2A3A52)
       ..strokeWidth = 1.2
       ..strokeCap = StrokeCap.round;
     for (final lane in layout.aisles) {
@@ -294,9 +294,9 @@ class CabinGame extends FlameGame {
   }
 
   void _drawWindows(Canvas canvas) {
-    final window = Paint()..color = const Color(0xFFD9EFF8);
+    final window = Paint()..color = const Color(0xFF1A3050);
     final windowBorder = Paint()
-      ..color = const Color(0xFFBBD8E6)
+      ..color = const Color(0xFF2A4870)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1.2;
     for (var row = 0; row < layout.rowCount; row++) {
@@ -320,7 +320,7 @@ class CabinGame extends FlameGame {
         '${row + 1}',
         Offset(layout.seatBlocks.first.left - 3, y),
         9,
-        const Color(0xFF95A3B1),
+        const Color(0xFF7A9BBF),
         bold: true,
       );
       _text(
@@ -328,12 +328,12 @@ class CabinGame extends FlameGame {
         '${row + 1}',
         Offset(layout.seatBlocks.last.right + 3, y),
         9,
-        const Color(0xFF95A3B1),
+        const Color(0xFF7A9BBF),
         bold: true,
       );
 
       // Slim overhead-bin panels frame each row and make the cabin read as a plane.
-      final binPaint = Paint()..color = const Color(0xFFF5F7F9);
+      final binPaint = Paint()..color = const Color(0xFF243348);
       for (final block in layout.seatBlocks) {
         canvas.drawRRect(
           RRect.fromRectAndRadius(
@@ -373,7 +373,7 @@ class CabinGame extends FlameGame {
       label,
       Offset(rect.center.dx, rect.center.dy + 4),
       7,
-      const Color(0xFF44566A),
+      const Color(0xFFB0C8E0),
       bold: true,
     );
   }

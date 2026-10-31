@@ -5,10 +5,8 @@ import 'package:flutter/services.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
 
 import 'package:razorpay_flutter/razorpay_flutter.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 import '../boarding/boarding_game_page.dart';
-import '../config/secrets.dart';
 import 'aircraft.dart';
 import 'aircraft_level_registry.dart';
 import 'local_profile_store.dart';
@@ -16,11 +14,12 @@ import 'manufacturer_brand_assets.dart';
 import 'rankings_service.dart';
 import 'shop_service.dart';
 
-const _navy = Color(0xFF101923);
-const _panel = Color(0xFFFFFFFF);
-const _panelLight = Color(0xFFE7EDF5);
-const _muted = Color(0xFF73849A);
-const _accent = Color(0xFF5EB8E8);
+const _navy = Color(0xFF0A0E1A);
+const _panel = Color(0xFF151C2E);
+const _panelLight = Color(0xFF1E2840);
+const _muted = Color(0xFF6B7A99);
+const _accent = Color(0xFFFFB930);
+const _accentGlow = Color(0x33FFB930);
 
 class BoardingHomeShell extends StatefulWidget {
   const BoardingHomeShell({super.key, this.store});
@@ -141,17 +140,33 @@ class _BoardingHomeShellState extends State<BoardingHomeShell> {
       return;
     }
 
-    // 2. Open Razorpay checkout
-    _razorpay.open({
-      'key': razorpayKey,
-      'amount': 49900, // paise — ₹499
-      'name': 'Boarding Bluster',
-      'description': 'Unlock All Premium Aircraft',
-      'prefill': {'email': account.email, 'name': account.displayName ?? ''},
-      'external': {
-        'wallets': ['paytm'],
-      },
-    });
+    // 2. Payment coming soon — Razorpay not yet live
+    if (!mounted) return;
+    showDialog<void>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: _panel,
+        icon: const Icon(Icons.rocket_launch_rounded, color: _accent, size: 32),
+        title: const Text(
+          'Coming Soon',
+          style: TextStyle(color: Colors.white),
+        ),
+        content: Text(
+          'Hi ${account.displayName?.split(' ').first ?? 'there'}! Payments are not live yet. Check back soon to unlock the Premium Fleet Pass.',
+          style: const TextStyle(color: _muted),
+        ),
+        actions: [
+          FilledButton(
+            onPressed: () => Navigator.pop(context),
+            style: FilledButton.styleFrom(
+              backgroundColor: _accent,
+              foregroundColor: _navy,
+            ),
+            child: const Text('Got it'),
+          ),
+        ],
+      ),
+    );
   }
 
   Future<void> _onPaymentSuccess(PaymentSuccessResponse response) async {
@@ -250,17 +265,19 @@ class _BoardingHomeShellState extends State<BoardingHomeShell> {
             builder: (_) => Theme(
               data: ThemeData(
                 useMaterial3: true,
-                scaffoldBackgroundColor: const Color(0xFFF2F4F8),
+                brightness: Brightness.dark,
+                scaffoldBackgroundColor: const Color(0xFF0A0E1A),
                 colorScheme: ColorScheme.fromSeed(
-                  seedColor: const Color(0xFF3676CF),
+                  seedColor: const Color(0xFFFFB930),
+                  brightness: Brightness.dark,
                 ),
                 fontFamily: 'sans-serif',
               ),
               child: AnnotatedRegion<SystemUiOverlayStyle>(
                 value: const SystemUiOverlayStyle(
-                  statusBarIconBrightness: Brightness.dark,
-                  systemNavigationBarColor: Color(0xFFF2F4F8),
-                  systemNavigationBarIconBrightness: Brightness.dark,
+                  statusBarIconBrightness: Brightness.light,
+                  systemNavigationBarColor: Color(0xFF0A0E1A),
+                  systemNavigationBarIconBrightness: Brightness.light,
                 ),
                 child: BoardingGamePage(
                   aircraftName: aircraft.displayName,
@@ -293,17 +310,19 @@ class _BoardingHomeShellState extends State<BoardingHomeShell> {
         builder: (_) => Theme(
           data: ThemeData(
             useMaterial3: true,
-            scaffoldBackgroundColor: const Color(0xFFF2F4F8),
+            brightness: Brightness.dark,
+            scaffoldBackgroundColor: const Color(0xFF0A0E1A),
             colorScheme: ColorScheme.fromSeed(
-              seedColor: const Color(0xFF3676CF),
+              seedColor: const Color(0xFFFFB930),
+              brightness: Brightness.dark,
             ),
             fontFamily: 'sans-serif',
           ),
           child: AnnotatedRegion<SystemUiOverlayStyle>(
             value: const SystemUiOverlayStyle(
-              statusBarIconBrightness: Brightness.dark,
-              systemNavigationBarColor: Color(0xFFF2F4F8),
-              systemNavigationBarIconBrightness: Brightness.dark,
+              statusBarIconBrightness: Brightness.light,
+              systemNavigationBarColor: Color(0xFF0A0E1A),
+              systemNavigationBarIconBrightness: Brightness.light,
             ),
             child: BoardingGamePage(
               aircraftName: aircraft.displayName,
@@ -390,7 +409,7 @@ class _BoardingHomeShellState extends State<BoardingHomeShell> {
       builder: (context) => AlertDialog(
         backgroundColor: _panel,
         icon: const Icon(Icons.lock_rounded, color: _accent),
-        title: Text(aircraft.displayName, style: const TextStyle(color: _navy)),
+        title: Text(aircraft.displayName, style: const TextStyle(color: Colors.white)),
         content: Text(
           aircraft.unlockRequirement ?? 'Complete the previous mission.',
           style: const TextStyle(color: _muted),
@@ -411,7 +430,7 @@ class _BoardingHomeShellState extends State<BoardingHomeShell> {
       builder: (context) => AlertDialog(
         backgroundColor: _panel,
         icon: const Icon(Icons.construction_rounded, color: _accent),
-        title: Text(aircraft.displayName, style: const TextStyle(color: _navy)),
+        title: Text(aircraft.displayName, style: const TextStyle(color: Colors.white)),
         content: const Text(
           'This aircraft is unlocked. Its boarding level is coming soon.',
           style: TextStyle(color: _muted),
@@ -433,13 +452,13 @@ class _BoardingHomeShellState extends State<BoardingHomeShell> {
       if (snapshot.connectionState != ConnectionState.done ||
           _profile == null) {
         return const Scaffold(
-          backgroundColor: Color(0xFFF2F4F8),
+          backgroundColor: _navy,
           body: Center(child: CircularProgressIndicator(color: _accent)),
         );
       }
       final crewMember = _profile!;
       return Scaffold(
-        backgroundColor: Color(0xFFF2F4F8),
+        backgroundColor: _navy,
         body: SafeArea(
           child: IndexedStack(
             index: _destination,
@@ -475,25 +494,25 @@ class _BoardingHomeShellState extends State<BoardingHomeShell> {
           ),
         ),
         bottomNavigationBar: NavigationBar(
-          backgroundColor: Colors.white,
-          indicatorColor: _accent.withValues(alpha: 0.18),
+          backgroundColor: _panel,
+          indicatorColor: _accentGlow,
           selectedIndex: _destination,
           onDestinationSelected: (value) =>
               setState(() => _destination = value),
           destinations: const [
             NavigationDestination(
-              icon: Icon(Icons.flight_outlined),
-              selectedIcon: Icon(Icons.flight_rounded),
+              icon: Icon(Icons.flight_outlined, color: _muted),
+              selectedIcon: Icon(Icons.flight_rounded, color: _accent),
               label: 'Fleet',
             ),
             NavigationDestination(
-              icon: Icon(Icons.emoji_events_outlined),
-              selectedIcon: Icon(Icons.emoji_events_rounded),
+              icon: Icon(Icons.emoji_events_outlined, color: _muted),
+              selectedIcon: Icon(Icons.emoji_events_rounded, color: _accent),
               label: 'Rankings',
             ),
             NavigationDestination(
-              icon: Icon(Icons.storefront_outlined),
-              selectedIcon: Icon(Icons.storefront_rounded),
+              icon: Icon(Icons.storefront_outlined, color: _muted),
+              selectedIcon: Icon(Icons.storefront_rounded, color: _accent),
               label: 'Shop',
             ),
           ],
@@ -530,27 +549,35 @@ class _ProfileDialogState extends State<_ProfileDialog> {
   @override
   Widget build(BuildContext context) => AlertDialog(
     backgroundColor: _panel,
-    title: const Text('Crew profile', style: TextStyle(color: _navy)),
+    title: const Text('Crew profile', style: TextStyle(color: Colors.white)),
     content: TextField(
       controller: _controller,
       autofocus: true,
       maxLength: 12,
-      style: const TextStyle(color: _navy),
-      decoration: const InputDecoration(
+      style: const TextStyle(color: Colors.white),
+      decoration: InputDecoration(
         labelText: 'Display name',
-        labelStyle: TextStyle(color: _muted),
-        enabledBorder: UnderlineInputBorder(
+        labelStyle: const TextStyle(color: _muted),
+        counterStyle: const TextStyle(color: _muted),
+        enabledBorder: const UnderlineInputBorder(
           borderSide: BorderSide(color: _accent),
+        ),
+        focusedBorder: const UnderlineInputBorder(
+          borderSide: BorderSide(color: _accent, width: 2),
         ),
       ),
     ),
     actions: [
       TextButton(
         onPressed: () => Navigator.pop(context),
-        child: const Text('Cancel'),
+        child: const Text('Cancel', style: TextStyle(color: _muted)),
       ),
       FilledButton(
         onPressed: () => Navigator.pop(context, _controller.text.trim()),
+        style: FilledButton.styleFrom(
+          backgroundColor: _accent,
+          foregroundColor: _navy,
+        ),
         child: const Text('Save'),
       ),
     ],
@@ -687,7 +714,14 @@ class _HomeTabState extends State<_HomeTab> {
               decoration: BoxDecoration(
                 color: _panel,
                 borderRadius: BorderRadius.circular(18),
-                border: Border.all(color: _navy.withValues(alpha: 0.08)),
+                border: Border.all(color: _accent.withValues(alpha: 0.2)),
+                boxShadow: [
+                  BoxShadow(
+                    color: _accent.withValues(alpha: 0.06),
+                    blurRadius: 16,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
               ),
               child: Row(
                 children: [
@@ -710,7 +744,7 @@ class _HomeTabState extends State<_HomeTab> {
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: const TextStyle(
-                            color: _navy,
+                            color: Colors.white,
                             fontSize: 14,
                             fontWeight: FontWeight.w800,
                           ),
@@ -732,7 +766,7 @@ class _HomeTabState extends State<_HomeTab> {
                       disabledForegroundColor: _muted,
                       textStyle: const TextStyle(
                         fontSize: 10,
-                        fontWeight: FontWeight.w800,
+                        fontWeight: FontWeight.w900,
                         letterSpacing: 0.55,
                       ),
                       padding: const EdgeInsets.symmetric(
@@ -770,10 +804,14 @@ class _HomeHeader extends StatelessWidget {
           color: _accent.withValues(alpha: 0.12),
           borderRadius: BorderRadius.circular(14),
         ),
-        child: const Icon(
-          Icons.flight_takeoff_rounded,
-          color: _accent,
-          size: 23,
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(14),
+          child: Image.asset(
+            'assets/boarding_bluster_logo.png',
+            width: 42,
+            height: 42,
+            fit: BoxFit.cover,
+          ),
         ),
       ),
       const SizedBox(width: 11),
@@ -781,10 +819,10 @@ class _HomeHeader extends StatelessWidget {
         child: Text(
           'Boarding Bluster',
           style: TextStyle(
-            color: _navy,
+            color: Colors.white,
             fontSize: 20,
-            fontWeight: FontWeight.w800,
-            letterSpacing: -0.4,
+            fontWeight: FontWeight.w900,
+            letterSpacing: 0.2,
           ),
         ),
       ),
@@ -807,9 +845,10 @@ class _HomeHeader extends StatelessWidget {
                 decoration: BoxDecoration(
                   color: _panelLight,
                   shape: BoxShape.circle,
+                  border: Border.all(color: _accent.withValues(alpha: 0.4)),
                 ),
                 child: const Icon(
-                  Icons.edit_rounded,
+                  Icons.person_rounded,
                   color: _accent,
                   size: 18,
                 ),
@@ -872,10 +911,19 @@ class _AircraftTile extends StatelessWidget {
           child: Container(
             decoration: BoxDecoration(
               border: Border.all(
-                color: selected ? _accent : _navy.withValues(alpha: 0.08),
+                color: selected ? _accent : Colors.white.withValues(alpha: 0.06),
                 width: selected ? 2 : 1,
               ),
               borderRadius: BorderRadius.circular(22),
+              boxShadow: selected
+                  ? [
+                      BoxShadow(
+                        color: _accent.withValues(alpha: 0.18),
+                        blurRadius: 20,
+                        spreadRadius: 1,
+                      ),
+                    ]
+                  : null,
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -949,7 +997,7 @@ class _AircraftTile extends StatelessWidget {
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: const TextStyle(
-                            color: _navy,
+                            color: Colors.white,
                             fontSize: 19,
                             fontWeight: FontWeight.w800,
                           ),
@@ -1174,7 +1222,7 @@ class _RankingsTabState extends State<_RankingsTab> {
                       selectedColor: _accent,
                       backgroundColor: _panel,
                       labelStyle: TextStyle(
-                        color: active ? Colors.white : _muted,
+                        color: active ? _navy : _muted,
                         fontSize: 11,
                         fontWeight: FontWeight.w700,
                       ),
@@ -1342,11 +1390,11 @@ class _RankRow extends StatelessWidget {
     margin: const EdgeInsets.only(bottom: 8),
     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 13),
     decoration: BoxDecoration(
-      color: highlighted ? const Color(0xFFE5F3FB) : _panel,
+      color: highlighted ? _accentGlow : _panel,
       borderRadius: BorderRadius.circular(14),
       border: highlighted
           ? Border.all(color: _accent.withValues(alpha: 0.5))
-          : null,
+          : Border.all(color: Colors.white.withValues(alpha: 0.04)),
     ),
     child: Row(
       children: [
@@ -1367,7 +1415,7 @@ class _RankRow extends StatelessWidget {
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: TextStyle(
-              color: highlighted ? _navy : _muted,
+              color: highlighted ? Colors.white : _muted,
               fontSize: 12,
               fontWeight: highlighted ? FontWeight.w800 : FontWeight.w600,
             ),
@@ -1376,7 +1424,7 @@ class _RankRow extends StatelessWidget {
         Text(
           time,
           style: const TextStyle(
-            color: _navy,
+            color: Colors.white,
             fontSize: 13,
             fontWeight: FontWeight.w800,
             fontFeatures: [],
@@ -1413,7 +1461,6 @@ class _ShopTab extends StatelessWidget {
               const _PageTitle(kicker: 'HANGAR STORE', title: 'Shop'),
               const SizedBox(height: 20),
 
-              // ── Premium pack card ──────────────────────────────────────────
               _PremiumPackCard(
                 aircraftList: premiumAircraft,
                 unlocked: premiumUnlocked,
@@ -1421,19 +1468,7 @@ class _ShopTab extends StatelessWidget {
                 onRestore: onRestore,
               ),
 
-              const SizedBox(height: 28),
-
-              // ── Promo banner placeholder ───────────────────────────────────
-              _PromoBanner(),
-
               const SizedBox(height: 20),
-              Center(
-                child: TextButton.icon(
-                  onPressed: () => _showPhotoCredits(context),
-                  icon: const Icon(Icons.copyright_rounded, size: 15),
-                  label: const Text('Aircraft photo credits'),
-                ),
-              ),
             ],
           ),
         ),
@@ -1606,7 +1641,7 @@ class _PremiumPackCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
                     const Text(
-                      '₹499',
+                      '\$5.99',
                       style: TextStyle(
                         color: Colors.white,
                         fontSize: 30,
@@ -1714,92 +1749,6 @@ class _Perk extends StatelessWidget {
   );
 }
 
-class _PromoBanner extends StatelessWidget {
-  const _PromoBanner();
-
-  @override
-  Widget build(BuildContext context) => Container(
-    padding: const EdgeInsets.all(18),
-    decoration: BoxDecoration(
-      color: _panel,
-      borderRadius: BorderRadius.circular(18),
-      border: Border.all(color: _navy.withValues(alpha: 0.08)),
-    ),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Container(
-              width: 36,
-              height: 36,
-              decoration: BoxDecoration(
-                color: _accent.withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: const Icon(Icons.link_rounded, color: _accent, size: 20),
-            ),
-            const SizedBox(width: 12),
-            const Expanded(
-              child: Text(
-                'FROM THE DEVELOPER',
-                style: TextStyle(
-                  color: _muted,
-                  fontSize: 9,
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: 1,
-                ),
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 12),
-        const Text(
-          'More coming soon',
-          style: TextStyle(
-            color: _navy,
-            fontSize: 15,
-            fontWeight: FontWeight.w800,
-          ),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          'Check back here for links to other apps and projects.',
-          style: const TextStyle(color: _muted, fontSize: 12, height: 1.4),
-        ),
-      ],
-    ),
-  );
-}
-
-void _showPhotoCredits(BuildContext context) {
-  showDialog<void>(
-    context: context,
-    builder: (context) => AlertDialog(
-      backgroundColor: _panel,
-      title: const Text('Aircraft photo credits'),
-      content: const SingleChildScrollView(
-        child: SelectableText(
-          'Airbus A320-200 — Ezbolor, CC BY-SA 3.0.\n'
-          'commons.wikimedia.org/wiki/File:Airbus_A320-200.jpg\n\n'
-          'Boeing 737-500 — MaxEddi, released to the public domain.\n'
-          'commons.wikimedia.org/wiki/File:Boeing_B737.jpg\n\n'
-          'Airbus A350-900 — pjs2005, CC BY-SA 2.0.\n'
-          'commons.wikimedia.org/wiki/File:Airbus_A350_(28227541585).jpg\n\n'
-          'The A320 and A350 photo files were resized for the game. Full license details are in assets/aircraft/ATTRIBUTION.md.',
-          style: TextStyle(color: _muted, fontSize: 12, height: 1.5),
-        ),
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: const Text('Close'),
-        ),
-      ],
-    ),
-  );
-}
-
 class _PageTitle extends StatelessWidget {
   const _PageTitle({required this.kicker, required this.title});
   final String kicker;
@@ -1822,9 +1771,9 @@ class _PageTitle extends StatelessWidget {
       Text(
         title,
         style: const TextStyle(
-          color: _navy,
+          color: Colors.white,
           fontSize: 25,
-          fontWeight: FontWeight.w800,
+          fontWeight: FontWeight.w900,
           letterSpacing: -0.5,
         ),
       ),

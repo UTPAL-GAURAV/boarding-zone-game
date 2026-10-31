@@ -9,7 +9,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'home/boarding_home_shell.dart';
 
-const _sentryDsn = 'SENTRY_DSN_PLACEHOLDER';
+const _sentryDsn = 'https://2c6b906a81468551cdf862646d84cf5c@o4511406258257920.ingest.de.sentry.io/4512349082681424';
 
 Future<void> main() async {
   await SentryFlutter.init(
@@ -71,11 +71,11 @@ class BoardingZoneApp extends StatelessWidget {
     debugShowCheckedModeBanner: false,
     theme: ThemeData(
       useMaterial3: true,
-      brightness: Brightness.light,
-      scaffoldBackgroundColor: const Color(0xFFF2F4F8),
+      brightness: Brightness.dark,
+      scaffoldBackgroundColor: const Color(0xFF0A0E1A),
       colorScheme: ColorScheme.fromSeed(
-        seedColor: const Color(0xFF5EB8E8),
-        brightness: Brightness.light,
+        seedColor: const Color(0xFFFFB930),
+        brightness: Brightness.dark,
       ),
       fontFamily: 'sans-serif',
     ),
@@ -83,9 +83,9 @@ class BoardingZoneApp extends StatelessWidget {
     builder: (context, child) => AnnotatedRegion<SystemUiOverlayStyle>(
       value: const SystemUiOverlayStyle(
         statusBarColor: Colors.transparent,
-        statusBarIconBrightness: Brightness.dark,
-        systemNavigationBarColor: Color(0xFFF2F4F8),
-        systemNavigationBarIconBrightness: Brightness.dark,
+        statusBarIconBrightness: Brightness.light,
+        systemNavigationBarColor: Color(0xFF151C2E),
+        systemNavigationBarIconBrightness: Brightness.light,
       ),
       child: child!,
     ),

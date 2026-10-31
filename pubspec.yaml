@@ -69,6 +69,7 @@ flutter:
     - assets/aircraft/
     - assets/manufacturers/
     - assets/data/aircraft_fleet.json
+    - assets/boarding_bluster_logo.png
 
   # To add assets to your application, add an assets section, like this:
   # assets:

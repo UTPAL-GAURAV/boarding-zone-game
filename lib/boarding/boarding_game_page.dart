@@ -54,8 +54,12 @@ class _BoardingGamePageState extends State<BoardingGamePage> {
   double _lastPointerGlobalX = 0;
 
   static const _zones = CabinGame.zoneColors;
-  static const _ink = Color(0xFF172B45);
-  static const _muted = Color(0xFF73849A);
+  static const _ink = Color(0xFFFFFFFF);
+  static const _muted = Color(0xFF6B7A99);
+  static const _bg = Color(0xFF0A0E1A);
+  static const _panel = Color(0xFF151C2E);
+  static const _panelLight = Color(0xFF1E2840);
+  static const _accent = Color(0xFFFFB930);
 
   @override
   void initState() {
@@ -158,6 +162,7 @@ class _BoardingGamePageState extends State<BoardingGamePage> {
   Widget build(BuildContext context) {
     final complete = _simulation.isComplete;
     return Scaffold(
+      backgroundColor: _bg,
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
@@ -204,7 +209,7 @@ class _BoardingGamePageState extends State<BoardingGamePage> {
           Tooltip(
             message: 'Back to fleet',
             child: Material(
-              color: Colors.white,
+              color: _panel,
               borderRadius: BorderRadius.circular(14),
               child: InkWell(
                 onTap: () => unawaited(_backToFleet()),
@@ -232,7 +237,7 @@ class _BoardingGamePageState extends State<BoardingGamePage> {
           ),
           const SizedBox(width: 10),
           Material(
-            color: Colors.white,
+            color: _panel,
             borderRadius: BorderRadius.circular(14),
             child: InkWell(
               onTap: _reset,
@@ -327,8 +332,8 @@ class _BoardingGamePageState extends State<BoardingGamePage> {
       borderRadius: BorderRadius.circular(28),
       child: DecoratedBox(
         decoration: BoxDecoration(
-          color: const Color(0xFFEAF0F6),
-          border: Border.all(color: const Color(0xFFE1E7EE)),
+          color: _panelLight,
+          border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
           borderRadius: BorderRadius.circular(28),
         ),
         child: LayoutBuilder(
@@ -438,19 +443,20 @@ class _BoardingGamePageState extends State<BoardingGamePage> {
 
   Widget _buildCompletionCard() {
     return Container(
-      color: const Color(0xA8172B45),
+      color: Colors.black.withValues(alpha: 0.75),
       alignment: Alignment.center,
       child: Container(
         margin: const EdgeInsets.all(24),
         padding: const EdgeInsets.fromLTRB(24, 28, 24, 22),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: _panel,
           borderRadius: BorderRadius.circular(26),
-          boxShadow: const [
+          border: Border.all(color: _accent.withValues(alpha: 0.25)),
+          boxShadow: [
             BoxShadow(
-              color: Color(0x4020334D),
-              blurRadius: 26,
-              offset: Offset(0, 12),
+              color: _accent.withValues(alpha: 0.08),
+              blurRadius: 32,
+              offset: const Offset(0, 12),
             ),
           ],
         ),
@@ -462,15 +468,13 @@ class _BoardingGamePageState extends State<BoardingGamePage> {
               height: 62,
               decoration: BoxDecoration(
                 color: _isNewRecord
-                    ? const Color(0xFFFFF8E1)
-                    : const Color(0xFFE8F7EF),
+                    ? _accent.withValues(alpha: 0.15)
+                    : Colors.green.withValues(alpha: 0.15),
                 shape: BoxShape.circle,
               ),
               child: Icon(
                 _isNewRecord ? Icons.emoji_events_rounded : Icons.check_rounded,
-                color: _isNewRecord
-                    ? const Color(0xFFF59E0B)
-                    : const Color(0xFF39A674),
+                color: _isNewRecord ? _accent : const Color(0xFF4ADE80),
                 size: 36,
               ),
             ),
@@ -478,8 +482,8 @@ class _BoardingGamePageState extends State<BoardingGamePage> {
             const Text(
               'All aboard!',
               style: TextStyle(
-                color: _ink,
-                fontWeight: FontWeight.w800,
+                color: Colors.white,
+                fontWeight: FontWeight.w900,
                 fontSize: 25,
                 letterSpacing: -0.5,
               ),
@@ -489,22 +493,21 @@ class _BoardingGamePageState extends State<BoardingGamePage> {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFFEF3C7),
+                  color: _accent.withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: const Color(0xFFF59E0B), width: 1),
+                  border: Border.all(color: _accent.withValues(alpha: 0.5)),
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(Icons.star_rounded,
-                        color: Color(0xFFF59E0B), size: 14),
+                    Icon(Icons.star_rounded, color: _accent, size: 14),
                     const SizedBox(width: 4),
                     Text(
                       widget.previousBestMilliseconds == null
                           ? 'FIRST RUN!'
                           : 'NEW RECORD!',
-                      style: const TextStyle(
-                        color: Color(0xFF92400E),
+                      style: TextStyle(
+                        color: _accent,
                         fontWeight: FontWeight.w800,
                         fontSize: 11,
                         letterSpacing: 0.5,
@@ -540,7 +543,7 @@ class _BoardingGamePageState extends State<BoardingGamePage> {
             Text(
               '${_simulation.passengerCount} passengers boarded',
               style: const TextStyle(
-                color: _ink,
+                color: Colors.white,
                 fontWeight: FontWeight.w700,
                 fontSize: 13,
               ),
@@ -558,9 +561,13 @@ class _BoardingGamePageState extends State<BoardingGamePage> {
                 icon: const Icon(Icons.arrow_forward_rounded),
                 label: const Text('NEXT FLIGHT'),
                 style: FilledButton.styleFrom(
-                  backgroundColor: const Color(0xFF3479D0),
-                  foregroundColor: Colors.white,
+                  backgroundColor: _accent,
+                  foregroundColor: Color(0xFF0A0E1A),
                   padding: const EdgeInsets.symmetric(vertical: 13),
+                  textStyle: const TextStyle(
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 0.5,
+                  ),
                 ),
               ),
             ),
@@ -587,17 +594,17 @@ class _BoardingGamePageState extends State<BoardingGamePage> {
         decoration: BoxDecoration(
           gradient: LinearGradient(
             colors: inactive
-                ? [const Color(0xFF7E8FA4), const Color(0xFF61758E)]
-                : [const Color(0xFF3479D0), const Color(0xFF245BB1)],
+                ? [const Color(0xFF2A3550), const Color(0xFF1E2840)]
+                : [const Color(0xFFFFB930), const Color(0xFFE8A020)],
           ),
           borderRadius: BorderRadius.circular(16),
           boxShadow: inactive
               ? const []
-              : const [
+              : [
                   BoxShadow(
-                    color: Color(0x30336EB8),
+                    color: const Color(0xFFFFB930).withValues(alpha: 0.3),
                     blurRadius: 12,
-                    offset: Offset(0, 5),
+                    offset: const Offset(0, 5),
                   ),
                 ],
         ),
@@ -625,15 +632,15 @@ class _BoardingGamePageState extends State<BoardingGamePage> {
             label,
             style: const TextStyle(
               fontSize: 11,
-              fontWeight: FontWeight.w800,
+              fontWeight: FontWeight.w900,
               letterSpacing: 0.65,
             ),
           ),
           style: ElevatedButton.styleFrom(
             backgroundColor: Colors.transparent,
-            foregroundColor: Colors.white,
+            foregroundColor: inactive ? _muted : const Color(0xFF0A0E1A),
             disabledBackgroundColor: Colors.transparent,
-            disabledForegroundColor: Colors.white,
+            disabledForegroundColor: _muted,
             shadowColor: Colors.transparent,
             padding: const EdgeInsets.symmetric(horizontal: 17),
             shape: RoundedRectangleBorder(
@@ -662,12 +669,13 @@ class _StatCard extends StatelessWidget {
     height: 62,
     padding: const EdgeInsets.symmetric(horizontal: 10),
     decoration: BoxDecoration(
-      color: Colors.white,
+      color: const Color(0xFF151C2E),
       borderRadius: BorderRadius.circular(17),
+      border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
     ),
     child: Row(
       children: [
-        Icon(icon, color: const Color(0xFF5481B5), size: 17),
+        Icon(icon, color: const Color(0xFFFFB930), size: 17),
         const SizedBox(width: 7),
         Expanded(
           child: Column(
@@ -679,7 +687,7 @@ class _StatCard extends StatelessWidget {
                 maxLines: 1,
                 overflow: TextOverflow.clip,
                 style: const TextStyle(
-                  color: Color(0xFF8B99A9),
+                  color: Color(0xFF6B7A99),
                   fontSize: 8,
                   fontWeight: FontWeight.w800,
                   letterSpacing: 0.85,
@@ -692,7 +700,7 @@ class _StatCard extends StatelessWidget {
                 child: Text(
                   value,
                   style: const TextStyle(
-                    color: Color(0xFF172B45),
+                    color: Colors.white,
                     fontSize: 14,
                     fontWeight: FontWeight.w800,
                   ),
