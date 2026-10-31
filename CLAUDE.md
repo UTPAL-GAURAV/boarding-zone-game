@@ -46,6 +46,10 @@ lib/
       level_saab340.dart           — L03 Saab 340B
       level_one.dart               — L04-06 shared layout (2×2 narrow-body)
       level_two.dart               — L07-09 shared layout (3×3 narrow-body)
+      level_767.dart               — L31-37 wide-body 2-4-2 / 2-3-2
+      level_wide_232.dart          — wide-body 2-3-2 variant
+      level_wide_333.dart          — wide-body 3-3-3
+      level_a380.dart              — L42 A380 3-4-3
   home/
     aircraft.dart                  — Aircraft model + AircraftCatalog (loads fleet JSON)
     aircraft_level_registry.dart   — maps gameLayoutId → AircraftLayout
@@ -111,16 +115,20 @@ RLS is enabled on all tables. `purchases` currently has a permissive policy (all
 
 **Levels 10–42 have no game layout yet** — they show "Coming Soon" in-app.
 
-### Seat block configs (real-world economy layouts)
+### Seat layout configs (real-world economy layouts)
 
-| Layout | seatBlocks | Aircraft examples |
+`seatLayout` in `AircraftLayout` and `aircraft_fleet.json` is the ground truth for blocker logic. It is a flat left-to-right string array where seat labels are letters and `"W"` marks a walking aisle.
+
+| Layout | seatLayout | Aircraft examples |
 |---|---|---|
-| Single-file | [1,1] | L1–3 (tiny turboprops) |
-| 4-abreast | [2,2] | L4–9 |
-| 5-abreast | [2,3] | L13–22 |
-| 6-abreast | [3,3] | L20–30 (single-aisle mainline) |
-| 7-abreast | [2,3,2] | L31–37 (767, A330, 787, 777-200ER) |
-| 9-abreast | [3,3,3] | L38–42 (A350, 777-300ER, 747, A380) |
+| Single-file | `["A","W","B"]` | L1–3 (tiny turboprops) |
+| 4-abreast | `["A","B","W","C","D"]` | L4–9 |
+| 5-abreast | `["A","B","W","C","D","E"]` | L13–22 |
+| 6-abreast | `["A","B","C","W","D","E","F"]` | L20–30 (single-aisle mainline) |
+| 7-abreast | `["A","B","W","C","D","E","F","W","G","H"]` | L31–37 (767, A330, 787) |
+| 9-abreast | `["A","B","C","W","D","E","F","W","G","H","J"]` | L38–42 (A350, 747, A380) |
+
+`seatBlocks` in `AircraftLayout` is render-only (used to draw overhead bin panels and row numbers) and is separate from `seatLayout`.
 
 ---
 
@@ -233,3 +241,26 @@ App never crashes on network failure — errors are swallowed after 3 retries an
 - The `leaderboard` Supabase view is read-only; scores are written to the `scores` table directly.
 - Player UUID is generated client-side (`_newUuid()` in `LocalProfileStore`) — not tied to any auth system for anonymous play.
 - `_premiumUnlocked` in `_BoardingHomeShellState` is the single source of truth for premium access. It's loaded from `ShopService.isPremiumUnlocked()` (local cache) on startup and set to `true` after a successful payment.
+
+### Boarding simulation architecture
+
+`BoardingSimulation` is pure Dart (no Flame). `CabinGame` reads its state each frame and renders.
+
+**`PassengerPhase` enum** (progression per passenger):
+```
+walking → turning → stowing → seatSliding → seated
+                            ↘ shuffleWait → seated
+```
+- `seatSliding`: no blockers — passenger slides directly from aisle to seat after stowing
+- `shuffleWait`: blocker(s) needed to stand first — passenger waits in aisle until all blockers are in `waitingInAisle`, then slides to seat
+
+**`ShufflePhase` enum** (for seated blocker passengers):
+```
+none → exitingToAisle → waitingInAisle → returningToSeat → none
+```
+- `waitingInAisle` has **no auto-timer** — blocker is held there until `_finallySeated` explicitly triggers return, guaranteeing strict serial order: outer exits → inner slides in and seats → outer returns.
+- If a blocker reaches `waitingInAisle` but no `shuffleWait` passenger is waiting for it (passenger seated before blocker arrived), the blocker self-releases to `returningToSeat` on the next frame.
+
+**Blocker detection** uses `seatLayout` string array — scans left/right from the target seat label to find the nearest `"W"`, then any occupied seats between that `W` and the target are blockers. `_findBlockersWhere` is the single implementation; `_findActiveBlockers` and `_findWaitingBlockers` are filtered wrappers.
+
+**Walking collision**: passengers only block the one directly behind them while both are `walking`. Passengers in `turning`/`stowing`/`seatSliding`/`shuffleWait` have stepped into their row and no longer block the aisle. Forward limit is never applied backwards (uses `math.max(rowPosition, cap)`).
