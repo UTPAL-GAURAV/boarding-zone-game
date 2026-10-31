@@ -22,12 +22,12 @@ abstract final class LevelC208 {
         id: 'main',
         centerX: 180,
         width: 60,
-        capacity: 6,
+        capacity: 25,
         minimumSpacingRows: 0.4,
         entryIntervalSeconds: 0.20,
         walkingSpeedRowsPerSecond: 2.66,
         turnDurationSeconds: 0.68,
-        entranceRow: -0.9,
+        entranceRow: -6.0,
         floorTop: 89,
       ),
     ],
@@ -54,5 +54,6 @@ abstract final class LevelC208 {
     entranceDoorY: 77,
     entranceDoorHeight: 13,
     seatLayout: ['A', 'W', 'B'],
+    blockerRules: {'A': [], 'B': []},
   );
 }

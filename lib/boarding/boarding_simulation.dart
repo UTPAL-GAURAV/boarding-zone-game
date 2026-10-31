@@ -235,14 +235,15 @@ class BoardingSimulation {
         passenger.animationTime += delta;
         switch (passenger.phase) {
           case PassengerPhase.walking:
-            // Only block behind a walking passenger ahead — turning/stowing
-            // passengers have stepped sideways into their row.
             double prevLimit = double.infinity;
             if (index > 0) {
               final ahead = aisle.passengers[index - 1];
-              if (ahead.phase == PassengerPhase.walking) {
-                prevLimit = ahead.rowPosition - aisle.layout.minimumSpacingRows;
-              }
+              // Block behind any non-seated passenger ahead — use their seat row
+              // as the position once they've stopped walking (turning/stowing/sliding).
+              final aheadPos = (ahead.phase == PassengerPhase.walking)
+                  ? ahead.rowPosition
+                  : ahead.seat.row.toDouble();
+              prevLimit = aheadPos - aisle.layout.minimumSpacingRows;
             }
             final shuffleLimit = blockRow - aisle.layout.minimumSpacingRows;
             // Never push backwards — only cap forward progress.
@@ -350,15 +351,16 @@ class BoardingSimulation {
   /// True when every blocker for [seat] has fully exited to the aisle
   /// (shufflePhase == waitingInAisle with progress reached 1, meaning they
   /// True when every blocker for [seat] has fully arrived and stopped in the aisle.
-  /// Searches all blockers including those still exiting, so a blocker mid-exit
-  /// will correctly block the inner passenger from starting.
   bool _allBlockersFullyInAisle(BoardingSeat seat) {
-    final allBlockers = _findBlockersWhere(
+    // Include blockers that are still exiting — they haven't stopped yet.
+    final exiting = _findBlockersWhere(
       seat,
-      (p) => p.shufflePhase != ShufflePhase.none,
+      (p) => p.shufflePhase == ShufflePhase.exitingToAisle,
     );
-    if (allBlockers.isEmpty) return true;
-    return allBlockers.every((b) => b.shufflePhase == ShufflePhase.waitingInAisle);
+    if (exiting.isNotEmpty) return false;
+    // Also check at least one is actually waiting (not all done and gone).
+    final waiting = _findWaitingBlockers(seat);
+    return waiting.isNotEmpty || _findActiveBlockers(seat).isEmpty;
   }
 
   void _transitionToSeatedOrShuffle(
@@ -400,7 +402,7 @@ class BoardingSimulation {
     }
   }
 
-  /// Blockers that are seated and not mid-shuffle — eligible to be asked to stand.
+  /// Blockers that are seated and idle — eligible to be asked to stand.
   List<BoardingPassenger> _findActiveBlockers(BoardingSeat seat) {
     return _findBlockersWhere(
       seat,
@@ -408,7 +410,7 @@ class BoardingSimulation {
     );
   }
 
-  /// Blockers currently waiting in the aisle (to be told to return).
+  /// Blockers currently standing in the aisle waiting to return.
   List<BoardingPassenger> _findWaitingBlockers(BoardingSeat seat) {
     return _findBlockersWhere(
       seat,
@@ -416,63 +418,21 @@ class BoardingSimulation {
     );
   }
 
+  /// Look up blocker labels from the hardcoded layout rule, then find
+  /// the matching seated passengers in this row.
   List<BoardingPassenger> _findBlockersWhere(
     BoardingSeat seat,
     bool Function(BoardingPassenger) test,
   ) {
-    final seatColumns = layout.seatColumns;
-    final layoutLabels = layout.seatLayout;
-    final targetLabel = seatColumns[seat.column].label;
-
-    final targetPos = layoutLabels.indexOf(targetLabel);
-    if (targetPos < 0) return [];
-
-    int leftW = -1;
-    for (var i = targetPos - 1; i >= 0; i--) {
-      if (layoutLabels[i] == 'W') { leftW = i; break; }
-    }
-    int rightW = -1;
-    for (var i = targetPos + 1; i < layoutLabels.length; i++) {
-      if (layoutLabels[i] == 'W') { rightW = i; break; }
-    }
-
-    if (leftW == -1 && rightW == -1) return [];
-
-    bool aisleIsLeft;
-    if (leftW == -1) {
-      aisleIsLeft = false;
-    } else if (rightW == -1) {
-      aisleIsLeft = true;
-    } else {
-      aisleIsLeft = (targetPos - leftW) <= (rightW - targetPos);
-    }
-
-    final blockerLabels = <String>[];
-    if (aisleIsLeft) {
-      for (var i = leftW + 1; i < targetPos; i++) {
-        if (layoutLabels[i] != 'W') blockerLabels.add(layoutLabels[i]);
-      }
-    } else {
-      for (var i = targetPos + 1; i < rightW; i++) {
-        if (layoutLabels[i] != 'W') blockerLabels.add(layoutLabels[i]);
-      }
-    }
-
+    final seatLabel = layout.seatColumns[seat.column].label;
+    final blockerLabels = layout.blockerRules[seatLabel] ?? [];
     if (blockerLabels.isEmpty) return [];
 
-    final blockerColumns = <int>{};
-    for (var col = 0; col < seatColumns.length; col++) {
-      if (blockerLabels.contains(seatColumns[col].label)) {
-        blockerColumns.add(col);
-      }
-    }
-
     final blockers = <BoardingPassenger>[];
-    for (final col in blockerColumns) {
+    for (var col = 0; col < layout.seatColumns.length; col++) {
+      if (!blockerLabels.contains(layout.seatColumns[col].label)) continue;
       final occupant = _occupiedSlots['${seat.row},$col'];
-      if (occupant != null && test(occupant)) {
-        blockers.add(occupant);
-      }
+      if (occupant != null && test(occupant)) blockers.add(occupant);
     }
     return blockers;
   }

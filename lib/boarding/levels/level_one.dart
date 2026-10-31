@@ -24,12 +24,12 @@ abstract final class LevelOne {
         id: 'main',
         centerX: 180,
         width: 32,
-        capacity: 12,
+        capacity: 32,
         minimumSpacingRows: 0.4,
         entryIntervalSeconds: 0.20,
         walkingSpeedRowsPerSecond: 2.66,
         turnDurationSeconds: 0.68,
-        entranceRow: -0.9,
+        entranceRow: -6.0,
         floorTop: 89,
       ),
     ],
@@ -56,5 +56,6 @@ abstract final class LevelOne {
     entranceDoorY: 77,
     entranceDoorHeight: 13,
     seatLayout: ['A', 'B', 'W', 'C', 'D'],
+    blockerRules: {'A': ['B'], 'B': [], 'C': [], 'D': ['C']},
   );
 }

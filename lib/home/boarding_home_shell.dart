@@ -309,6 +309,7 @@ class _BoardingHomeShellState extends State<BoardingHomeShell> {
               aircraftName: aircraft.displayName,
               layout: layout,
               initialZones: initialZones,
+              previousBestMilliseconds: _bestTimes[aircraft.id],
               onZonesChanged: (zones) =>
                   _store.saveSeatZones(aircraft.id, zones),
               onCompleted: (milliseconds) =>

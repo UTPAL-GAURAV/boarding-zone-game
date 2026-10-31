@@ -104,6 +104,7 @@ class AircraftLayout {
     required this.entranceDoorY,
     required this.entranceDoorHeight,
     required this.seatLayout,
+    required this.blockerRules,
   }) : assert(rowCount > 0),
        assert(zoneCount > 0);
 
@@ -131,6 +132,12 @@ class AircraftLayout {
   /// Seat labels are letter strings (e.g. "A", "B"); walking aisles are "W".
   /// Example 2-4-2: ["A","B","W","C","D","E","F","W","G","H"]
   final List<String> seatLayout;
+
+  /// Who must stand up when a given seat label is being filled.
+  /// Key = seat label (e.g. "A"), value = list of seat labels that must vacate.
+  /// Derived from seatLayout + aisleIndex at definition time — no runtime scanning.
+  /// Example for ["A","B","W","C","D"]: blockerRules = {"A": ["B"], "B": [], "C": [], "D": []}
+  final Map<String, List<String>> blockerRules;
 
   int get seatsPerRow => seatColumns.length;
   int get passengerCount => rowCount * seatsPerRow;

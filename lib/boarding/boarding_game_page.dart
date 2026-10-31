@@ -19,6 +19,7 @@ class BoardingGamePage extends StatefulWidget {
     this.onNext,
     this.previewOnly = false,
     this.onUnlockTap,
+    this.previousBestMilliseconds,
   });
 
   final String aircraftName;
@@ -31,6 +32,8 @@ class BoardingGamePage extends StatefulWidget {
   final bool previewOnly;
   /// Called when the user taps "PREMIUM — UNLOCK TO BOARD" in preview mode.
   final VoidCallback? onUnlockTap;
+  /// Personal best from previous runs, null if this is the first run.
+  final int? previousBestMilliseconds;
 
   @override
   State<BoardingGamePage> createState() => _BoardingGamePageState();
@@ -45,6 +48,7 @@ class _BoardingGamePageState extends State<BoardingGamePage> {
   Future<void>? _completionSave;
   int _selectedZone = 5;
   bool _reportedCompletion = false;
+  bool _isNewRecord = false;
   bool _paintPointerActive = false;
   double _lastPointerGlobalY = 0;
   double _lastPointerGlobalX = 0;
@@ -71,9 +75,10 @@ class _BoardingGamePageState extends State<BoardingGamePage> {
     _saveZonesWhenChanged();
     if (_simulation.isComplete && !_reportedCompletion) {
       _reportedCompletion = true;
-      _completionSave = widget.onCompleted?.call(
-        (_simulation.elapsedSeconds * 1000).round(),
-      );
+      final ms = (_simulation.elapsedSeconds * 1000).round();
+      final prev = widget.previousBestMilliseconds;
+      _isNewRecord = prev == null || ms < prev;
+      _completionSave = widget.onCompleted?.call(ms);
     }
     if (mounted) setState(() {});
   }
@@ -125,6 +130,12 @@ class _BoardingGamePageState extends State<BoardingGamePage> {
 
   String get _timer {
     final milliseconds = (_simulation.elapsedSeconds * 1000).floor();
+    final seconds = milliseconds ~/ 1000;
+    final fraction = milliseconds % 1000;
+    return '${seconds.toString().padLeft(3, '0')}.${fraction.toString().padLeft(3, '0')}';
+  }
+
+  String _formatMs(int milliseconds) {
     final seconds = milliseconds ~/ 1000;
     final fraction = milliseconds % 1000;
     return '${seconds.toString().padLeft(3, '0')}.${fraction.toString().padLeft(3, '0')}';
@@ -242,6 +253,7 @@ class _BoardingGamePageState extends State<BoardingGamePage> {
   }
 
   Widget _buildStats() {
+    final best = widget.previousBestMilliseconds;
     return Row(
       children: [
         Expanded(
@@ -263,9 +275,9 @@ class _BoardingGamePageState extends State<BoardingGamePage> {
         const SizedBox(width: 8),
         Expanded(
           child: _StatCard(
-            label: 'FLIGHT',
-            value: '${_simulation.layout.rowCount} rows',
-            icon: Icons.airplanemode_active_rounded,
+            label: 'BEST',
+            value: best != null ? _formatMs(best) : '—',
+            icon: Icons.emoji_events_outlined,
           ),
         ),
       ],
@@ -448,13 +460,17 @@ class _BoardingGamePageState extends State<BoardingGamePage> {
             Container(
               width: 62,
               height: 62,
-              decoration: const BoxDecoration(
-                color: Color(0xFFE8F7EF),
+              decoration: BoxDecoration(
+                color: _isNewRecord
+                    ? const Color(0xFFFFF8E1)
+                    : const Color(0xFFE8F7EF),
                 shape: BoxShape.circle,
               ),
-              child: const Icon(
-                Icons.check_rounded,
-                color: Color(0xFF39A674),
+              child: Icon(
+                _isNewRecord ? Icons.emoji_events_rounded : Icons.check_rounded,
+                color: _isNewRecord
+                    ? const Color(0xFFF59E0B)
+                    : const Color(0xFF39A674),
                 size: 36,
               ),
             ),
@@ -468,12 +484,58 @@ class _BoardingGamePageState extends State<BoardingGamePage> {
                 letterSpacing: -0.5,
               ),
             ),
+            if (_isNewRecord) ...[
+              const SizedBox(height: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFEF3C7),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: const Color(0xFFF59E0B), width: 1),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.star_rounded,
+                        color: Color(0xFFF59E0B), size: 14),
+                    const SizedBox(width: 4),
+                    Text(
+                      widget.previousBestMilliseconds == null
+                          ? 'FIRST RUN!'
+                          : 'NEW RECORD!',
+                      style: const TextStyle(
+                        color: Color(0xFF92400E),
+                        fontWeight: FontWeight.w800,
+                        fontSize: 11,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
             const SizedBox(height: 7),
             Text(
               'Every passenger is seated in $_timer.',
               textAlign: TextAlign.center,
               style: const TextStyle(color: _muted, fontSize: 14, height: 1.4),
             ),
+            if (!_isNewRecord && widget.previousBestMilliseconds != null) ...[
+              const SizedBox(height: 4),
+              Text(
+                'Your best: ${_formatMs(widget.previousBestMilliseconds!)}',
+                textAlign: TextAlign.center,
+                style: const TextStyle(color: _muted, fontSize: 12),
+              ),
+            ],
+            if (_isNewRecord && widget.previousBestMilliseconds != null) ...[
+              const SizedBox(height: 4),
+              Text(
+                'Previous best: ${_formatMs(widget.previousBestMilliseconds!)}',
+                textAlign: TextAlign.center,
+                style: const TextStyle(color: _muted, fontSize: 12),
+              ),
+            ],
             const SizedBox(height: 18),
             Text(
               '${_simulation.passengerCount} passengers boarded',
