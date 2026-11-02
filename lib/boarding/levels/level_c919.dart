@@ -1,6 +1,6 @@
 import '../aircraft_layout.dart';
 
-/// 6-abreast narrow-body (A-B-C-W-D-E-F): 26 rows, 156 seats. Used by COMAC C919.
+/// 6-abreast narrow-body (A-B-C-D-E-F-W): 26 rows, 156 seats. Used by COMAC C919.
 abstract final class LevelC919 {
   static const AircraftLayout aircraft = AircraftLayout(
     id: 'level_6abreast_26row',
@@ -13,18 +13,18 @@ abstract final class LevelC919 {
     seatWidth: 32,
     seatHeight: 26,
     seatColumns: [
-      SeatColumnLayout(label: 'A', centerX: 50,  aisleIndex: 0, seatType: SeatType.window),
-      SeatColumnLayout(label: 'B', centerX: 88,  aisleIndex: 0, seatType: SeatType.middle),
-      SeatColumnLayout(label: 'C', centerX: 126, aisleIndex: 0, seatType: SeatType.aisle),
-      SeatColumnLayout(label: 'D', centerX: 214, aisleIndex: 0, seatType: SeatType.aisle),
-      SeatColumnLayout(label: 'E', centerX: 252, aisleIndex: 0, seatType: SeatType.middle),
-      SeatColumnLayout(label: 'F', centerX: 290, aisleIndex: 0, seatType: SeatType.window),
+      SeatColumnLayout(label: 'A', centerX: 44,  aisleIndex: 0, seatType: SeatType.window),
+      SeatColumnLayout(label: 'B', centerX: 80,  aisleIndex: 0, seatType: SeatType.middle),
+      SeatColumnLayout(label: 'C', centerX: 116, aisleIndex: 0, seatType: SeatType.middle),
+      SeatColumnLayout(label: 'D', centerX: 152, aisleIndex: 0, seatType: SeatType.middle),
+      SeatColumnLayout(label: 'E', centerX: 188, aisleIndex: 0, seatType: SeatType.middle),
+      SeatColumnLayout(label: 'F', centerX: 224, aisleIndex: 0, seatType: SeatType.aisle),
     ],
     rowDefaultZones: [5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5],
     aisles: [
       BoardingAisleLayout(
         id: 'main',
-        centerX: 170,
+        centerX: 268,
         width: 36,
         capacity: 46,
         minimumSpacingRows: 0.4,
@@ -36,10 +36,9 @@ abstract final class LevelC919 {
       ),
     ],
     seatBlocks: [
-      SeatBlockLayout(left: 31, right: 145),
-      SeatBlockLayout(left: 195, right: 309),
+      SeatBlockLayout(left: 25, right: 243),
     ],
-    windowCentersX: [18, 322],
+    windowCentersX: [12, 340],
     cabinShell: CabinRegion(
       left: 20,
       top: 28,
@@ -57,7 +56,14 @@ abstract final class LevelC919 {
     gateLabelY: 14,
     entranceDoorY: 71,
     entranceDoorHeight: 13,
-    seatLayout: ['A', 'B', 'C', 'W', 'D', 'E', 'F'],
-    blockerRules: {'A': ['B', 'C'], 'B': ['C'], 'C': [], 'D': [], 'E': ['D'], 'F': ['D', 'E']},
+    seatLayout: ['A', 'B', 'C', 'D', 'E', 'F', 'W'],
+    blockerRules: {
+      'A': ['B', 'C', 'D', 'E', 'F'],
+      'B': ['C', 'D', 'E', 'F'],
+      'C': ['D', 'E', 'F'],
+      'D': ['E', 'F'],
+      'E': ['F'],
+      'F': [],
+    },
   );
 }

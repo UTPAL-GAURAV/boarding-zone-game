@@ -364,6 +364,12 @@ class BoardingSimulation {
   /// Skips blockers already in motion. Sets shuffleTargetSeat on the started blocker.
   void _startNextBlockerExit(BoardingSeat targetSeat) {
     final blockerLabels = layout.blockerRules[layout.seatColumns[targetSeat.column].label] ?? [];
+    final aisleX = layout.aisles[targetSeat.aisleIndex].centerX;
+
+    // Collect candidate (col, occupant) pairs sorted by distance to aisle ascending
+    // so the seat physically closest to the aisle exits first, regardless of which
+    // side the aisle is on.
+    final candidates = <(int, BoardingPassenger)>[];
     for (final label in blockerLabels) {
       for (var col = 0; col < layout.seatColumns.length; col++) {
         if (layout.seatColumns[col].label != label) continue;
@@ -371,34 +377,54 @@ class BoardingSimulation {
         if (occupant == null) continue;
         if (occupant.shufflePhase == ShufflePhase.none &&
             occupant.phase == PassengerPhase.seated) {
-          occupant.shufflePhase = ShufflePhase.exitingToAisle;
-          occupant.shufflePhaseProgress = 0;
-          occupant.shuffleTargetSeat = targetSeat;
-          return;
+          candidates.add((col, occupant));
         }
       }
     }
+    if (candidates.isEmpty) return;
+    candidates.sort((a, b) {
+      final distA = (layout.seatColumns[a.$1].centerX - aisleX).abs();
+      final distB = (layout.seatColumns[b.$1].centerX - aisleX).abs();
+      return distA.compareTo(distB);
+    });
+    final occupant = candidates.first.$2;
+    occupant.shufflePhase = ShufflePhase.exitingToAisle;
+    occupant.shufflePhaseProgress = 0;
+    occupant.shuffleTargetSeat = targetSeat;
   }
 
-  /// Starts the innermost waitingInAisle blocker returning for [row]/[aisleIndex],
-  /// in reverse blocker-label order (window-side first, then toward aisle).
+  /// Starts the innermost waitingInAisle blocker returning for [row]/[aisleIndex].
+  /// The blocker closest to the aisle returns first (it entered the aisle last, so
+  /// it steps back in first, clearing the way for the ones further out).
   void _startNextBlockerReturnForRow(int row, int aisleIndex) {
-    // Find any seated passenger in this row that has waitingInAisle blockers.
+    final aisleX = layout.aisles[aisleIndex].centerX;
     for (final p in seatedPassengers) {
       if (p.seat.row != row || p.seat.aisleIndex != aisleIndex) continue;
       final blockerLabels = layout.blockerRules[layout.seatColumns[p.seat.column].label] ?? [];
-      for (final label in blockerLabels.reversed) {
+
+      // Collect waitingInAisle blockers for this passenger's seat.
+      final candidates = <(int, BoardingPassenger)>[];
+      for (final label in blockerLabels) {
         for (var col = 0; col < layout.seatColumns.length; col++) {
           if (layout.seatColumns[col].label != label) continue;
           final occupant = _occupiedSlots['$row,$col'];
           if (occupant == null) continue;
           if (occupant.shufflePhase == ShufflePhase.waitingInAisle) {
-            occupant.shufflePhase = ShufflePhase.returningToSeat;
-            occupant.shufflePhaseProgress = 0;
-            return;
+            candidates.add((col, occupant));
           }
         }
       }
+      if (candidates.isEmpty) continue;
+      // Sort ascending by distance to aisle — closest returns first.
+      candidates.sort((a, b) {
+        final distA = (layout.seatColumns[a.$1].centerX - aisleX).abs();
+        final distB = (layout.seatColumns[b.$1].centerX - aisleX).abs();
+        return distA.compareTo(distB);
+      });
+      final occupant = candidates.first.$2;
+      occupant.shufflePhase = ShufflePhase.returningToSeat;
+      occupant.shufflePhaseProgress = 0;
+      return;
     }
   }
 
