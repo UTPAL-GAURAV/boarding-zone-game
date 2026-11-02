@@ -2,7 +2,9 @@ import 'aircraft.dart';
 import '../boarding/levels/level_c208.dart';
 import '../boarding/levels/level_skycourier.dart';
 import '../boarding/levels/level_saab340.dart';
-import '../boarding/levels/level_one.dart';
+import '../boarding/levels/level_4abreast.dart';
+import '../boarding/levels/level_atr42.dart';
+import '../boarding/levels/level_saab2000.dart';
 import '../boarding/levels/level_two.dart';
 import '../boarding/levels/level_dual_aisle.dart';
 import '../boarding/levels/level_767.dart';
@@ -60,11 +62,11 @@ void registerAircraftCatalog() {
       model: '42-600',
       description: 'A compact turboprop built for short regional hops.',
       imageAsset: 'assets/aircraft/atr-42-600.jpeg',
-      typicalSeats: 52,
+      typicalSeats: 48,
       targetSeconds: 56,
       unlockType: AircraftUnlockType.progression,
       unlockRequirement: 'Complete 340B under 07:00',
-      layout: LevelOne.aircraft,
+      layout: LevelAtr42.aircraft,
     ),
     const Aircraft(
       id: 'embraer-erj-145',
@@ -74,10 +76,10 @@ void registerAircraftCatalog() {
       description: 'A slim regional jet that brought jet comfort to thin routes.',
       imageAsset: 'assets/aircraft/embraer-erj-145.jpeg',
       typicalSeats: 52,
-      targetSeconds: 70,
+      targetSeconds: 66,
       unlockType: AircraftUnlockType.progression,
       unlockRequirement: 'Complete 42-600 under 08:00',
-      layout: LevelOne.aircraft,
+      layout: Level4Abreast.aircraft,
     ),
     const Aircraft(
       id: 'saab-2000',
@@ -88,10 +90,10 @@ void registerAircraftCatalog() {
           'A fast regional turboprop engineered to compete with short-haul jets.',
       imageAsset: 'assets/aircraft/saab-2000.jpeg',
       typicalSeats: 52,
-      targetSeconds: 70,
+      targetSeconds: 56,
       unlockType: AircraftUnlockType.progression,
       unlockRequirement: 'Complete ERJ-145 under 08:30',
-      layout: LevelOne.aircraft,
+      layout: LevelSaab2000.aircraft,
     ),
     const Aircraft(
       id: 'ilyushin-il-114-300',

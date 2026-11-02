@@ -1,9 +1,11 @@
 import '../aircraft_layout.dart';
 
-/// Hard-coded prototype aircraft. Each future level gets its own definition.
-abstract final class LevelOne {
+/// Asymmetric 4-abreast cabin (A-W-B-C-D): 13 rows, 52 seats.
+/// Left: single window seat A. Right: B=aisle, C=middle, D=window.
+/// Used by Saab 2000.
+abstract final class LevelSaab2000 {
   static const AircraftLayout aircraft = AircraftLayout(
-    id: 'level_1_single_aisle',
+    id: 'level_saab2000_13row',
     designWidth: 360,
     designHeight: 580,
     rowCount: 13,
@@ -13,16 +15,16 @@ abstract final class LevelOne {
     seatWidth: 37,
     seatHeight: 27,
     seatColumns: [
-      SeatColumnLayout(label: 'A', centerX: 70, aisleIndex: 0, seatType: SeatType.window),
-      SeatColumnLayout(label: 'B', centerX: 116, aisleIndex: 0, seatType: SeatType.aisle),
-      SeatColumnLayout(label: 'C', centerX: 244, aisleIndex: 0, seatType: SeatType.aisle),
-      SeatColumnLayout(label: 'D', centerX: 290, aisleIndex: 0, seatType: SeatType.window),
+      SeatColumnLayout(label: 'A', centerX: 90, aisleIndex: 0, seatType: SeatType.window),
+      SeatColumnLayout(label: 'B', centerX: 196, aisleIndex: 0, seatType: SeatType.aisle),
+      SeatColumnLayout(label: 'C', centerX: 242, aisleIndex: 0, seatType: SeatType.middle),
+      SeatColumnLayout(label: 'D', centerX: 288, aisleIndex: 0, seatType: SeatType.window),
     ],
     rowDefaultZones: [5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5],
     aisles: [
       BoardingAisleLayout(
         id: 'main',
-        centerX: 180,
+        centerX: 143,
         width: 32,
         capacity: 33,
         minimumSpacingRows: 0.4,
@@ -34,10 +36,10 @@ abstract final class LevelOne {
       ),
     ],
     seatBlocks: [
-      SeatBlockLayout(left: 51, right: 155),
-      SeatBlockLayout(left: 205, right: 309),
+      SeatBlockLayout(left: 71, right: 109),
+      SeatBlockLayout(left: 177, right: 307),
     ],
-    windowCentersX: [31, 319],
+    windowCentersX: [51, 319],
     cabinShell: CabinRegion(
       left: 20,
       top: 38,
@@ -55,7 +57,7 @@ abstract final class LevelOne {
     gateLabelY: 24,
     entranceDoorY: 71,
     entranceDoorHeight: 13,
-    seatLayout: ['A', 'B', 'W', 'C', 'D'],
-    blockerRules: {'A': ['B'], 'B': [], 'C': [], 'D': ['C']},
+    seatLayout: ['A', 'W', 'B', 'C', 'D'],
+    blockerRules: {'A': [], 'B': [], 'C': ['B'], 'D': ['B', 'C']},
   );
 }

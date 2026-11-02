@@ -1,7 +1,7 @@
 import 'dart:math' as math;
 
 import 'aircraft_layout.dart';
-import 'levels/level_one.dart';
+import 'levels/level_4abreast.dart';
 
 enum PassengerPhase { walking, turning, stowing, seatSliding, shuffleWait, seated }
 
@@ -60,7 +60,7 @@ class _AisleRuntime {
 /// Boarding rules and run state, independent of Flame rendering/animation.
 class BoardingSimulation {
   BoardingSimulation({
-    this.layout = LevelOne.aircraft,
+    this.layout = Level4Abreast.aircraft,
     this.luggageStowSeconds = 1.2,
     this.shuffleSeed,
     List<int>? initialZones,

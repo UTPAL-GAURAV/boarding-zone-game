@@ -7,7 +7,7 @@ import '../audio/app_audio.dart';
 import 'boarding_simulation.dart';
 import 'cabin_game.dart';
 import 'aircraft_layout.dart';
-import 'levels/level_one.dart';
+import 'levels/level_4abreast.dart';
 import 'tutorial_overlay.dart';
 
 class BoardingGamePage extends StatefulWidget {
@@ -15,7 +15,7 @@ class BoardingGamePage extends StatefulWidget {
     super.key,
     required this.aircraftName,
     this.aircraftImageAsset,
-    this.layout = LevelOne.aircraft,
+    this.layout = Level4Abreast.aircraft,
     this.initialZones,
     this.onZonesChanged,
     this.onCompleted,
