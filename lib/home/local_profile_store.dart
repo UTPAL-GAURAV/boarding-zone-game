@@ -143,6 +143,12 @@ class LocalProfileStore {
     await (await _preferences).setString(_displayNameKey, name.trim());
   }
 
+  /// Replaces the local player UUID. Called when a returning Google-linked
+  /// player is detected so all future submissions use their canonical cloud ID.
+  Future<void> overridePlayerId(String newId) async {
+    await (await _preferences).setString(_playerIdKey, newId);
+  }
+
   Future<bool> loadSoundEnabled() async {
     return (await _preferences).getBool(_soundEnabledKey) ?? true;
   }

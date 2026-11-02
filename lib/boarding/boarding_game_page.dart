@@ -24,6 +24,7 @@ class BoardingGamePage extends StatefulWidget {
     this.onUnlockTap,
     this.previousBestMilliseconds,
     this.tutorialMode = false,
+    this.targetSeconds,
   });
 
   final String aircraftName;
@@ -41,6 +42,8 @@ class BoardingGamePage extends StatefulWidget {
   final int? previousBestMilliseconds;
   /// When true, coach-bubble tutorial overlays are shown step by step.
   final bool tutorialMode;
+  /// Target time in seconds; when set, overtime completions show a different dialog.
+  final int? targetSeconds;
 
   @override
   State<BoardingGamePage> createState() => _BoardingGamePageState();
@@ -211,6 +214,12 @@ class _BoardingGamePageState extends State<BoardingGamePage> {
     final s = (totalSeconds % 60).toString().padLeft(2, '0');
     final ms = (milliseconds % 1000).toString().padLeft(3, '0');
     return '$m:$s.$ms';
+  }
+
+  bool get _isOverTarget {
+    final target = widget.targetSeconds;
+    if (target == null) return false;
+    return (_simulation.elapsedSeconds * 1000).floor() > target * 1000;
   }
 
   String _formatMs(int milliseconds) {
@@ -582,77 +591,102 @@ class _BoardingGamePageState extends State<BoardingGamePage> {
               width: 62,
               height: 62,
               decoration: BoxDecoration(
-                color: _isNewRecord
-                    ? _accent.withValues(alpha: 0.15)
-                    : Colors.green.withValues(alpha: 0.15),
+                color: _isOverTarget
+                    ? Colors.red.withValues(alpha: 0.15)
+                    : _isNewRecord
+                        ? _accent.withValues(alpha: 0.15)
+                        : Colors.green.withValues(alpha: 0.15),
                 shape: BoxShape.circle,
               ),
               child: Icon(
-                _isNewRecord ? Icons.emoji_events_rounded : Icons.check_rounded,
-                color: _isNewRecord ? _accent : const Color(0xFF4ADE80),
+                _isOverTarget
+                    ? Icons.sentiment_very_dissatisfied_rounded
+                    : _isNewRecord
+                        ? Icons.emoji_events_rounded
+                        : Icons.check_rounded,
+                color: _isOverTarget
+                    ? const Color(0xFFFF6B6B)
+                    : _isNewRecord
+                        ? _accent
+                        : const Color(0xFF4ADE80),
                 size: 36,
               ),
             ),
             const SizedBox(height: 16),
-            const Text(
-              'All aboard!',
-              style: TextStyle(
+            Text(
+              _isOverTarget ? 'Over time!' : 'All aboard!',
+              style: const TextStyle(
                 color: Colors.white,
                 fontWeight: FontWeight.w900,
                 fontSize: 25,
                 letterSpacing: -0.5,
               ),
             ),
-            if (_isNewRecord) ...[
-              const SizedBox(height: 8),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
-                decoration: BoxDecoration(
-                  color: _accent.withValues(alpha: 0.15),
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: _accent.withValues(alpha: 0.5)),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(Icons.star_rounded, color: _accent, size: 14),
-                    const SizedBox(width: 4),
-                    Text(
-                      widget.previousBestMilliseconds == null
-                          ? 'FIRST RUN!'
-                          : 'NEW RECORD!',
-                      style: TextStyle(
-                        color: _accent,
-                        fontWeight: FontWeight.w800,
-                        fontSize: 11,
-                        letterSpacing: 0.5,
+            if (_isOverTarget) ...[
+              const SizedBox(height: 7),
+              const Text(
+                'Everyone got seated, but the\ncaptain is NOT impressed.',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: _muted, fontSize: 14, height: 1.4),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                'You took $_timer — try reorganising your zones.',
+                textAlign: TextAlign.center,
+                style: const TextStyle(color: _muted, fontSize: 12),
+              ),
+            ] else ...[
+              if (_isNewRecord) ...[
+                const SizedBox(height: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+                  decoration: BoxDecoration(
+                    color: _accent.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: _accent.withValues(alpha: 0.5)),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.star_rounded, color: _accent, size: 14),
+                      const SizedBox(width: 4),
+                      Text(
+                        widget.previousBestMilliseconds == null
+                            ? 'FIRST RUN!'
+                            : 'NEW RECORD!',
+                        style: TextStyle(
+                          color: _accent,
+                          fontWeight: FontWeight.w800,
+                          fontSize: 11,
+                          letterSpacing: 0.5,
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-              ),
-            ],
-            const SizedBox(height: 7),
-            Text(
-              'Every passenger is seated in $_timer.',
-              textAlign: TextAlign.center,
-              style: const TextStyle(color: _muted, fontSize: 14, height: 1.4),
-            ),
-            if (!_isNewRecord && _currentBestMilliseconds != null) ...[
-              const SizedBox(height: 4),
+              ],
+              const SizedBox(height: 7),
               Text(
-                'Your best: ${_formatMs(_currentBestMilliseconds!)}',
+                'Every passenger is seated in $_timer.',
                 textAlign: TextAlign.center,
-                style: const TextStyle(color: _muted, fontSize: 12),
+                style: const TextStyle(color: _muted, fontSize: 14, height: 1.4),
               ),
-            ],
-            if (_isNewRecord && widget.previousBestMilliseconds != null) ...[
-              const SizedBox(height: 4),
-              Text(
-                'Previous best: ${_formatMs(widget.previousBestMilliseconds!)}',
-                textAlign: TextAlign.center,
-                style: const TextStyle(color: _muted, fontSize: 12),
-              ),
+              if (!_isNewRecord && _currentBestMilliseconds != null) ...[
+                const SizedBox(height: 4),
+                Text(
+                  'Your best: ${_formatMs(_currentBestMilliseconds!)}',
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(color: _muted, fontSize: 12),
+                ),
+              ],
+              if (_isNewRecord && widget.previousBestMilliseconds != null) ...[
+                const SizedBox(height: 4),
+                Text(
+                  'Previous best: ${_formatMs(widget.previousBestMilliseconds!)}',
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(color: _muted, fontSize: 12),
+                ),
+              ],
             ],
             const SizedBox(height: 18),
             Text(
@@ -664,50 +698,70 @@ class _BoardingGamePageState extends State<BoardingGamePage> {
               ),
             ),
             const SizedBox(height: 4),
-            const Text(
-              'Ready for your next flight?',
-              style: TextStyle(color: _muted, fontSize: 12),
+            Text(
+              _isOverTarget
+                  ? 'Rezone and beat the target!'
+                  : 'Ready for your next flight?',
+              style: const TextStyle(color: _muted, fontSize: 12),
             ),
             const SizedBox(height: 18),
-            Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton.icon(
-                    onPressed: _replay,
-                    icon: const Icon(Icons.replay_rounded, size: 18),
-                    label: const Text('REPLAY'),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: Colors.white,
-                      side: BorderSide(color: Colors.white.withValues(alpha: 0.25)),
-                      padding: const EdgeInsets.symmetric(vertical: 13),
-                      textStyle: const TextStyle(
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: 0.5,
-                        fontSize: 11,
+            if (_isOverTarget)
+              OutlinedButton.icon(
+                onPressed: _replay,
+                icon: const Icon(Icons.replay_rounded, size: 18),
+                label: const Text('TRY AGAIN'),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: Colors.white,
+                  side: BorderSide(color: Colors.white.withValues(alpha: 0.25)),
+                  padding: const EdgeInsets.symmetric(vertical: 13),
+                  minimumSize: const Size(double.infinity, 0),
+                  textStyle: const TextStyle(
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 0.5,
+                    fontSize: 11,
+                  ),
+                ),
+              )
+            else
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: _replay,
+                      icon: const Icon(Icons.replay_rounded, size: 18),
+                      label: const Text('REPLAY'),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: Colors.white,
+                        side: BorderSide(color: Colors.white.withValues(alpha: 0.25)),
+                        padding: const EdgeInsets.symmetric(vertical: 13),
+                        textStyle: const TextStyle(
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: 0.5,
+                          fontSize: 11,
+                        ),
                       ),
                     ),
                   ),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  flex: 2,
-                  child: FilledButton.icon(
-                    onPressed: () => unawaited(_nextFlight()),
-                    icon: const Icon(Icons.arrow_forward_rounded),
-                    label: const Text('NEXT FLIGHT'),
-                    style: FilledButton.styleFrom(
-                      backgroundColor: _accent,
-                      foregroundColor: Color(0xFF0A0E1A),
-                      padding: const EdgeInsets.symmetric(vertical: 13),
-                      textStyle: const TextStyle(
-                        fontWeight: FontWeight.w900,
-                        letterSpacing: 0.5,
+                  const SizedBox(width: 10),
+                  Expanded(
+                    flex: 2,
+                    child: FilledButton.icon(
+                      onPressed: () => unawaited(_nextFlight()),
+                      icon: const Icon(Icons.arrow_forward_rounded),
+                      label: const Text('NEXT FLIGHT'),
+                      style: FilledButton.styleFrom(
+                        backgroundColor: _accent,
+                        foregroundColor: Color(0xFF0A0E1A),
+                        padding: const EdgeInsets.symmetric(vertical: 13),
+                        textStyle: const TextStyle(
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 0.5,
+                        ),
                       ),
                     ),
                   ),
-                ),
-              ],
-            ),
+                ],
+              ),
           ],
         ),
       ),

@@ -1,39 +1,6 @@
-import 'dart:convert';
-
-import 'package:flutter/services.dart';
+import '../boarding/aircraft_layout.dart';
 
 enum AircraftUnlockType { free, progression, premium }
-
-class CabinLayoutData {
-  const CabinLayoutData({
-    required this.rows,
-    required this.seatLayout,
-    required this.aisleCount,
-    required this.aisleCapacity,
-  });
-
-  final int rows;
-
-  /// Seat columns and walking aisles from left to right.
-  /// Seat labels are letter strings (e.g. "A", "B"); walking aisles are "W".
-  /// Example 2-4-2: ["A","B","W","C","D","E","F","W","G","H"]
-  final List<String> seatLayout;
-  final int aisleCount;
-
-  /// Maximum passengers occupying the walking aisle, for level tuning.
-  final int aisleCapacity;
-
-  /// Just the seat labels, no "W" entries.
-  List<String> get seatLabels => seatLayout.where((s) => s != 'W').toList();
-
-  factory CabinLayoutData.fromJson(Map<String, dynamic> json) =>
-      CabinLayoutData(
-        rows: json['rows'] as int,
-        seatLayout: (json['seatLayout'] as List).cast<String>(),
-        aisleCount: json['aisleCount'] as int,
-        aisleCapacity: json['aisleCapacity'] as int,
-      );
-}
 
 class Aircraft {
   const Aircraft({
@@ -46,10 +13,9 @@ class Aircraft {
     required this.typicalSeats,
     required this.unlockType,
     required this.targetSeconds,
-    required this.cabin,
+    this.layout,
     this.unlockRequirement,
     this.priceLabel,
-    this.gameLayoutId,
   });
 
   final String id;
@@ -61,55 +27,27 @@ class Aircraft {
   final int typicalSeats;
   final AircraftUnlockType unlockType;
   final int targetSeconds;
-  final CabinLayoutData cabin;
+
+  /// The game layout for this aircraft. Null for coming-soon aircraft.
+  final AircraftLayout? layout;
+
   final String? unlockRequirement;
   final String? priceLabel;
-
-  /// Stable key resolved by the boarding-level registry.
-  final String? gameLayoutId;
 
   String get displayName => '$manufacturer $model';
   String get subtitle => description;
 
-  factory Aircraft.fromJson(Map<String, dynamic> json) {
-    final unlock = AircraftUnlockType.values.firstWhere(
-      (value) => value.name == json['unlockType'],
-      orElse: () => throw FormatException(
-        'Unknown unlockType for aircraft ${json['id']}',
-      ),
-    );
-    return Aircraft(
-      id: json['id'] as String,
-      level: json['level'] as int,
-      manufacturer: json['manufacturer'] as String,
-      model: json['model'] as String,
-      description: json['description'] as String,
-      imageAsset: json['imageAsset'] as String,
-      typicalSeats: json['typicalSeats'] as int,
-      unlockType: unlock,
-      targetSeconds: json['targetSeconds'] as int,
-      cabin: CabinLayoutData.fromJson(json['cabin'] as Map<String, dynamic>),
-      unlockRequirement: json['unlockRequirement'] as String?,
-      priceLabel: json['priceLabel'] as String?,
-      gameLayoutId: json['gameLayoutId'] as String?,
-    );
-  }
+  /// Passenger count from the layout if available, otherwise typicalSeats.
+  int get passengerCount => layout?.passengerCount ?? typicalSeats;
 }
 
-/// Reads the bundled, source-authored aircraft catalog once at app startup.
+/// Source-authored aircraft catalog. Call [register] once at app startup.
 abstract final class AircraftCatalog {
-  static List<Aircraft> all = const [];
+  static List<Aircraft> all = [];
 
-  static Future<void> load() async {
-    if (all.isNotEmpty) return;
-    final decoded = jsonDecode(
-      await rootBundle.loadString('assets/data/aircraft_fleet.json'),
-    ) as List<dynamic>;
-    final aircraft = decoded
-        .map((entry) => Aircraft.fromJson(entry as Map<String, dynamic>))
-        .toList(growable: false);
-    _validate(aircraft);
-    all = aircraft;
+  static void register(List<Aircraft> fleet) {
+    _validate(fleet);
+    all = fleet;
   }
 
   static Aircraft byId(String id) =>
@@ -129,11 +67,13 @@ abstract final class AircraftCatalog {
       if (index > 0 && aircraft[index - 1].typicalSeats > item.typicalSeats) {
         throw FormatException('Fleet is not ordered by typical seat count');
       }
-      if (item.cabin.rows < 1 ||
-          item.cabin.seatLabels.isEmpty ||
-          item.cabin.aisleCount < 1 ||
-          item.cabin.aisleCapacity < 1) {
-        throw FormatException('Invalid cabin data for ${item.displayName}');
+      final layout = item.layout;
+      if (layout != null) {
+        if (layout.rowCount < 1 ||
+            layout.seatColumns.isEmpty ||
+            layout.aisles.isEmpty) {
+          throw FormatException('Invalid layout data for ${item.displayName}');
+        }
       }
     }
   }

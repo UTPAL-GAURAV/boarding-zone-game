@@ -15,6 +15,9 @@ class ShopService {
   static const _premiumKey = 'shop.premium_unlocked';
   static const _googleIdKey = 'shop.google_id';
   static const _emailKey = 'shop.email';
+  // Player ID from Supabase profiles that was linked to this Google account.
+  // Set when an existing account is found on sign-in so scores can be restored.
+  static const _linkedPlayerIdKey = 'shop.linked_player_id';
 
   // ── Local cache ────────────────────────────────────────────────────────────
 
@@ -32,6 +35,19 @@ class ShopService {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getString(_emailKey);
   }
+
+  Future<String?> cachedLinkedPlayerId() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString(_linkedPlayerIdKey);
+  }
+
+  Future<void> _cacheLinkedPlayerId(String playerId) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_linkedPlayerIdKey, playerId);
+  }
+
+  Future<void> saveLinkedPlayerId(String playerId) =>
+      _cacheLinkedPlayerId(playerId);
 
   Future<void> _cacheGoogleId(String googleId, String email) async {
     final prefs = await SharedPreferences.getInstance();

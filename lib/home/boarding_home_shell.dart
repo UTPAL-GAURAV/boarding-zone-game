@@ -11,7 +11,7 @@ import '../audio/app_audio.dart';
 import '../boarding/boarding_game_page.dart';
 import '../boarding/levels/level_tutorial.dart';
 import 'aircraft.dart';
-import 'aircraft_level_registry.dart';
+import 'aircraft_catalog.dart';
 import 'local_profile_store.dart';
 import 'manufacturer_brand_assets.dart';
 import 'rankings_service.dart';
@@ -68,7 +68,7 @@ class _BoardingHomeShellState extends State<BoardingHomeShell> {
   }
 
   Future<PlayerProfile> _loadProfile() async {
-    await AircraftCatalog.load();
+    registerAircraftCatalog();
     final profile = await _store.loadProfile();
     final progress = await _store.loadFleetProgress(AircraftCatalog.all);
     final soundEnabled = await _store.loadSoundEnabled();
@@ -167,18 +167,103 @@ class _BoardingHomeShellState extends State<BoardingHomeShell> {
 
   Future<GoogleSignInAccount?> _signInForShop() async {
     final account = await _shop.signIn();
-    if (account != null) {
-      final profile = _profile;
-      if (profile != null) {
-        unawaited(_rankings.linkGoogleId(
-          playerId: profile.internalId,
-          displayName: profile.displayName,
-          googleId: account.id,
-          email: account.email,
-        ));
-      }
+    if (account == null) return null;
+
+    final profile = _profile;
+    if (profile == null) return account;
+
+    // Check if this Google account is already linked to a different player in Supabase.
+    final existing = await _rankings.fetchProfileByGoogleId(account.id);
+
+    if (existing != null && existing.playerId != profile.internalId) {
+      // Returning player on a new install — restore their cloud data locally.
+      await _restoreCloudData(
+        tempPlayerId: profile.internalId,
+        cloudPlayerId: existing.playerId,
+        cloudDisplayName: existing.displayName,
+        googleId: account.id,
+      );
+    } else {
+      // New Google sign-in for this device player — link them.
+      unawaited(_rankings.linkGoogleId(
+        playerId: profile.internalId,
+        displayName: profile.displayName,
+        googleId: account.id,
+        email: account.email,
+      ));
     }
+
     return account;
+  }
+
+  /// Pulls purchases and best scores from Supabase for a returning player and
+  /// applies them to local storage so no progress is lost after a reinstall.
+  /// Also merges any scores the temp UUID accumulated into the canonical UUID.
+  Future<void> _restoreCloudData({
+    required String tempPlayerId,
+    required String cloudPlayerId,
+    required String cloudDisplayName,
+    required String googleId,
+  }) async {
+    // Merge any scores the temp UUID played into the canonical cloud player.
+    // Fire-and-forget — UI shouldn't block on this.
+    unawaited(_rankings.mergeScoresIntoPlayer(
+      fromPlayerId: tempPlayerId,
+      intoPlayerId: cloudPlayerId,
+    ));
+
+    // Switch local UUID to the canonical cloud player ID.
+    await _store.overridePlayerId(cloudPlayerId);
+    await _shop.saveLinkedPlayerId(cloudPlayerId);
+
+    // Restore cloud best scores locally (take best of cloud vs local).
+    final cloudScores = await _rankings.fetchBestScoresByPlayerId(cloudPlayerId);
+    for (final entry in cloudScores.entries) {
+      await _store.saveBestTime(entry.key, entry.value);
+    }
+
+    // Restore premium purchase if present.
+    final hasPremium = await _shop.restorePurchase(googleId);
+
+    // Reload fleet progress so UI reflects the restored data.
+    final progress = await _store.loadFleetProgress(AircraftCatalog.all);
+    final bestTimes = {
+      for (final e in progress.entries) e.key: e.value.bestTimeMilliseconds,
+    };
+
+    if (mounted) {
+      setState(() {
+        // Update the in-memory profile to use the canonical player ID.
+        final current = _profile;
+        if (current != null) {
+          _profile = PlayerProfile(
+            internalId: cloudPlayerId,
+            displayName: current.displayName,
+          );
+        }
+        if (hasPremium) _premiumUnlocked = true;
+        _bestTimes = bestTimes;
+        _unlockedAircraftIds = {
+          for (final e in progress.entries)
+            if (e.value.unlocked) e.key,
+        };
+        _premiumOwnedAircraftIds = {
+          for (final e in progress.entries)
+            if (e.value.premiumOwned) e.key,
+        };
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Welcome back, $cloudDisplayName! '
+            'Your progress from your previous install has been restored.',
+          ),
+          behavior: SnackBarBehavior.floating,
+          backgroundColor: const Color(0xFF2E7D32),
+          duration: const Duration(seconds: 5),
+        ),
+      );
+    }
   }
 
   void _openRazorpay(GoogleSignInAccount account) {
@@ -289,7 +374,7 @@ class _BoardingHomeShellState extends State<BoardingHomeShell> {
 
 
   Future<void> _launchAircraft(Aircraft aircraft) async {
-    final layout = AircraftLevelRegistry.resolve(aircraft);
+    final layout = aircraft.layout;
     if (!_isUnlocked(aircraft)) {
       if (aircraft.unlockType == AircraftUnlockType.premium) {
         if (layout == null) {
@@ -370,6 +455,7 @@ class _BoardingHomeShellState extends State<BoardingHomeShell> {
               layout: layout,
               initialZones: initialZones,
               previousBestMilliseconds: _bestTimes[aircraft.id],
+              targetSeconds: aircraft.targetSeconds,
               onZonesChanged: (zones) =>
                   _store.saveSeatZones(aircraft.id, zones),
               onCompleted: (milliseconds) =>
@@ -1201,7 +1287,7 @@ class _AircraftTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final premium = aircraft.unlockType == AircraftUnlockType.premium;
-    final hasLevel = AircraftLevelRegistry.resolve(aircraft) != null;
+    final hasLevel = aircraft.layout != null;
     final status = premium
         ? unlocked
               ? 'OWNED'
@@ -2176,12 +2262,14 @@ class _Perk extends StatelessWidget {
     children: [
       Icon(icon, color: _accent, size: 16),
       const SizedBox(width: 10),
-      Text(
-        label,
-        style: TextStyle(
-          color: Colors.white.withValues(alpha: 0.8),
-          fontSize: 12,
-          fontWeight: FontWeight.w500,
+      Flexible(
+        child: Text(
+          label,
+          style: TextStyle(
+            color: Colors.white.withValues(alpha: 0.8),
+            fontSize: 12,
+            fontWeight: FontWeight.w500,
+          ),
         ),
       ),
     ],

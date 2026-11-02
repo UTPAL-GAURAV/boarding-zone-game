@@ -70,7 +70,6 @@ flutter:
     - assets/aircraft/
     - assets/manufacturers/
     - assets/audio/
-    - assets/data/aircraft_fleet.json
     - assets/boarding_bluster_logo.png
     - assets/passenger_avatar.png
 

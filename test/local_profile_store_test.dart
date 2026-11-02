@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:boarding_bluster/home/aircraft.dart';
+import 'package:boarding_bluster/home/aircraft_catalog.dart';
 import 'package:boarding_bluster/home/local_profile_store.dart';
 
 void main() {
@@ -12,7 +13,7 @@ void main() {
     final store = LocalProfileStore();
     final first = await store.loadProfile();
     expect(first.internalId, matches(RegExp(r'^[0-9a-f-]{36}$')));
-    expect(first.displayName, startsWith('Crew '));
+    expect(first.displayName, matches(RegExp(r'^[A-Z][a-z]+\d{3}$')));
 
     await store.saveDisplayName('Captain Nova');
     await store.saveBestTime('airbus-a320', 487000);
@@ -27,19 +28,20 @@ void main() {
   test(
     'migrates legacy second scores into millisecond personal bests',
     () async {
+      // Store a qualifying time (15s < targetSeconds:22) for the first aircraft.
       SharedPreferences.setMockInitialValues({
-        'aircraft.best_seconds.cessna-grand-caravan-ex': 299,
+        'aircraft.best_seconds.cessna-grand-caravan-ex': 15,
       });
       final store = LocalProfileStore();
-      await AircraftCatalog.load();
+      registerAircraftCatalog();
       final progress = await store.loadFleetProgress(AircraftCatalog.all);
       expect(
         await store.bestTimeMilliseconds(AircraftCatalog.all.first.id),
-        299000,
+        15000,
       );
       expect(
         progress[AircraftCatalog.all.first.id]!.bestTimeMilliseconds,
-        299000,
+        15000,
       );
       expect(progress[AircraftCatalog.all[1].id]!.unlocked, isTrue);
     },
@@ -70,16 +72,16 @@ void main() {
   });
 
   test(
-    'migrates Pilot defaults without changing the internal player ID',
+    'loads stored display name without modification',
     () async {
       SharedPreferences.setMockInitialValues({
         'player.internal_id': 'stable-player-uuid',
-        'player.display_name': 'Pilot Bluebird4322',
+        'player.display_name': 'Falcon847',
       });
 
       final profile = await LocalProfileStore().loadProfile();
       expect(profile.internalId, 'stable-player-uuid');
-      expect(profile.displayName, 'Crew Bluebird4322');
+      expect(profile.displayName, 'Falcon847');
     },
   );
 
@@ -87,7 +89,7 @@ void main() {
     'persists best times, permanent unlocks, and premium ownership',
     () async {
       SharedPreferences.setMockInitialValues({});
-      await AircraftCatalog.load();
+      registerAircraftCatalog();
       final fleet = AircraftCatalog.all;
       final store = LocalProfileStore();
       final first = fleet.first;

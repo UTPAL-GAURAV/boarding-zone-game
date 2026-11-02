@@ -6,8 +6,8 @@ void main() {
   group('BoardingSimulation', () {
     test('builds seats from the hard-coded aircraft level', () {
       final simulation = BoardingSimulation();
-      expect(simulation.layout.rowCount, 12);
-      expect(simulation.seats, hasLength(48));
+      expect(simulation.layout.rowCount, 13);
+      expect(simulation.seats, hasLength(52));
       expect(simulation.seats.every((seat) => seat.zone == 5), isTrue);
 
       final seat = simulation.seats.first;

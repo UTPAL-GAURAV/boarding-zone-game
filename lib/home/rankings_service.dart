@@ -188,6 +188,130 @@ class RankingsService {
     return const [];
   }
 
+  /// Looks up a profile by Google ID. Returns (playerId, displayName) or null.
+  Future<({String playerId, String displayName})?> fetchProfileByGoogleId(
+    String googleId,
+  ) async {
+    Sentry.addBreadcrumb(Breadcrumb(
+      message: 'fetchProfileByGoogleId: $googleId',
+      category: 'rankings',
+      level: SentryLevel.info,
+    ));
+    for (var attempt = 0; attempt < 3; attempt++) {
+      try {
+        final rows = await _db
+            .from('profiles')
+            .select('id, display_name')
+            .eq('google_id', googleId)
+            .limit(1);
+        if (rows.isEmpty) return null;
+        final row = rows.first;
+        return (
+          playerId: row['id'] as String,
+          displayName: row['display_name'] as String,
+        );
+      } catch (e, st) {
+        if (attempt == 2) {
+          await Sentry.captureException(
+            e,
+            stackTrace: st,
+            hint: Hint.withMap(
+                {'place': 'fetchProfileByGoogleId', 'attempt': attempt}),
+          );
+          return null;
+        }
+        await Future<void>.delayed(const Duration(milliseconds: 800));
+      }
+    }
+    return null;
+  }
+
+  /// Returns the best time per aircraft for a player (from the leaderboard view).
+  Future<Map<String, int>> fetchBestScoresByPlayerId(String playerId) async {
+    Sentry.addBreadcrumb(Breadcrumb(
+      message: 'fetchBestScoresByPlayerId: $playerId',
+      category: 'rankings',
+      level: SentryLevel.info,
+    ));
+    for (var attempt = 0; attempt < 3; attempt++) {
+      try {
+        final rows = await _db
+            .from('leaderboard')
+            .select('aircraft_id, best_milliseconds')
+            .eq('player_id', playerId);
+        return {
+          for (final row in rows)
+            row['aircraft_id'] as String: row['best_milliseconds'] as int,
+        };
+      } catch (e, st) {
+        if (attempt == 2) {
+          await Sentry.captureException(
+            e,
+            stackTrace: st,
+            hint: Hint.withMap({
+              'place': 'fetchBestScoresByPlayerId',
+              'player_id': playerId,
+              'attempt': attempt,
+            }),
+          );
+          return const {};
+        }
+        await Future<void>.delayed(const Duration(milliseconds: 800));
+      }
+    }
+    return const {};
+  }
+
+  /// Merges scores from [fromPlayerId] into [intoPlayerId] in Supabase.
+  /// For each aircraft where fromPlayerId has a better best time (or intoPlayerId
+  /// has no score), inserts that score under intoPlayerId.
+  /// Called on account consolidation (Option A: cloud UUID wins).
+  Future<void> mergeScoresIntoPlayer({
+    required String fromPlayerId,
+    required String intoPlayerId,
+  }) async {
+    Sentry.addBreadcrumb(Breadcrumb(
+      message: 'mergeScoresIntoPlayer: $fromPlayerId -> $intoPlayerId',
+      category: 'rankings',
+      level: SentryLevel.info,
+    ));
+    try {
+      final fromScores = await fetchBestScoresByPlayerId(fromPlayerId);
+      if (fromScores.isEmpty) return;
+      final intoScores = await fetchBestScoresByPlayerId(intoPlayerId);
+
+      final toInsert = <Map<String, dynamic>>[];
+      for (final entry in fromScores.entries) {
+        final existing = intoScores[entry.key];
+        if (existing == null || entry.value < existing) {
+          toInsert.add({
+            'player_id': intoPlayerId,
+            'aircraft_id': entry.key,
+            'milliseconds': entry.value,
+          });
+        }
+      }
+      if (toInsert.isEmpty) return;
+
+      await _db.from('scores').insert(toInsert);
+      Sentry.addBreadcrumb(Breadcrumb(
+        message: 'mergeScoresIntoPlayer ok: ${toInsert.length} scores merged',
+        category: 'rankings',
+        level: SentryLevel.info,
+      ));
+    } catch (e, st) {
+      await Sentry.captureException(
+        e,
+        stackTrace: st,
+        hint: Hint.withMap({
+          'place': 'mergeScoresIntoPlayer',
+          'from': fromPlayerId,
+          'into': intoPlayerId,
+        }),
+      );
+    }
+  }
+
   Future<LeaderboardEntry?> fetchPlayerBest(
     String aircraftId,
     String playerId,
