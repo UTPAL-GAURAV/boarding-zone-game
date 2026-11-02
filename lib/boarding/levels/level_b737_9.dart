@@ -1,6 +1,6 @@
 import '../aircraft_layout.dart';
 
-/// 6-abreast narrow-body: 32 rows, 192 seats. Used by Boeing 737-9 MAX.
+/// 6-abreast narrow-body (A-B-C-W-D-E-F): 32 rows, 192 seats. Used by Boeing 737-9 MAX.
 abstract final class LevelB737_9 {
   static const AircraftLayout aircraft = AircraftLayout(
     id: 'level_6abreast_32row',

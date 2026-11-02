@@ -1,6 +1,6 @@
 import '../aircraft_layout.dart';
 
-/// 6-abreast narrow-body: 34 rows, 204 seats. Used by Airbus A321XLR.
+/// 6-abreast narrow-body (A-B-C-W-D-E-F): 34 rows, 204 seats. Used by Airbus A321XLR.
 abstract final class LevelA321xlr {
   static const AircraftLayout aircraft = AircraftLayout(
     id: 'level_6abreast_34row',

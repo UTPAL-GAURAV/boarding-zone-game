@@ -1,6 +1,6 @@
 import '../aircraft_layout.dart';
 
-/// 4-abreast (A-B-W-C-D): 20 rows, 80 seats. Embraer E175.
+/// 4-abreast (A-B-C-W-D): 20 rows, 80 seats. Embraer E175.
 abstract final class LevelE175 {
   static const AircraftLayout aircraft = AircraftLayout(
     id: 'level_4abreast_20row_e175',
@@ -13,16 +13,16 @@ abstract final class LevelE175 {
     seatWidth: 37,
     seatHeight: 28,
     seatColumns: [
-      SeatColumnLayout(label: 'A', centerX: 70,  aisleIndex: 0, seatType: SeatType.window),
-      SeatColumnLayout(label: 'B', centerX: 116, aisleIndex: 0, seatType: SeatType.aisle),
-      SeatColumnLayout(label: 'C', centerX: 244, aisleIndex: 0, seatType: SeatType.aisle),
-      SeatColumnLayout(label: 'D', centerX: 290, aisleIndex: 0, seatType: SeatType.window),
+      SeatColumnLayout(label: 'A', centerX: 55,  aisleIndex: 0, seatType: SeatType.window),
+      SeatColumnLayout(label: 'B', centerX: 97,  aisleIndex: 0, seatType: SeatType.middle),
+      SeatColumnLayout(label: 'C', centerX: 139, aisleIndex: 0, seatType: SeatType.aisle),
+      SeatColumnLayout(label: 'D', centerX: 275, aisleIndex: 0, seatType: SeatType.aisle),
     ],
     rowDefaultZones: [5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5],
     aisles: [
       BoardingAisleLayout(
         id: 'main',
-        centerX: 180,
+        centerX: 207,
         width: 32,
         capacity: 40,
         minimumSpacingRows: 0.4,
@@ -34,10 +34,10 @@ abstract final class LevelE175 {
       ),
     ],
     seatBlocks: [
-      SeatBlockLayout(left: 51, right: 155),
-      SeatBlockLayout(left: 205, right: 309),
+      SeatBlockLayout(left: 36, right: 158),
+      SeatBlockLayout(left: 256, right: 294),
     ],
-    windowCentersX: [31, 319],
+    windowCentersX: [18, 319],
     cabinShell: CabinRegion(
       left: 20,
       top: 28,
@@ -55,7 +55,7 @@ abstract final class LevelE175 {
     gateLabelY: 14,
     entranceDoorY: 67,
     entranceDoorHeight: 13,
-    seatLayout: ['A', 'B', 'W', 'C', 'D'],
-    blockerRules: {'A': ['B'], 'B': [], 'C': [], 'D': ['C']},
+    seatLayout: ['A', 'B', 'C', 'W', 'D'],
+    blockerRules: {'A': ['B', 'C'], 'B': ['C'], 'C': [], 'D': []},
   );
 }

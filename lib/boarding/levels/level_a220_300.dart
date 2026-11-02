@@ -1,6 +1,6 @@
 import '../aircraft_layout.dart';
 
-/// 5-abreast cabin: 29 rows, 145 seats. Used by Airbus A220-300.
+/// 5-abreast cabin (A-B-W-C-D-E): 29 rows, 145 seats. Used by Airbus A220-300.
 abstract final class LevelA220_300 {
   static const AircraftLayout aircraft = AircraftLayout(
     id: 'level_5abreast_29row',

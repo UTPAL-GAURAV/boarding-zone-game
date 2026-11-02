@@ -1,6 +1,6 @@
 import '../aircraft_layout.dart';
 
-/// 5-abreast cabin: 20 rows, 100 seats. Used by Embraer E190.
+/// 5-abreast cabin (A-W-B-C-D-E): 20 rows, 100 seats. Used by Embraer E190.
 abstract final class LevelE190 {
   static const AircraftLayout aircraft = AircraftLayout(
     id: 'level_5abreast_20row_e190',
@@ -13,17 +13,17 @@ abstract final class LevelE190 {
     seatWidth: 37,
     seatHeight: 27,
     seatColumns: [
-      SeatColumnLayout(label: 'A', centerX: 52,  aisleIndex: 0, seatType: SeatType.window),
-      SeatColumnLayout(label: 'B', centerX: 96,  aisleIndex: 0, seatType: SeatType.aisle),
-      SeatColumnLayout(label: 'C', centerX: 214, aisleIndex: 0, seatType: SeatType.aisle),
-      SeatColumnLayout(label: 'D', centerX: 258, aisleIndex: 0, seatType: SeatType.middle),
-      SeatColumnLayout(label: 'E', centerX: 302, aisleIndex: 0, seatType: SeatType.window),
+      SeatColumnLayout(label: 'A', centerX: 68,  aisleIndex: 0, seatType: SeatType.window),
+      SeatColumnLayout(label: 'B', centerX: 162, aisleIndex: 0, seatType: SeatType.aisle),
+      SeatColumnLayout(label: 'C', centerX: 204, aisleIndex: 0, seatType: SeatType.middle),
+      SeatColumnLayout(label: 'D', centerX: 246, aisleIndex: 0, seatType: SeatType.middle),
+      SeatColumnLayout(label: 'E', centerX: 288, aisleIndex: 0, seatType: SeatType.window),
     ],
     rowDefaultZones: [5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5],
     aisles: [
       BoardingAisleLayout(
         id: 'main',
-        centerX: 155,
+        centerX: 115,
         width: 36,
         capacity: 40,
         minimumSpacingRows: 0.4,
@@ -35,10 +35,10 @@ abstract final class LevelE190 {
       ),
     ],
     seatBlocks: [
-      SeatBlockLayout(left: 33, right: 115),
-      SeatBlockLayout(left: 195, right: 321),
+      SeatBlockLayout(left: 49, right: 87),
+      SeatBlockLayout(left: 143, right: 307),
     ],
-    windowCentersX: [18, 335],
+    windowCentersX: [30, 319],
     cabinShell: CabinRegion(
       left: 20,
       top: 28,
@@ -56,7 +56,7 @@ abstract final class LevelE190 {
     gateLabelY: 14,
     entranceDoorY: 67,
     entranceDoorHeight: 13,
-    seatLayout: ['A', 'B', 'W', 'C', 'D', 'E'],
-    blockerRules: {'A': ['B'], 'B': [], 'C': [], 'D': ['C'], 'E': ['C', 'D']},
+    seatLayout: ['A', 'W', 'B', 'C', 'D', 'E'],
+    blockerRules: {'A': [], 'B': [], 'C': ['B'], 'D': ['B', 'C'], 'E': ['B', 'C', 'D']},
   );
 }

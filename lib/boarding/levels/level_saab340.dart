@@ -1,6 +1,6 @@
 import '../aircraft_layout.dart';
 
-/// Seventeen-row regional cabin for the 34-seat Saab 340 mission.
+/// Single-file cabin (A-W-B): 17 rows, 34 seats. Used by Saab 340B.
 abstract final class LevelSaab340 {
   static const AircraftLayout aircraft = AircraftLayout(
     id: 'level_saab_340b_34_seat',

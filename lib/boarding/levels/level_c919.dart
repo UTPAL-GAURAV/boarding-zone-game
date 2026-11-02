@@ -1,6 +1,6 @@
 import '../aircraft_layout.dart';
 
-/// 6-abreast narrow-body: 26 rows, 156 seats. Used by COMAC C919.
+/// 6-abreast narrow-body (A-B-C-W-D-E-F): 26 rows, 156 seats. Used by COMAC C919.
 abstract final class LevelC919 {
   static const AircraftLayout aircraft = AircraftLayout(
     id: 'level_6abreast_26row',

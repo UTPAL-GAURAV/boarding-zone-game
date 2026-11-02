@@ -1,6 +1,6 @@
 import '../aircraft_layout.dart';
 
-/// Ten-row single-aisle cabin for the 19-seat Cessna SkyCourier mission.
+/// Single-file cabin (A-W-B): 10 rows, 20 seats. Used by Cessna SkyCourier.
 abstract final class LevelSkyCourier {
   static const AircraftLayout aircraft = AircraftLayout(
     id: 'level_skycourier_19_seat',

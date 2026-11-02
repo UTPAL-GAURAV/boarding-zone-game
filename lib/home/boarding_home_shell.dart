@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:razorpay_flutter/razorpay_flutter.dart';
@@ -664,6 +665,7 @@ class _BoardingHomeShellState extends State<BoardingHomeShell> {
                 signIn: _signInForShop,
                 onPurchase: _openRazorpay,
                 onRestore: _restorePurchase,
+                playerId: crewMember.internalId,
               ),
             ],
           ),
@@ -1847,11 +1849,13 @@ class _ShopTab extends StatefulWidget {
     required this.signIn,
     required this.onPurchase,
     required this.onRestore,
+    required this.playerId,
   });
   final bool premiumUnlocked;
   final Future<GoogleSignInAccount?> Function() signIn;
   final void Function(GoogleSignInAccount) onPurchase;
   final VoidCallback onRestore;
+  final String playerId;
 
   @override
   State<_ShopTab> createState() => _ShopTabState();
@@ -1914,6 +1918,8 @@ class _ShopTabState extends State<_ShopTab> {
               ),
 
               const SizedBox(height: 20),
+              _ShopFooter(playerId: widget.playerId),
+              const SizedBox(height: 8),
             ],
           ),
         ),
@@ -2345,6 +2351,622 @@ String _formatTarget(int seconds) {
   final m = seconds ~/ 60;
   final s = (seconds % 60).toString().padLeft(2, '0');
   return '$m:$s';
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Shop footer — Privacy Policy + Contact Us
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _ShopFooter extends StatelessWidget {
+  const _ShopFooter({required this.playerId});
+  final String playerId;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+      decoration: BoxDecoration(
+        color: _panel,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
+      ),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.shield_outlined, color: _muted, size: 14),
+              const SizedBox(width: 6),
+              const Text(
+                'NordicLabs · Boarding Bluster',
+                style: TextStyle(
+                  color: _muted,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          Row(
+            children: [
+              Expanded(
+                child: _FooterLinkButton(
+                  icon: Icons.lock_outline_rounded,
+                  label: 'Privacy Policy',
+                  onTap: () => _showPrivacyPolicy(context),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: _FooterLinkButton(
+                  icon: Icons.mail_outline_rounded,
+                  label: 'Contact Us',
+                  onTap: () => _showContactSheet(context, playerId),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _FooterLinkButton extends StatelessWidget {
+  const _FooterLinkButton({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: _panelLight,
+      borderRadius: BorderRadius.circular(14),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(14),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(icon, color: _accent, size: 15),
+              const SizedBox(width: 7),
+              Text(
+                label,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+void _showPrivacyPolicy(BuildContext context) {
+  showModalBottomSheet<void>(
+    context: context,
+    isScrollControlled: true,
+    backgroundColor: Colors.transparent,
+    builder: (_) => const _PrivacyPolicySheet(),
+  );
+}
+
+void _showContactSheet(BuildContext context, String playerId) {
+  showModalBottomSheet<void>(
+    context: context,
+    isScrollControlled: true,
+    backgroundColor: Colors.transparent,
+    builder: (_) => _ContactSheet(playerId: playerId),
+  );
+}
+
+// ─── Privacy Policy Sheet ───────────────────────────────────────────────────
+
+class _PrivacyPolicySheet extends StatelessWidget {
+  const _PrivacyPolicySheet();
+
+  @override
+  Widget build(BuildContext context) {
+    return DraggableScrollableSheet(
+      initialChildSize: 0.94,
+      minChildSize: 0.5,
+      maxChildSize: 0.96,
+      builder: (context, scrollController) {
+        return Container(
+          decoration: const BoxDecoration(
+            color: _panel,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+          ),
+          child: Column(
+            children: [
+              _SheetHandle(),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(24, 4, 24, 12),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 38,
+                      height: 38,
+                      decoration: BoxDecoration(
+                        color: _accent.withValues(alpha: 0.12),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(Icons.lock_outline_rounded, color: _accent, size: 18),
+                    ),
+                    const SizedBox(width: 12),
+                    const Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Privacy Policy',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 18,
+                            fontWeight: FontWeight.w900,
+                          ),
+                        ),
+                        Text(
+                          'Effective 1 November 2026',
+                          style: TextStyle(color: _muted, fontSize: 11),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              const Divider(color: Color(0xFF1E2840), height: 1),
+              Expanded(
+                child: ListView(
+                  controller: scrollController,
+                  padding: const EdgeInsets.fromLTRB(24, 20, 24, 40),
+                  children: const [
+                    _PpSummaryCard(),
+                    SizedBox(height: 24),
+                    _PpSection(
+                      title: 'Information We Collect',
+                      children: [
+                        _PpSubheading('Automatically (all users)'),
+                        _PpBullet('A random anonymous player ID (UUID generated on your device)'),
+                        _PpBullet('An auto-generated display name (e.g. Falcon847) for the leaderboard'),
+                        _PpBullet('Your best boarding times per aircraft'),
+                        SizedBox(height: 10),
+                        _PpSubheading('Only if you use Google Sign-In'),
+                        _PpBullet('Your Google account ID — used solely to record and restore your purchase'),
+                        _PpBullet('Your Google email address — stored to identify your account and support data deletion requests'),
+                        _PpBullet('We do not access your name, profile photo, or any other Google data'),
+                        SizedBox(height: 10),
+                        _PpSubheading('Crash & error data'),
+                        _PpBullet('Device type, OS version, app version, and stack traces sent to Sentry'),
+                        _PpBullet('No personally identifiable information in crash reports'),
+                      ],
+                    ),
+                    SizedBox(height: 24),
+                    _PpSection(
+                      title: 'How We Use Your Information',
+                      children: [
+                        _PpTableRow(key_: 'Anonymous player ID', value: 'Identify your scores on the leaderboard'),
+                        _PpTableRow(key_: 'Display name', value: 'Show your name on global rankings'),
+                        _PpTableRow(key_: 'Best times', value: 'Power the global leaderboard'),
+                        _PpTableRow(key_: 'Google account ID', value: 'Record and restore your Premium Fleet purchase'),
+                        _PpTableRow(key_: 'Google email', value: 'Account identification and data deletion requests'),
+                        _PpTableRow(key_: 'Crash data', value: 'Fix bugs and improve app stability'),
+                      ],
+                    ),
+                    SizedBox(height: 24),
+                    _PpSection(
+                      title: 'Third-Party Services',
+                      children: [
+                        _PpBullet('Supabase — leaderboard and purchase storage (EU: eu-west-1)'),
+                        _PpBullet('Sentry — crash reporting (EU-hosted)'),
+                        _PpBullet('Google Sign-In — optional authentication for purchases'),
+                      ],
+                    ),
+                    SizedBox(height: 24),
+                    _PpSection(
+                      title: 'Data Retention & Deletion',
+                      children: [
+                        _PpBullet('Anonymous scores and display names are retained to maintain leaderboard history'),
+                        _PpBullet('Purchase records are retained to allow you to restore Premium Fleet access after reinstallation'),
+                        _PpBullet('You may request deletion of all your data at any time by emailing us from the Contact Us section — we will process requests within 30 days'),
+                      ],
+                    ),
+                    SizedBox(height: 24),
+                    _PpSection(
+                      title: "Children's Privacy",
+                      children: [
+                        _PpBullet('Boarding Bluster does not knowingly collect personal information from children under 13'),
+                        _PpBullet('If you believe a child has provided personal data, contact us and we will delete it promptly'),
+                      ],
+                    ),
+                    SizedBox(height: 24),
+                    _PpSection(
+                      title: 'Security',
+                      children: [
+                        _PpBullet('We use industry-standard practices to protect your data'),
+                        _PpBullet('No method of internet transmission is 100% secure — we cannot guarantee absolute security'),
+                      ],
+                    ),
+                    SizedBox(height: 24),
+                    _PpSection(
+                      title: 'Changes to This Policy',
+                      children: [
+                        _PpBullet('We may update this policy from time to time'),
+                        _PpBullet('Changes take effect immediately upon posting — review this page periodically'),
+                      ],
+                    ),
+                    SizedBox(height: 8),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _PpSummaryCard extends StatelessWidget {
+  const _PpSummaryCard();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: _accent.withValues(alpha: 0.07),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: _accent.withValues(alpha: 0.2)),
+      ),
+      child: const Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'TL;DR',
+            style: TextStyle(color: _accent, fontSize: 10, fontWeight: FontWeight.w800, letterSpacing: 1),
+          ),
+          SizedBox(height: 8),
+          _PpBullet('Anonymous play — no account required'),
+          _PpBullet('Google Sign-In only if you buy the Premium Fleet'),
+          _PpBullet('Your email is stored when you sign in with Google'),
+          _PpBullet('Your scores & display name go on the leaderboard'),
+          _PpBullet('No ads. No data sold. Ever.'),
+        ],
+      ),
+    );
+  }
+}
+
+class _PpSection extends StatelessWidget {
+  const _PpSection({required this.title, required this.children});
+  final String title;
+  final List<Widget> children;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          title,
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 15,
+            fontWeight: FontWeight.w800,
+          ),
+        ),
+        const SizedBox(height: 10),
+        ...children,
+      ],
+    );
+  }
+}
+
+class _PpSubheading extends StatelessWidget {
+  const _PpSubheading(this.text);
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 6, top: 2),
+      child: Text(
+        text,
+        style: const TextStyle(
+          color: _accent,
+          fontSize: 11,
+          fontWeight: FontWeight.w700,
+          letterSpacing: 0.3,
+        ),
+      ),
+    );
+  }
+}
+
+class _PpBullet extends StatelessWidget {
+  const _PpBullet(this.text);
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 6),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Padding(
+            padding: EdgeInsets.only(top: 5),
+            child: CircleAvatar(radius: 2.5, backgroundColor: _muted),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              text,
+              style: const TextStyle(color: _muted, fontSize: 13, height: 1.45),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _PpTableRow extends StatelessWidget {
+  const _PpTableRow({required this.key_, required this.value});
+  final String key_;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 130,
+            child: Text(
+              key_,
+              style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600),
+            ),
+          ),
+          Expanded(
+            child: Text(
+              value,
+              style: const TextStyle(color: _muted, fontSize: 12, height: 1.4),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ─── Contact Sheet ───────────────────────────────────────────────────────────
+
+class _ContactSheet extends StatelessWidget {
+  const _ContactSheet({required this.playerId});
+  final String playerId;
+
+  static const _email = 'nordiclabsdev@gmail.com';
+
+  Future<void> _launchEmail(BuildContext context) async {
+    final uri = Uri(
+      scheme: 'mailto',
+      path: _email,
+      queryParameters: {
+        'subject': 'Boarding Bluster — Feedback / Support',
+      },
+    );
+    if (!await launchUrl(uri)) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Could not open mail app. Email us at $_email')),
+        );
+      }
+    }
+  }
+
+  Future<void> _launchDeleteEmail(BuildContext context) async {
+    final uri = Uri(
+      scheme: 'mailto',
+      path: _email,
+      queryParameters: {
+        'subject': 'Boarding Bluster — Data Deletion Request',
+        'body': 'Hi NordicLabs,\n\nPlease delete all data associated with my account.\n\nPlayer ID: $playerId\nGoogle email (if signed in): \nPlayer display name: \n',
+      },
+    );
+    if (!await launchUrl(uri)) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Could not open mail app. Email us at $_email')),
+        );
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return DraggableScrollableSheet(
+      initialChildSize: 0.55,
+      minChildSize: 0.4,
+      maxChildSize: 0.75,
+      builder: (context, scrollController) {
+        return Container(
+          decoration: const BoxDecoration(
+            color: _panel,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+          ),
+          child: ListView(
+            controller: scrollController,
+            padding: const EdgeInsets.fromLTRB(24, 0, 24, 40),
+            children: [
+              _SheetHandle(),
+              const SizedBox(height: 4),
+              Row(
+                children: [
+                  Container(
+                    width: 38,
+                    height: 38,
+                    decoration: BoxDecoration(
+                      color: _accent.withValues(alpha: 0.12),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(Icons.mail_outline_rounded, color: _accent, size: 18),
+                  ),
+                  const SizedBox(width: 12),
+                  const Text(
+                    'Contact Us',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 18,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 20),
+              const Text(
+                'Have a question, found a bug, or want to share feedback? We\'d love to hear from you.',
+                style: TextStyle(color: _muted, fontSize: 13, height: 1.5),
+              ),
+              const SizedBox(height: 20),
+              _ContactActionTile(
+                icon: Icons.mail_rounded,
+                iconColor: _accent,
+                title: 'Send us an email',
+                subtitle: _email,
+                onTap: () => unawaited(_launchEmail(context)),
+              ),
+              const SizedBox(height: 12),
+              _ContactActionTile(
+                icon: Icons.delete_outline_rounded,
+                iconColor: const Color(0xFFFF6B6B),
+                title: 'Request data deletion',
+                subtitle: 'We\'ll delete all your data within 30 days',
+                onTap: () => unawaited(_launchDeleteEmail(context)),
+              ),
+              const SizedBox(height: 24),
+              Container(
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: _panelLight,
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
+                ),
+                child: const Row(
+                  children: [
+                    Icon(Icons.business_rounded, color: _muted, size: 16),
+                    SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        'NordicLabs · nordiclabsdev@gmail.com',
+                        style: TextStyle(color: _muted, fontSize: 12),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _ContactActionTile extends StatelessWidget {
+  const _ContactActionTile({
+    required this.icon,
+    required this.iconColor,
+    required this.title,
+    required this.subtitle,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final Color iconColor;
+  final String title;
+  final String subtitle;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: _panelLight,
+      borderRadius: BorderRadius.circular(16),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            children: [
+              Container(
+                width: 42,
+                height: 42,
+                decoration: BoxDecoration(
+                  color: iconColor.withValues(alpha: 0.12),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(icon, color: iconColor, size: 20),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w700),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      subtitle,
+                      style: const TextStyle(color: _muted, fontSize: 12),
+                    ),
+                  ],
+                ),
+              ),
+              const Icon(Icons.chevron_right_rounded, color: _muted, size: 20),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _SheetHandle extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 12),
+      child: Center(
+        child: Container(
+          width: 38,
+          height: 4,
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.15),
+            borderRadius: BorderRadius.circular(2),
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 String _formatTime(int milliseconds) {

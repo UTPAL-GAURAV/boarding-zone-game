@@ -1,6 +1,6 @@
 import '../aircraft_layout.dart';
 
-/// 5-abreast cabin: 26 rows, 130 seats. Used by Embraer E195-E2.
+/// 5-abreast cabin (A-B-W-C-D-E): 26 rows, 130 seats. Used by Embraer E195-E2.
 abstract final class LevelE195 {
   static const AircraftLayout aircraft = AircraftLayout(
     id: 'level_5abreast_26row',

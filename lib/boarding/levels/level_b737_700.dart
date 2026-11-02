@@ -1,6 +1,6 @@
 import '../aircraft_layout.dart';
 
-/// 6-abreast narrow-body: 23 rows, 138 seats. Used by Boeing 737-700.
+/// 6-abreast narrow-body (A-B-C-W-D-E-F): 23 rows, 138 seats. Used by Boeing 737-700.
 abstract final class LevelB737_700 {
   static const AircraftLayout aircraft = AircraftLayout(
     id: 'level_6abreast_23row_b737',

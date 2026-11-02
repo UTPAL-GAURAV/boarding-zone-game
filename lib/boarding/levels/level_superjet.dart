@@ -1,6 +1,6 @@
 import '../aircraft_layout.dart';
 
-/// 5-abreast cabin: 20 rows, 100 seats. Used by Sukhoi Superjet 100.
+/// 5-abreast cabin (W-A-B-C-D-E): 20 rows, 100 seats. Used by Sukhoi Superjet 100.
 abstract final class LevelSuperjet {
   static const AircraftLayout aircraft = AircraftLayout(
     id: 'level_5abreast_20row_superjet',
@@ -13,17 +13,17 @@ abstract final class LevelSuperjet {
     seatWidth: 37,
     seatHeight: 27,
     seatColumns: [
-      SeatColumnLayout(label: 'A', centerX: 52,  aisleIndex: 0, seatType: SeatType.window),
-      SeatColumnLayout(label: 'B', centerX: 96,  aisleIndex: 0, seatType: SeatType.aisle),
-      SeatColumnLayout(label: 'C', centerX: 214, aisleIndex: 0, seatType: SeatType.aisle),
-      SeatColumnLayout(label: 'D', centerX: 258, aisleIndex: 0, seatType: SeatType.middle),
-      SeatColumnLayout(label: 'E', centerX: 302, aisleIndex: 0, seatType: SeatType.window),
+      SeatColumnLayout(label: 'A', centerX: 138, aisleIndex: 0, seatType: SeatType.aisle),
+      SeatColumnLayout(label: 'B', centerX: 180, aisleIndex: 0, seatType: SeatType.middle),
+      SeatColumnLayout(label: 'C', centerX: 222, aisleIndex: 0, seatType: SeatType.middle),
+      SeatColumnLayout(label: 'D', centerX: 264, aisleIndex: 0, seatType: SeatType.middle),
+      SeatColumnLayout(label: 'E', centerX: 306, aisleIndex: 0, seatType: SeatType.window),
     ],
     rowDefaultZones: [5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5],
     aisles: [
       BoardingAisleLayout(
         id: 'main',
-        centerX: 155,
+        centerX: 96,
         width: 36,
         capacity: 40,
         minimumSpacingRows: 0.4,
@@ -35,10 +35,9 @@ abstract final class LevelSuperjet {
       ),
     ],
     seatBlocks: [
-      SeatBlockLayout(left: 33, right: 115),
-      SeatBlockLayout(left: 195, right: 321),
+      SeatBlockLayout(left: 119, right: 325),
     ],
-    windowCentersX: [18, 335],
+    windowCentersX: [30, 337],
     cabinShell: CabinRegion(
       left: 20,
       top: 28,
@@ -56,7 +55,7 @@ abstract final class LevelSuperjet {
     gateLabelY: 14,
     entranceDoorY: 67,
     entranceDoorHeight: 13,
-    seatLayout: ['A', 'B', 'W', 'C', 'D', 'E'],
-    blockerRules: {'A': ['B'], 'B': [], 'C': [], 'D': ['C'], 'E': ['C', 'D']},
+    seatLayout: ['W', 'A', 'B', 'C', 'D', 'E'],
+    blockerRules: {'A': [], 'B': ['A'], 'C': ['A', 'B'], 'D': ['A', 'B', 'C'], 'E': ['A', 'B', 'C', 'D']},
   );
 }
