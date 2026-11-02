@@ -42,9 +42,11 @@ class BoardingPassenger {
   ShufflePhase shufflePhase = ShufflePhase.none;
   double shufflePhaseProgress = 0; // 0→1 within current sub-phase
 
+  // The seat this blocker is serving — set when exitingToAisle begins.
+  // Used to chain the next blocker and trigger return without searching the aisle list.
+  BoardingSeat? shuffleTargetSeat;
+
   // For shuffleWait incoming passenger: 0→1 slide from aisle to seat.
-  // Only starts once ALL blockers are fully stopped in the aisle (waitingInAisle,
-  // progress=1). Blockers only start returning AFTER this reaches 1.
   double seatSlideProgress = 0;
 }
 
@@ -205,15 +207,27 @@ class BoardingSimulation {
     for (final p in seatedPassengers) {
       if (p.shufflePhase == ShufflePhase.none) continue;
       if (p.shufflePhase == ShufflePhase.waitingInAisle) {
-        // Check if any aisle passenger is still waiting for this blocker.
-        final hasWaiter = _aisles.any((aisle) => aisle.passengers.any(
-          (q) => q.phase == PassengerPhase.shuffleWait &&
-                 _findWaitingBlockers(q.seat).contains(p),
-        ));
-        if (!hasWaiter) {
-          // Nobody waiting — return immediately.
-          p.shufflePhase = ShufflePhase.returningToSeat;
-          p.shufflePhaseProgress = 0;
+        // Still waiting for the inner passenger to slide in, OR for a chained
+        // blocker ahead of us to finish exiting first — check both.
+        final targetSeat = p.shuffleTargetSeat;
+        if (targetSeat != null) {
+          // Check if the inner passenger is still in the aisle (shuffleWait).
+          final innerStillWaiting = _aisles.any((aisle) => aisle.passengers.any(
+            (q) => q.seat == targetSeat && q.phase == PassengerPhase.shuffleWait,
+          ));
+          // Check if a later blocker in the chain is still exiting.
+          final chainPending = seatedPassengers.any(
+            (q) => q != p &&
+                   q.seat.row == p.seat.row &&
+                   q.seat.aisleIndex == p.seat.aisleIndex &&
+                   q.shufflePhase == ShufflePhase.exitingToAisle,
+          );
+          if (!innerStillWaiting && !chainPending) {
+            // Inner is seated and chain is done — start returning (innermost first).
+            _startNextBlockerReturnForRow(p.seat.row, p.seat.aisleIndex);
+            // If _startNextBlockerReturn didn't pick us (already picked an inner one),
+            // we'll be triggered when that inner one finishes. If it did pick us, good.
+          }
         }
         continue;
       }
@@ -327,61 +341,101 @@ class BoardingSimulation {
   void _advanceBlockerPhase(BoardingPassenger blocker) {
     switch (blocker.shufflePhase) {
       case ShufflePhase.exitingToAisle:
-        // Arrived at aisle — wait here until inner passenger has seated.
         blocker.shufflePhase = ShufflePhase.waitingInAisle;
         blocker.shufflePhaseProgress = 0;
+        // Chain the next blocker (one step further from aisle) to start exiting.
+        if (blocker.shuffleTargetSeat != null) {
+          _startNextBlockerExit(blocker.shuffleTargetSeat!);
+        }
       case ShufflePhase.returningToSeat:
         blocker.shufflePhase = ShufflePhase.none;
         blocker.shufflePhaseProgress = 0;
+        blocker.shuffleTargetSeat = null;
+        // Chain the next blocker (one step closer to window) to start returning.
+        // _startNextBlockerReturn finds the next waitingInAisle blocker for the same row.
+        _startNextBlockerReturnForRow(blocker.seat.row, blocker.seat.aisleIndex);
       case ShufflePhase.waitingInAisle:
       case ShufflePhase.none:
         break;
     }
   }
 
-  /// Row of the nearest seatSliding/shuffleWait passenger — walking passengers stop before it.
+  /// Starts the next still-idle blocker exiting for [targetSeat], aisle-first order.
+  /// Skips blockers already in motion. Sets shuffleTargetSeat on the started blocker.
+  void _startNextBlockerExit(BoardingSeat targetSeat) {
+    final blockerLabels = layout.blockerRules[layout.seatColumns[targetSeat.column].label] ?? [];
+    for (final label in blockerLabels) {
+      for (var col = 0; col < layout.seatColumns.length; col++) {
+        if (layout.seatColumns[col].label != label) continue;
+        final occupant = _occupiedSlots['${targetSeat.row},$col'];
+        if (occupant == null) continue;
+        if (occupant.shufflePhase == ShufflePhase.none &&
+            occupant.phase == PassengerPhase.seated) {
+          occupant.shufflePhase = ShufflePhase.exitingToAisle;
+          occupant.shufflePhaseProgress = 0;
+          occupant.shuffleTargetSeat = targetSeat;
+          return;
+        }
+      }
+    }
+  }
+
+  /// Starts the innermost waitingInAisle blocker returning for [row]/[aisleIndex],
+  /// in reverse blocker-label order (window-side first, then toward aisle).
+  void _startNextBlockerReturnForRow(int row, int aisleIndex) {
+    // Find any seated passenger in this row that has waitingInAisle blockers.
+    for (final p in seatedPassengers) {
+      if (p.seat.row != row || p.seat.aisleIndex != aisleIndex) continue;
+      final blockerLabels = layout.blockerRules[layout.seatColumns[p.seat.column].label] ?? [];
+      for (final label in blockerLabels.reversed) {
+        for (var col = 0; col < layout.seatColumns.length; col++) {
+          if (layout.seatColumns[col].label != label) continue;
+          final occupant = _occupiedSlots['$row,$col'];
+          if (occupant == null) continue;
+          if (occupant.shufflePhase == ShufflePhase.waitingInAisle) {
+            occupant.shufflePhase = ShufflePhase.returningToSeat;
+            occupant.shufflePhaseProgress = 0;
+            return;
+          }
+        }
+      }
+    }
+  }
+
+  /// Row that blocks walking passengers behind it.
+  /// Holds until the shuffling passenger is done AND all their blockers are back seated.
   double _aisleBlockRow(_AisleRuntime aisle) {
     for (final p in aisle.passengers) {
       if (p.phase == PassengerPhase.shuffleWait ||
-          p.phase == PassengerPhase.seatSliding) return p.rowPosition;
+          p.phase == PassengerPhase.seatSliding) {
+        return p.rowPosition;
+      }
+    }
+    // Also block while blockers for a recently-seated passenger are still shuffling.
+    for (final p in seatedPassengers) {
+      if (p.shufflePhase != ShufflePhase.none &&
+          p.seat.aisleIndex == _aisles.indexOf(aisle)) {
+        return p.seat.row.toDouble();
+      }
     }
     return double.infinity;
   }
 
   /// True when every blocker for [seat] has fully exited to the aisle
-  /// (shufflePhase == waitingInAisle with progress reached 1, meaning they
-  /// True when every blocker for [seat] has fully arrived and stopped in the aisle.
-  bool _allBlockersFullyInAisle(BoardingSeat seat) {
-    // Include blockers that are still exiting — they haven't stopped yet.
-    final exiting = _findBlockersWhere(
-      seat,
-      (p) => p.shufflePhase == ShufflePhase.exitingToAisle,
-    );
-    if (exiting.isNotEmpty) return false;
-    // Also check at least one is actually waiting (not all done and gone).
-    final waiting = _findWaitingBlockers(seat);
-    return waiting.isNotEmpty || _findActiveBlockers(seat).isEmpty;
-  }
-
   void _transitionToSeatedOrShuffle(
     BoardingPassenger passenger,
     List<BoardingPassenger> seatedThisFrame,
   ) {
     final blockers = _findActiveBlockers(passenger.seat);
     if (blockers.isEmpty) {
-      // No blockers — slide directly to seat.
       passenger.phase = PassengerPhase.seatSliding;
       passenger.seatSlideProgress = 0;
       return;
     }
     passenger.phase = PassengerPhase.shuffleWait;
     passenger.shuffleWaitRemaining = 0;
-    for (final blocker in blockers) {
-      if (blocker.shufflePhase == ShufflePhase.none) {
-        blocker.shufflePhase = ShufflePhase.exitingToAisle;
-        blocker.shufflePhaseProgress = 0;
-      }
-    }
+    // Start only the first (aisle-side) blocker — it chains the rest sequentially.
+    _startNextBlockerExit(passenger.seat);
   }
 
   void _finallySeated(
@@ -391,15 +445,26 @@ class BoardingSimulation {
     passenger.phase = PassengerPhase.seated;
     _occupiedSlots['${passenger.seat.row},${passenger.seat.column}'] = passenger;
     seatedThisFrame.add(passenger);
-    // Inner passenger is now fully seated — tell blockers to return.
-    // Use _findAllBlockers here (includes those in waitingInAisle).
-    final blockers = _findWaitingBlockers(passenger.seat);
-    for (final b in blockers) {
-      if (b.shufflePhase == ShufflePhase.waitingInAisle) {
-        b.shufflePhase = ShufflePhase.returningToSeat;
-        b.shufflePhaseProgress = 0;
+    // Trigger innermost waiting blocker to start returning (chains outward).
+    _startNextBlockerReturnForRow(passenger.seat.row, passenger.seat.aisleIndex);
+  }
+
+  /// True only when ALL blockers for [seat] are in waitingInAisle (none still exiting,
+  /// none still idle-but-pending). With sequential exit, this means every blocker
+  /// in the chain has finished exiting.
+  bool _allBlockersFullyInAisle(BoardingSeat seat) {
+    final blockerLabels = layout.blockerRules[layout.seatColumns[seat.column].label] ?? [];
+    if (blockerLabels.isEmpty) return true;
+    for (final label in blockerLabels) {
+      for (var col = 0; col < layout.seatColumns.length; col++) {
+        if (layout.seatColumns[col].label != label) continue;
+        final occupant = _occupiedSlots['${seat.row},$col'];
+        if (occupant == null) continue;
+        // Any blocker not yet in waitingInAisle means we're not ready.
+        if (occupant.shufflePhase != ShufflePhase.waitingInAisle) return false;
       }
     }
+    return true;
   }
 
   /// Blockers that are seated and idle — eligible to be asked to stand.
