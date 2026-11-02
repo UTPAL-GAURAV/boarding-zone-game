@@ -63,6 +63,7 @@ class _BoardingHomeShellState extends State<BoardingHomeShell> {
   @override
   void dispose() {
     _razorpay.clear();
+    AppAudio.instance.dispose();
     super.dispose();
   }
 
@@ -107,19 +108,15 @@ class _BoardingHomeShellState extends State<BoardingHomeShell> {
         };
       });
     }
-    unawaited(AppAudio.instance.init(enabled: soundEnabled));
+    unawaited(AppAudio.instance.init(enabled: soundEnabled).then((_) {
+      AppAudio.instance.startBgMusic();
+    }));
 
     // Ensure profile row exists in Supabase from first launch onwards
     unawaited(_rankings.upsertProfile(
       playerId: profile.internalId,
       displayName: profile.displayName,
     ));
-
-    // Auto-launch tutorial on first ever open
-    final tutorialDone = await _store.isTutorialCompleted();
-    if (!tutorialDone) {
-      WidgetsBinding.instance.addPostFrameCallback((_) => _launchTutorial());
-    }
 
     return profile;
   }
@@ -141,10 +138,6 @@ class _BoardingHomeShellState extends State<BoardingHomeShell> {
       builder: (_) => _ProfileDialog(
         initialName: current.displayName,
         initialSoundEnabled: _soundEnabled,
-        onHowToPlay: () {
-          Navigator.of(context).pop();
-          _launchTutorial();
-        },
       ),
     );
     if (result == null) return;
@@ -491,10 +484,7 @@ class _BoardingHomeShellState extends State<BoardingHomeShell> {
       final prevIndex = all.indexWhere((a) => a.id == aircraft.id) - 1;
       if (prevIndex >= 0) {
         final prev = all[prevIndex];
-        final secs = prev.targetSeconds;
-        final mm = (secs ~/ 60).toString();
-        final ss = (secs % 60).toString().padLeft(2, '0');
-        message = 'Complete ${prev.displayName} under $mm:$ss.000';
+        message = 'Complete ${prev.displayName} under ${_formatTarget(prev.targetSeconds)}';
       } else {
         message = 'Complete the previous mission.';
       }
@@ -576,6 +566,7 @@ class _BoardingHomeShellState extends State<BoardingHomeShell> {
                     _showLockedRequirement(aircraft);
                   }
                 },
+                onHowToPlay: _launchTutorial,
               ),
               _RankingsTab(
                 crewName: crewMember.displayName,
@@ -624,12 +615,10 @@ class _ProfileDialog extends StatefulWidget {
   const _ProfileDialog({
     required this.initialName,
     required this.initialSoundEnabled,
-    required this.onHowToPlay,
   });
 
   final String initialName;
   final bool initialSoundEnabled;
-  final VoidCallback onHowToPlay;
 
   @override
   State<_ProfileDialog> createState() => _ProfileDialogState();
@@ -834,21 +823,6 @@ class _ProfileDialogState extends State<_ProfileDialog> {
                   ),
                 ),
                 const SizedBox(height: 6),
-                // How to play link
-                TextButton.icon(
-                  onPressed: widget.onHowToPlay,
-                  icon: const Icon(Icons.school_rounded, size: 14),
-                  label: const Text('How to play'),
-                  style: TextButton.styleFrom(
-                    foregroundColor: _accent,
-                    textStyle: const TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w700,
-                    ),
-                    padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
-                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                  ),
-                ),
               ],
             ),
           ),
@@ -917,6 +891,7 @@ class _HomeTab extends StatefulWidget {
     required this.onSelect,
     required this.onPlay,
     required this.onLockedTap,
+    required this.onHowToPlay,
   });
 
   final String crewName;
@@ -927,6 +902,7 @@ class _HomeTab extends StatefulWidget {
   final ValueChanged<Aircraft> onSelect;
   final ValueChanged<Aircraft> onPlay;
   final ValueChanged<Aircraft> onLockedTap;
+  final VoidCallback onHowToPlay;
 
   @override
   State<_HomeTab> createState() => _HomeTabState();
@@ -1104,6 +1080,26 @@ class _HomeTabState extends State<_HomeTab> {
                 ],
               ),
             ),
+            Align(
+              alignment: Alignment.center,
+              child: Padding(
+                padding: const EdgeInsets.only(top: 8),
+                child: TextButton.icon(
+                  onPressed: widget.onHowToPlay,
+                  icon: const Icon(Icons.school_rounded, size: 14),
+                  label: const Text('How to play'),
+                  style: TextButton.styleFrom(
+                    foregroundColor: _accent,
+                    textStyle: const TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                    ),
+                    padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  ),
+                ),
+              ),
+            ),
           ],
         ),
       ),
@@ -1218,13 +1214,13 @@ class _AircraftTile extends StatelessWidget {
         ? 'COMPLETED'
         : 'AVAILABLE';
     final statusColor = premium ? const Color(0xFFF0B963) : _accent;
-    final detail = !unlocked
+    final detail = !hasLevel && !unlocked
         ? aircraft.unlockRequirement ?? aircraft.priceLabel ?? 'Locked aircraft'
         : !hasLevel
         ? 'LEVEL ${aircraft.level}  ·  ${aircraft.typicalSeats} SEATS  ·  IN DEVELOPMENT'
         : bestMilliseconds != null
         ? 'PERSONAL BEST  ${_formatTime(bestMilliseconds!)}'
-        : 'LEVEL ${aircraft.level}  ·  ${aircraft.typicalSeats} SEATS  ·  TARGET ${_formatTime(aircraft.targetSeconds * 1000)}';
+        : 'LEVEL ${aircraft.level}  ·  ${aircraft.typicalSeats} SEATS  ·  TARGET ${_formatTarget(aircraft.targetSeconds)}';
 
     return SizedBox(
       width: 300,
@@ -2255,6 +2251,12 @@ class _Pill extends StatelessWidget {
       ],
     ),
   );
+}
+
+String _formatTarget(int seconds) {
+  final m = seconds ~/ 60;
+  final s = (seconds % 60).toString().padLeft(2, '0');
+  return '$m:$s';
 }
 
 String _formatTime(int milliseconds) {

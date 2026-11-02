@@ -32,10 +32,12 @@ class CabinGame extends FlameGame {
 
   @override
   void update(double dt) {
-    super.update(dt);
-    if (!paused) simulation.update(dt);
+    // Cap dt to 50 ms to prevent first-frame teleport on slower devices.
+    final safeDt = dt.clamp(0.0, 0.05);
+    super.update(safeDt);
+    if (!paused) simulation.update(safeDt);
     if (simulation.isBoarding) {
-      _notifyClock += dt;
+      _notifyClock += safeDt;
       if (_notifyClock >= 0.12) {
         _notifyClock = 0;
         onChanged();

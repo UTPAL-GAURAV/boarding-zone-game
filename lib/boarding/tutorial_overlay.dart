@@ -1,89 +1,193 @@
 import 'package:flutter/material.dart';
 
+import 'cabin_game.dart';
+
 enum TutorialStep {
-  selectZone,
-  paintSeats,
-  startBoarding,
-  watchBoard,
-  done,
+  strategy,      // D1 — what the game is about
+  learnZones,    // D2 — show A–F zone pills, explain order
+  paintSeats,    // D3 — gated until ≥1 seat is painted
+  startBoarding, // D4 — explain timer + arrow to START BOARDING, passthrough
+  done,          // boarding complete — Replay + Back to Home
 }
 
-class TutorialOverlay extends StatelessWidget {
+class TutorialOverlay extends StatefulWidget {
   const TutorialOverlay({
     super.key,
     required this.step,
+    required this.seatsHaveBeenPainted,
     required this.onDismiss,
+    required this.onReplay,
   });
 
   final TutorialStep step;
+  final bool seatsHaveBeenPainted;
   final VoidCallback onDismiss;
+  final VoidCallback onReplay;
 
+  @override
+  State<TutorialOverlay> createState() => _TutorialOverlayState();
+}
+
+class _TutorialOverlayState extends State<TutorialOverlay> {
   static const _accent = Color(0xFFFFB930);
+  static const _bg = Color(0xFF0A0E1A);
 
   @override
   Widget build(BuildContext context) {
-    if (step == TutorialStep.done) return _buildDoneCard(context);
-    return _buildCoachBubble(context);
+    switch (widget.step) {
+      case TutorialStep.strategy:
+        return _buildDialog(
+          title: 'Your mission',
+          body:
+              "You're a ground crew chief. Paint seats into boarding zones — passengers board Zone A first, Zone F last. Beat the target time to unlock the next aircraft.",
+          cta: "Let's go",
+          ctaEnabled: true,
+          onCta: widget.onDismiss,
+          showArrow: false,
+        );
+
+      case TutorialStep.learnZones:
+        return _buildDialog(
+          title: 'Boarding zones',
+          body:
+              'Passengers board in zone order. Zone A boards first — seats at the back. Zone F boards last — seats near the door. Assign wisely!',
+          cta: 'Understood',
+          ctaEnabled: true,
+          onCta: widget.onDismiss,
+          showArrow: false,
+          anchorTop: true,
+          extra: _buildZonePills(),
+        );
+
+      case TutorialStep.paintSeats:
+        return _buildDialog(
+          title: 'Paint your seats',
+          body:
+              'Select a zone then tap or drag across seats to paint them. Passengers in the same zone board together — try putting Zone A at the back!',
+          cta: 'NEXT',
+          ctaEnabled: widget.seatsHaveBeenPainted,
+          onCta: widget.onDismiss,
+          showArrow: false,
+        );
+
+      case TutorialStep.startBoarding:
+        return _buildDialog(
+          title: 'Ready for boarding?',
+          body:
+              'Tap START BOARDING below. Watch the timer at the top — better zones mean a faster time!',
+          cta: null,
+          ctaEnabled: false,
+          onCta: null,
+          showArrow: false,
+          passthrough: true,
+        );
+
+      case TutorialStep.done:
+        return _buildDoneDialog();
+    }
   }
 
-  Widget _buildCoachBubble(BuildContext context) {
-    final config = _stepConfig(step);
+  Widget _buildDialog({
+    required String title,
+    required String body,
+    required String? cta,
+    required bool ctaEnabled,
+    required VoidCallback? onCta,
+    required bool showArrow,
+    bool arrowUp = false,
+    bool passthrough = false,
+    bool anchorTop = false,
+    Widget? extra,
+  }) {
     final size = MediaQuery.of(context).size;
-
-    // Arrow indicator pointing to a UI element
-    Widget? arrowIndicator;
-    if (config.arrowDirection != null) {
-      arrowIndicator = Positioned(
-        bottom: config.arrowFromBottom,
-        left: size.width / 2 - 12,
-        child: _PulsingArrow(direction: config.arrowDirection!),
-      );
-    }
-
-    // Card can be anchored to top or bottom depending on the step
     final Positioned card;
-    if (config.cardBottom != null) {
+    if (anchorTop) {
       card = Positioned(
-        bottom: config.cardBottom,
+        top: 80,
         left: 16,
         right: 16,
         child: _CoachCard(
-          title: config.title,
-          body: config.body,
-          cta: config.cta,
-          onTap: config.ctaIsAuto ? null : onDismiss,
+          title: title,
+          body: body,
+          cta: cta,
+          ctaEnabled: ctaEnabled,
+          onTap: onCta,
+          extra: extra,
         ),
       );
     } else {
       card = Positioned(
-        top: config.cardTop,
+        bottom: passthrough ? 80 : 72,
         left: 16,
         right: 16,
         child: _CoachCard(
-          title: config.title,
-          body: config.body,
-          cta: config.cta,
-          onTap: config.ctaIsAuto ? null : onDismiss,
+          title: title,
+          body: body,
+          cta: cta,
+          ctaEnabled: ctaEnabled,
+          onTap: onCta,
+          extra: extra,
         ),
       );
     }
 
-    return IgnorePointer(
-      // Allow touches through everywhere except the card itself
-      ignoring: false,
-      child: Stack(
+    Widget? arrow;
+    if (showArrow) {
+      arrow = Positioned(
+        bottom: passthrough ? 64 : (arrowUp ? 220 : 64),
+        left: size.width / 2 - 12,
+        child: _PulsingArrow(up: arrowUp),
+      );
+    }
+
+    if (passthrough) {
+      // D4: only the card blocks touches; rest of screen is interactive
+      return Stack(
         children: [
-          if (arrowIndicator != null) arrowIndicator,
+          if (arrow != null) IgnorePointer(child: arrow),
           card,
         ],
-      ),
+      );
+    }
+
+    return Stack(
+      children: [
+        if (arrow != null) IgnorePointer(child: arrow),
+        card,
+      ],
     );
   }
 
-  Widget _buildDoneCard(BuildContext context) {
-    const bg = Color(0xFF0A0E1A);
+  Widget _buildZonePills() {
+    const labels = ['A', 'B', 'C', 'D', 'E', 'F'];
+    return Wrap(
+      spacing: 6,
+      runSpacing: 6,
+      children: List.generate(6, (i) {
+        final color = CabinGame.zoneColors[i];
+        return Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          decoration: BoxDecoration(
+            color: color.withValues(alpha: 0.2),
+            border: Border.all(color: color, width: 1.5),
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Text(
+            'Zone ${labels[i]}',
+            style: TextStyle(
+              color: color,
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        );
+      }),
+    );
+  }
+
+  Widget _buildDoneDialog() {
     return Container(
-      color: bg.withValues(alpha: 0.88),
+      color: _bg.withValues(alpha: 0.88),
       child: Center(
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 32),
@@ -93,7 +197,7 @@ class TutorialOverlay extends StatelessWidget {
               const Icon(Icons.check_circle_rounded, color: _accent, size: 64),
               const SizedBox(height: 20),
               const Text(
-                "You're ready to fly!",
+                'Boarding complete!',
                 style: TextStyle(
                   color: Colors.white,
                   fontSize: 26,
@@ -103,27 +207,58 @@ class TutorialOverlay extends StatelessWidget {
               ),
               const SizedBox(height: 12),
               const Text(
-                'You know how to zone seats and board passengers.\nNow try it for real on Level 1!',
+                'Great job! This is how the real game works — zone your seats, board fast, beat the target time.',
                 style: TextStyle(color: Color(0xFFB0B8CC), fontSize: 15),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 32),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: _accent,
-                    foregroundColor: bg,
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(14)),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: widget.onReplay,
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: Colors.white,
+                        side: BorderSide(
+                          color: Colors.white.withValues(alpha: 0.3),
+                        ),
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                      ),
+                      child: const Text(
+                        'REPLAY',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ),
                   ),
-                  onPressed: onDismiss,
-                  child: const Text(
-                    'GO TO FLEET',
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    flex: 2,
+                    child: FilledButton(
+                      onPressed: widget.onDismiss,
+                      style: FilledButton.styleFrom(
+                        backgroundColor: _accent,
+                        foregroundColor: _bg,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                      ),
+                      child: const Text(
+                        'BACK TO HOME',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ),
                   ),
-                ),
+                ],
               ),
             ],
           ),
@@ -131,100 +266,26 @@ class TutorialOverlay extends StatelessWidget {
       ),
     );
   }
-
-  _StepConfig _stepConfig(TutorialStep s) {
-    switch (s) {
-      case TutorialStep.selectZone:
-        return _StepConfig(
-          title: 'Pick a boarding zone',
-          body: 'Tap one of the coloured zone pills to select it. Zone A boards first — Zone F boards last.',
-          cta: 'GOT IT',
-          cardTop: 0,
-          cardBottom: 72,
-          arrowDirection: _ArrowDir.up,
-          arrowFromBottom: 220,
-          ctaIsAuto: false,
-        );
-      case TutorialStep.paintSeats:
-        return _StepConfig(
-          title: 'Assign seats to zones',
-          body: 'Drag your finger over the seats in the cabin to paint them with the selected zone colour.',
-          cta: 'GOT IT',
-          cardTop: 0,
-          cardBottom: 72,
-          arrowDirection: null,
-          arrowFromBottom: null,
-          ctaIsAuto: false,
-        );
-      case TutorialStep.startBoarding:
-        return _StepConfig(
-          title: 'Start boarding!',
-          body: 'Tap the START BOARDING button below to let passengers on.',
-          cta: null,
-          cardTop: 0,
-          cardBottom: 72,
-          arrowDirection: _ArrowDir.down,
-          arrowFromBottom: 64,
-          ctaIsAuto: true,
-        );
-      case TutorialStep.watchBoard:
-        return _StepConfig(
-          title: 'Watch them board',
-          body: 'Passengers board in zone order — back rows first. When everyone is seated the flight is done!',
-          cta: 'OK',
-          cardTop: 0,
-          cardBottom: 72,
-          arrowDirection: null,
-          arrowFromBottom: null,
-          ctaIsAuto: false,
-        );
-      case TutorialStep.done:
-        return _StepConfig(
-          title: '', body: '', cta: null,
-          cardTop: 0, arrowDirection: null,
-          arrowFromBottom: null, ctaIsAuto: false,
-        );
-    }
-  }
 }
 
 // ─── Internal helpers ────────────────────────────────────────────────────────
-
-enum _ArrowDir { down, up }
-
-class _StepConfig {
-  const _StepConfig({
-    required this.title,
-    required this.body,
-    required this.cta,
-    required this.cardTop,
-    this.cardBottom,
-    required this.arrowDirection,
-    required this.arrowFromBottom,
-    required this.ctaIsAuto,
-  });
-  final String title;
-  final String body;
-  final String? cta;
-  final double cardTop;
-  final double? cardBottom;
-  final _ArrowDir? arrowDirection;
-  final double? arrowFromBottom;
-  final bool ctaIsAuto;
-}
 
 class _CoachCard extends StatelessWidget {
   const _CoachCard({
     required this.title,
     required this.body,
     required this.cta,
+    required this.ctaEnabled,
     required this.onTap,
+    this.extra,
   });
 
   final String title;
   final String body;
   final String? cta;
+  final bool ctaEnabled;
   final VoidCallback? onTap;
+  final Widget? extra;
 
   static const _accent = Color(0xFFFFB930);
   static const _panel = Color(0xFF1E2840);
@@ -270,19 +331,26 @@ class _CoachCard extends StatelessWidget {
               body,
               style: const TextStyle(color: Color(0xFFB0B8CC), fontSize: 13),
             ),
-            if (cta != null && onTap != null) ...[
+            if (extra != null) ...[
+              const SizedBox(height: 12),
+              extra!,
+            ],
+            if (cta != null) ...[
               const SizedBox(height: 14),
               Align(
                 alignment: Alignment.centerRight,
                 child: TextButton(
                   style: TextButton.styleFrom(
-                    foregroundColor: _accent,
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    foregroundColor: ctaEnabled ? _accent : const Color(0xFF6B7A99),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 8,
+                    ),
                     shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8)),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
                   ),
-                  onPressed: onTap,
+                  onPressed: ctaEnabled ? onTap : null,
                   child: Text(
                     '$cta →',
                     style: const TextStyle(fontWeight: FontWeight.bold),
@@ -298,8 +366,8 @@ class _CoachCard extends StatelessWidget {
 }
 
 class _PulsingArrow extends StatefulWidget {
-  const _PulsingArrow({required this.direction});
-  final _ArrowDir direction;
+  const _PulsingArrow({required this.up});
+  final bool up;
 
   @override
   State<_PulsingArrow> createState() => _PulsingArrowState();
@@ -331,9 +399,9 @@ class _PulsingArrowState extends State<_PulsingArrow>
     return AnimatedBuilder(
       animation: _anim,
       builder: (_, __) => Transform.translate(
-        offset: Offset(0, widget.direction == _ArrowDir.up ? -_anim.value : _anim.value),
+        offset: Offset(0, widget.up ? -_anim.value : _anim.value),
         child: Icon(
-          widget.direction == _ArrowDir.up
+          widget.up
               ? Icons.keyboard_arrow_up_rounded
               : Icons.keyboard_arrow_down_rounded,
           color: const Color(0xFFFFB930),

@@ -1,6 +1,6 @@
 import '../aircraft_layout.dart';
 
-/// Tutorial flight — 4-abreast, 3 rows (12 seats), 2 zones.
+/// Tutorial flight — 4-abreast, 3 rows (12 seats), 6 zones.
 /// Kept intentionally tiny so new players can see the full effect quickly.
 abstract final class LevelTutorial {
   static const AircraftLayout aircraft = AircraftLayout(
@@ -8,7 +8,7 @@ abstract final class LevelTutorial {
     designWidth: 360,
     designHeight: 320,
     rowCount: 3,
-    zoneCount: 2,
+    zoneCount: 6,
     rowStartY: 140,
     rowSpacing: 44,
     seatWidth: 37,
@@ -19,7 +19,7 @@ abstract final class LevelTutorial {
       SeatColumnLayout(label: 'C', centerX: 244, aisleIndex: 0, seatType: SeatType.aisle),
       SeatColumnLayout(label: 'D', centerX: 290, aisleIndex: 0, seatType: SeatType.window),
     ],
-    rowDefaultZones: [1, 1, 1],
+    rowDefaultZones: [5, 5, 5],
     aisles: [
       BoardingAisleLayout(
         id: 'main',

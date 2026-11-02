@@ -64,6 +64,7 @@ class _BoardingGamePageState extends State<BoardingGamePage> {
   int? _currentBestMilliseconds;
   // Tutorial step index (only used when widget.tutorialMode is true).
   int _tutorialStep = 0;
+  bool _tutorialSeatsHaveBeenPainted = false;
 
   static const _zones = CabinGame.zoneColors;
   static const _ink = Color(0xFFFFFFFF);
@@ -94,13 +95,13 @@ class _BoardingGamePageState extends State<BoardingGamePage> {
       final step = _tutorialStep < TutorialStep.values.length
           ? TutorialStep.values[_tutorialStep]
           : null;
-      // Auto-advance from startBoarding once boarding begins
+      // Hide the overlay once boarding starts — user watches freely.
       if (step == TutorialStep.startBoarding && _simulation.isBoarding) {
-        _advanceTutorial(); // → watchBoard
+        setState(() => _tutorialStep = TutorialStep.values.length); // no overlay
       }
-      // Auto-advance from watchBoard once complete
-      if (step == TutorialStep.watchBoard && _simulation.isComplete) {
-        _advanceTutorial(); // → done
+      // Show done dialog only when all passengers are seated.
+      if (step == null && _simulation.isComplete) {
+        setState(() => _tutorialStep = TutorialStep.values.indexOf(TutorialStep.done));
       }
     }
     if (_simulation.isComplete && !_reportedCompletion) {
@@ -110,7 +111,6 @@ class _BoardingGamePageState extends State<BoardingGamePage> {
       _isNewRecord = prev == null || ms < prev;
       if (_isNewRecord) _currentBestMilliseconds = ms;
       if (!widget.tutorialMode) _completionSave = widget.onCompleted?.call(ms);
-      unawaited(AppAudio.instance.stopBgMusic());
     }
     if (_simulation.isBoarding &&
         !_simulation.isComplete &&
@@ -118,7 +118,6 @@ class _BoardingGamePageState extends State<BoardingGamePage> {
         _simulation.elapsedSeconds >= 600) {
       _timedOut = true;
       _game.paused = true;
-      unawaited(AppAudio.instance.stopBgMusic());
     }
     if (mounted) setState(() {});
   }
@@ -143,14 +142,18 @@ class _BoardingGamePageState extends State<BoardingGamePage> {
     final next = _tutorialStep + 1;
     final step = TutorialStep.values[next < TutorialStep.values.length ? next : TutorialStep.values.length - 1];
     setState(() => _tutorialStep = next);
-    // Unfreeze simulation once we reach watchBoard
-    if (step == TutorialStep.watchBoard) {
-      _game.paused = false;
-    }
-    // Done — pop back to fleet after brief delay
+    // Unfreeze simulation once we reach done (boarding starts, overlay disappears)
     if (step == TutorialStep.done) {
-      // handled by the overlay's GO TO FLEET button calling onDismiss again
+      // boarding already running at this point
     }
+  }
+
+  void _tutorialReplay() {
+    _replay();
+    setState(() {
+      _tutorialStep = TutorialStep.values.indexOf(TutorialStep.startBoarding);
+      _tutorialSeatsHaveBeenPainted = false;
+    });
   }
 
   void _finishTutorial() {
@@ -161,7 +164,6 @@ class _BoardingGamePageState extends State<BoardingGamePage> {
   void dispose() {
     _cabinScrollController.dispose();
     _cabinHScrollController.dispose();
-    unawaited(AppAudio.instance.stopBgMusic());
     super.dispose();
   }
 
@@ -179,6 +181,11 @@ class _BoardingGamePageState extends State<BoardingGamePage> {
       return;
     }
     _lastSavedZones = zones;
+    if (widget.tutorialMode &&
+        !_tutorialSeatsHaveBeenPainted &&
+        _tutorialStep == TutorialStep.values.indexOf(TutorialStep.paintSeats)) {
+      _tutorialSeatsHaveBeenPainted = true;
+    }
     final callback = widget.onZonesChanged;
     if (callback != null) unawaited(callback(List.unmodifiable(zones)));
   }
@@ -275,9 +282,11 @@ class _BoardingGamePageState extends State<BoardingGamePage> {
               Positioned.fill(
                 child: TutorialOverlay(
                   step: tutStep,
+                  seatsHaveBeenPainted: _tutorialSeatsHaveBeenPainted,
                   onDismiss: tutStep == TutorialStep.done
                       ? _finishTutorial
                       : _advanceTutorial,
+                  onReplay: _tutorialReplay,
                 ),
               ),
           ],
@@ -416,11 +425,6 @@ class _BoardingGamePageState extends State<BoardingGamePage> {
                         selected: zone == _selectedZone,
                         onTap: () {
                           setState(() => _selectedZone = zone);
-                          // Tutorial: advance from selectZone to paintSeats on first zone tap
-                          if (widget.tutorialMode &&
-                              _tutorialStep == TutorialStep.selectZone.index) {
-                            _advanceTutorial();
-                          }
                         },
                       ),
                     ),
@@ -486,12 +490,6 @@ class _BoardingGamePageState extends State<BoardingGamePage> {
                               );
                               _lastPointerGlobalY = event.position.dy;
                               _lastPointerGlobalX = event.position.dx;
-                              // Tutorial: advance from paintSeats to startBoarding on first paint
-                              if (widget.tutorialMode &&
-                                  _tutorialStep == TutorialStep.paintSeats.index &&
-                                  _paintPointerActive) {
-                                _advanceTutorial();
-                              }
                             },
                             onPointerMove: (event) {
                               if (widget.tutorialMode &&
@@ -831,6 +829,9 @@ class _BoardingGamePageState extends State<BoardingGamePage> {
   Widget _buildStartButton(bool complete) {
     final boarding = _simulation.isBoarding;
     final preview = widget.previewOnly;
+    // In tutorial, block boarding until the startBoarding dialog is shown.
+    final tutorialBlocked = widget.tutorialMode &&
+        _tutorialStep < TutorialStep.values.indexOf(TutorialStep.startBoarding);
     final label = preview
         ? 'PREMIUM — UNLOCK TO BOARD'
         : complete
@@ -840,7 +841,7 @@ class _BoardingGamePageState extends State<BoardingGamePage> {
         : boarding
         ? 'BOARDING…'
         : 'START BOARDING';
-    final inactive = boarding || complete || _timedOut;
+    final inactive = boarding || complete || _timedOut || tutorialBlocked;
     return SizedBox(
       height: 48,
       child: DecoratedBox(
@@ -862,7 +863,7 @@ class _BoardingGamePageState extends State<BoardingGamePage> {
                 ],
         ),
         child: ElevatedButton.icon(
-          onPressed: boarding || preview
+          onPressed: boarding || preview || tutorialBlocked
               ? (preview
                   ? () {
                       Navigator.of(context).pop();
@@ -872,7 +873,6 @@ class _BoardingGamePageState extends State<BoardingGamePage> {
               : () {
                   _simulation.start();
                   unawaited(AppAudio.instance.playBleep());
-                  unawaited(AppAudio.instance.startBgMusic());
                   _refresh();
                 },
           icon: Icon(
