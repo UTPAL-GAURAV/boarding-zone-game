@@ -81,9 +81,9 @@ android/
 ### Tables
 
 ```sql
-profiles      (id text PK, display_name text)
-scores        (id uuid PK, player_id text, aircraft_id text, milliseconds int, created_at timestamptz)
-purchases     (google_id text PK, payment_id text, purchased_at timestamptz)
+profiles      (id uuid PK, display_name text, google_id text UNIQUE, email text)
+scores        (id uuid PK, player_id uuid FK→profiles.id, aircraft_id text, milliseconds int, recorded_at timestamptz)
+purchases     (google_id text PK, payment_id text, purchased_at timestamptz, email text)
 ```
 
 ### Views
@@ -157,24 +157,31 @@ Levels 31–42 have layouts but are premium-locked.
 
 ## Key services
 
+### RankingsService (`lib/home/rankings_service.dart`)
+- `upsertProfile` — syncs display name to Supabase `profiles`
+- `linkGoogleId` — links a Google account to a profile row (called on first sign-in for a device)
+- `submitScore` — inserts to `scores` (retry ×3, 800ms delay)
+- `fetchLeaderboard(aircraftId)` — top 50 by best time
+- `fetchPlayerBest(aircraftId, playerId)` — current player's rank
+- `fetchProfileByGoogleId(googleId)` — looks up `profiles` by `google_id`; returns `(playerId, displayName)` or null. Used to detect returning players after reinstall.
+- `fetchBestScoresByPlayerId(playerId)` — returns `Map<aircraftId, bestMilliseconds>` from the leaderboard view for a given player.
+- `mergeScoresIntoPlayer(fromPlayerId, intoPlayerId)` — for each aircraft where `fromPlayerId` has a better best time than `intoPlayerId` (or `intoPlayerId` has none), inserts a score row under `intoPlayerId`. Used during account consolidation.
+- All errors reported to Sentry via `captureException`, app never crashes
+
+### ShopService (`lib/home/shop_service.dart`)
+- `signIn()` — Google Sign-In (silent first, then picker); caches `google_id` and `email` in SharedPreferences
+- `recordPurchase(googleId, email, paymentId)` — writes to Supabase `purchases` + caches locally
+- `restorePurchase(googleId)` — checks Supabase, restores local cache
+- `isPremiumUnlocked()` — reads local cache (instant, no network)
+- `cachedGoogleId()` / `cachedEmail()` — read cached Google identity
+- `cachedLinkedPlayerId()` / `saveLinkedPlayerId(id)` — stores the canonical Supabase player UUID that was found linked to the signed-in Google account. Set during account consolidation so future sessions know the cloud UUID.
+
 ### LocalProfileStore (`lib/home/local_profile_store.dart`)
 - Generates a UUID player ID on first launch (stored in SharedPreferences)
 - Auto-generates display names: `<Word><3-digit number>` e.g. `Falcon847` — max 12 chars
 - 40 word pool (max 9 chars each so total stays ≤12): Falcon, Skyhawk, Comet, Orion, Bluebird, Jetstar, Nimbus, Zephyr, Stratos, Vortex, Cirrus, Altair, Solaris, Tempest, Quasar, Aether, Boreal, Cygnus, Dawnjet, Equinox, Zenith, Aurora, Corvus, Mistral, Polaris, Halcyon, Typhoon, Cumulus, Pegasus, Solstice, Spectra, Stormfly, Horizon, Skyburn, Nebula, Draco, Jetwave, Sunrift, Windfall, Arclight
 - Stores best times, fleet progress, seat zone configs offline
-
-### RankingsService (`lib/home/rankings_service.dart`)
-- `upsertProfile` — syncs display name to Supabase `profiles`
-- `submitScore` — inserts to `scores` (retry ×3, 800ms delay)
-- `fetchLeaderboard(aircraftId)` — top 50 by best time
-- `fetchPlayerBest(aircraftId, playerId)` — current player's rank
-- All errors reported to Sentry via `captureException`, app never crashes
-
-### ShopService (`lib/home/shop_service.dart`)
-- `signIn()` — Google Sign-In (silent first, then picker)
-- `recordPurchase(googleId, paymentId)` — writes to Supabase `purchases` + caches locally
-- `restorePurchase(googleId)` — checks Supabase, restores local cache
-- `isPremiumUnlocked()` — reads local cache (instant, no network)
+- `overridePlayerId(newId)` — replaces the local UUID in SharedPreferences. Called during account consolidation so the canonical cloud UUID becomes the permanent local identity.
 
 ---
 
@@ -195,6 +202,28 @@ Razorpay sheet (₹499 / 49900 paise)
 ```
 
 Restore flow: "Restore purchase" → Google Sign-In → `ShopService.restorePurchase` → Supabase lookup → unlock locally.
+
+---
+
+## Account consolidation on Google Sign-In
+
+When a player signs in with Google, `_signInForShop` checks Supabase `profiles` for an existing row with that `google_id`. Two outcomes:
+
+**No match (first sign-in for this device player):**
+`linkGoogleId` writes `google_id` + `email` into the existing profile row. The local UUID stays unchanged.
+
+**Match with a different UUID (returning player after reinstall):**
+The cloud UUID (uuid1, the original) wins. `_restoreCloudData` is called:
+1. `mergeScoresIntoPlayer(uuid2 → uuid1)` — uploads any scores the temp UUID accumulated to uuid1 in Supabase (fire-and-forget).
+2. `overridePlayerId(uuid1)` — replaces the local UUID in SharedPreferences so all future submissions use uuid1.
+3. `saveLinkedPlayerId(uuid1)` — caches the mapping for future auto-restore on startup.
+4. Cloud best times are pulled and merged locally (only overwrites if the cloud time is better).
+5. Premium purchase is restored if present in Supabase.
+6. Fleet progress is reloaded — unlocks cascade from restored best times.
+7. `_profile.internalId` is updated in memory to uuid1 immediately.
+8. Toast shown: `"Welcome back, <name>! Your progress from your previous install has been restored."`
+
+The old temp UUID (uuid2) becomes an orphaned profile row in Supabase with no `google_id` — it won't appear on leaderboards under any identity.
 
 ---
 

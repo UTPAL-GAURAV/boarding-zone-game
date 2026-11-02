@@ -131,28 +131,14 @@ class _TutorialOverlayState extends State<TutorialOverlay> {
       );
     }
 
-    Widget? arrow;
-    if (showArrow) {
-      arrow = Positioned(
-        bottom: passthrough ? 64 : (arrowUp ? 220 : 64),
-        left: size.width / 2 - 12,
-        child: _PulsingArrow(up: arrowUp),
-      );
-    }
-
-    if (passthrough) {
-      // D4: only the card blocks touches; rest of screen is interactive
-      return Stack(
-        children: [
-          if (arrow != null) IgnorePointer(child: arrow),
-          card,
-        ],
-      );
-    }
-
     return Stack(
       children: [
-        if (arrow != null) IgnorePointer(child: arrow),
+        if (showArrow)
+          Positioned(
+            bottom: arrowUp ? 220.0 : 64.0,
+            left: size.width / 2 - 12,
+            child: IgnorePointer(child: _PulsingArrow(up: arrowUp)),
+          ),
         card,
       ],
     );

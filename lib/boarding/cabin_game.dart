@@ -407,7 +407,7 @@ class CabinGame extends FlameGame {
         case ShufflePhase.none:
           fraction = 0;
       }
-      shuffleOffsetX = toAisle * fraction * 0.7;
+      shuffleOffsetX = toAisle * fraction;
     }
 
     double x;

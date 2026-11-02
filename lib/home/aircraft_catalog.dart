@@ -5,8 +5,30 @@ import '../boarding/levels/level_saab340.dart';
 import '../boarding/levels/level_4abreast.dart';
 import '../boarding/levels/level_atr42.dart';
 import '../boarding/levels/level_saab2000.dart';
-import '../boarding/levels/level_two.dart';
+import '../boarding/levels/level_il114.dart';
+import '../boarding/levels/level_crj700.dart';
+import '../boarding/levels/level_atr72.dart';
+import '../boarding/levels/level_e170.dart';
+import '../boarding/levels/level_dash8.dart';
+import '../boarding/levels/level_e175.dart';
+import '../boarding/levels/level_an148.dart';
+import '../boarding/levels/level_arj21.dart';
+import '../boarding/levels/level_an158.dart';
+import '../boarding/levels/level_e190.dart';
+import '../boarding/levels/level_superjet.dart';
+import '../boarding/levels/level_a220_100.dart';
+import '../boarding/levels/level_e195.dart';
+import '../boarding/levels/level_a319.dart';
+import '../boarding/levels/level_b737_700.dart';
+import '../boarding/levels/level_a220_300.dart';
+import '../boarding/levels/level_a320.dart';
+import '../boarding/levels/level_c919.dart';
+import '../boarding/levels/level_b737_800.dart';
+import '../boarding/levels/level_a321neo.dart';
+import '../boarding/levels/level_b737_9.dart';
 import '../boarding/levels/level_dual_aisle.dart';
+import '../boarding/levels/level_b757.dart';
+import '../boarding/levels/level_a321xlr.dart';
 import '../boarding/levels/level_767.dart';
 import '../boarding/levels/level_wide_232.dart';
 import '../boarding/levels/level_wide_333.dart';
@@ -90,7 +112,7 @@ void registerAircraftCatalog() {
           'A fast regional turboprop engineered to compete with short-haul jets.',
       imageAsset: 'assets/aircraft/saab-2000.jpeg',
       typicalSeats: 52,
-      targetSeconds: 56,
+      targetSeconds: 70,
       unlockType: AircraftUnlockType.progression,
       unlockRequirement: 'Complete ERJ-145 under 08:30',
       layout: LevelSaab2000.aircraft,
@@ -103,11 +125,11 @@ void registerAircraftCatalog() {
       description:
           'A modernized turboprop reviving Soviet-era short-haul efficiency.',
       imageAsset: 'assets/aircraft/ilyushin-il-114-300.jpeg',
-      typicalSeats: 68,
-      targetSeconds: 71,
+      typicalSeats: 60,
+      targetSeconds: 72,
       unlockType: AircraftUnlockType.progression,
       unlockRequirement: 'Complete Saab 2000 under 08:30',
-      layout: LevelTwo.aircraft,
+      layout: LevelIl114.aircraft,
     ),
     const Aircraft(
       id: 'bombardier-crj-700',
@@ -120,7 +142,7 @@ void registerAircraftCatalog() {
       targetSeconds: 78,
       unlockType: AircraftUnlockType.progression,
       unlockRequirement: 'Complete Il-114-300 under 09:00',
-      layout: LevelTwo.aircraft,
+      layout: LevelCrj700.aircraft,
     ),
     const Aircraft(
       id: 'atr-72-600',
@@ -133,7 +155,7 @@ void registerAircraftCatalog() {
       targetSeconds: 90,
       unlockType: AircraftUnlockType.progression,
       unlockRequirement: 'Complete CRJ-700 under 09:15',
-      layout: null,
+      layout: LevelAtr72.aircraft,
     ),
     const Aircraft(
       id: 'embraer-e170',
@@ -144,10 +166,10 @@ void registerAircraftCatalog() {
           'A clean-sheet E-Jet that brought new economy to 70-seat flying.',
       imageAsset: 'assets/aircraft/embraer-e170.jpeg',
       typicalSeats: 72,
-      targetSeconds: 78,
+      targetSeconds: 100,
       unlockType: AircraftUnlockType.progression,
       unlockRequirement: 'Complete 72-600 under 09:00',
-      layout: LevelTwo.aircraft,
+      layout: LevelE170.aircraft,
     ),
     const Aircraft(
       id: 'dash-8-q400',
@@ -161,7 +183,7 @@ void registerAircraftCatalog() {
       targetSeconds: 570,
       unlockType: AircraftUnlockType.progression,
       unlockRequirement: 'Complete E170 under 09:15',
-      layout: null,
+      layout: LevelDash8.aircraft,
     ),
     const Aircraft(
       id: 'embraer-e175',
@@ -175,7 +197,7 @@ void registerAircraftCatalog() {
       targetSeconds: 570,
       unlockType: AircraftUnlockType.progression,
       unlockRequirement: 'Complete Dash 8-400 under 09:30',
-      layout: null,
+      layout: LevelE175.aircraft,
     ),
     const Aircraft(
       id: 'antonov-an-148',
@@ -189,7 +211,7 @@ void registerAircraftCatalog() {
       targetSeconds: 600,
       unlockType: AircraftUnlockType.progression,
       unlockRequirement: 'Complete E175 under 09:30',
-      layout: null,
+      layout: LevelAn148.aircraft,
     ),
     const Aircraft(
       id: 'comac-arj21',
@@ -203,7 +225,7 @@ void registerAircraftCatalog() {
       targetSeconds: 615,
       unlockType: AircraftUnlockType.progression,
       unlockRequirement: 'Complete An-148 under 10:00',
-      layout: null,
+      layout: LevelArj21.aircraft,
     ),
     const Aircraft(
       id: 'antonov-an-158',
@@ -217,7 +239,7 @@ void registerAircraftCatalog() {
       targetSeconds: 630,
       unlockType: AircraftUnlockType.progression,
       unlockRequirement: 'Complete ARJ21-700 under 10:15',
-      layout: null,
+      layout: LevelAn158.aircraft,
     ),
     const Aircraft(
       id: 'embraer-e190',
@@ -231,7 +253,7 @@ void registerAircraftCatalog() {
       targetSeconds: 630,
       unlockType: AircraftUnlockType.progression,
       unlockRequirement: 'Complete An-158 under 10:30',
-      layout: null,
+      layout: LevelE190.aircraft,
     ),
     const Aircraft(
       id: 'sukhoi-superjet-100',
@@ -245,7 +267,7 @@ void registerAircraftCatalog() {
       targetSeconds: 630,
       unlockType: AircraftUnlockType.progression,
       unlockRequirement: 'Complete E190 under 10:30',
-      layout: null,
+      layout: LevelSuperjet.aircraft,
     ),
     const Aircraft(
       id: 'airbus-a220-100',
@@ -259,7 +281,7 @@ void registerAircraftCatalog() {
       targetSeconds: 675,
       unlockType: AircraftUnlockType.progression,
       unlockRequirement: 'Complete Superjet 100 under 10:30',
-      layout: null,
+      layout: LevelA220_100.aircraft,
     ),
     const Aircraft(
       id: 'embraer-e195',
@@ -273,7 +295,7 @@ void registerAircraftCatalog() {
       targetSeconds: 690,
       unlockType: AircraftUnlockType.progression,
       unlockRequirement: 'Complete A220-100 under 11:15',
-      layout: null,
+      layout: LevelE195.aircraft,
     ),
     const Aircraft(
       id: 'airbus-a319neo',
@@ -287,7 +309,7 @@ void registerAircraftCatalog() {
       targetSeconds: 720,
       unlockType: AircraftUnlockType.progression,
       unlockRequirement: 'Complete E195-E2 under 11:30',
-      layout: null,
+      layout: LevelA319.aircraft,
     ),
     const Aircraft(
       id: 'boeing-737-700',
@@ -301,7 +323,7 @@ void registerAircraftCatalog() {
       targetSeconds: 720,
       unlockType: AircraftUnlockType.progression,
       unlockRequirement: 'Complete A319neo under 12:00',
-      layout: null,
+      layout: LevelB737_700.aircraft,
     ),
     const Aircraft(
       id: 'airbus-a220-300',
@@ -315,7 +337,7 @@ void registerAircraftCatalog() {
       targetSeconds: 720,
       unlockType: AircraftUnlockType.progression,
       unlockRequirement: 'Complete 737-700 under 12:00',
-      layout: null,
+      layout: LevelA220_300.aircraft,
     ),
     const Aircraft(
       id: 'airbus-a320',
@@ -329,7 +351,7 @@ void registerAircraftCatalog() {
       targetSeconds: 750,
       unlockType: AircraftUnlockType.progression,
       unlockRequirement: 'Complete A220-300 under 12:00',
-      layout: null,
+      layout: LevelA320.aircraft,
     ),
     const Aircraft(
       id: 'comac-c919',
@@ -343,7 +365,7 @@ void registerAircraftCatalog() {
       targetSeconds: 765,
       unlockType: AircraftUnlockType.progression,
       unlockRequirement: 'Complete A320 under 12:30',
-      layout: null,
+      layout: LevelC919.aircraft,
     ),
     const Aircraft(
       id: 'boeing-737-800',
@@ -357,7 +379,7 @@ void registerAircraftCatalog() {
       targetSeconds: 810,
       unlockType: AircraftUnlockType.progression,
       unlockRequirement: 'Complete C919 under 12:45',
-      layout: null,
+      layout: LevelB737_800.aircraft,
     ),
     const Aircraft(
       id: 'airbus-a321neo',
@@ -371,7 +393,7 @@ void registerAircraftCatalog() {
       targetSeconds: 840,
       unlockType: AircraftUnlockType.progression,
       unlockRequirement: 'Complete 737-800 under 13:30',
-      layout: null,
+      layout: LevelA321neo.aircraft,
     ),
     const Aircraft(
       id: 'boeing-737-9',
@@ -385,7 +407,7 @@ void registerAircraftCatalog() {
       targetSeconds: 855,
       unlockType: AircraftUnlockType.progression,
       unlockRequirement: 'Complete A321neo under 14:00',
-      layout: null,
+      layout: LevelB737_9.aircraft,
     ),
     const Aircraft(
       id: 'tupolev-tu-214',
@@ -413,7 +435,7 @@ void registerAircraftCatalog() {
       targetSeconds: 870,
       unlockType: AircraftUnlockType.progression,
       unlockRequirement: 'Complete Tu-214 under 14:30',
-      layout: null,
+      layout: LevelB757.aircraft,
     ),
     const Aircraft(
       id: 'airbus-a321xlr',
@@ -427,7 +449,7 @@ void registerAircraftCatalog() {
       targetSeconds: 885,
       unlockType: AircraftUnlockType.progression,
       unlockRequirement: 'Complete 757-200 under 14:30',
-      layout: null,
+      layout: LevelA321xlr.aircraft,
     ),
     const Aircraft(
       id: 'boeing-767-300er',

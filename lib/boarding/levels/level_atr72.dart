@@ -1,11 +1,11 @@
 import '../aircraft_layout.dart';
 
-/// 2+2 single-aisle, 18 rows (70 seats). Matches CRJ-700 / Il-114-300 real config.
-abstract final class LevelTwo {
+/// 4-abreast (A-B-C-W-D): 18 rows, 72 seats. ATR 72-600.
+abstract final class LevelAtr72 {
   static const AircraftLayout aircraft = AircraftLayout(
-    id: 'level_2_single_aisle_22',
+    id: 'level_4abreast_18row_atr72',
     designWidth: 360,
-    designHeight: 750,
+    designHeight: 758,
     rowCount: 18,
     zoneCount: 6,
     rowStartY: 104,
@@ -13,16 +13,16 @@ abstract final class LevelTwo {
     seatWidth: 37,
     seatHeight: 28,
     seatColumns: [
-      SeatColumnLayout(label: 'A', centerX: 70,  aisleIndex: 0, seatType: SeatType.window),
-      SeatColumnLayout(label: 'B', centerX: 116, aisleIndex: 0, seatType: SeatType.aisle),
-      SeatColumnLayout(label: 'C', centerX: 244, aisleIndex: 0, seatType: SeatType.aisle),
-      SeatColumnLayout(label: 'D', centerX: 290, aisleIndex: 0, seatType: SeatType.window),
+      SeatColumnLayout(label: 'A', centerX: 55,  aisleIndex: 0, seatType: SeatType.window),
+      SeatColumnLayout(label: 'B', centerX: 97,  aisleIndex: 0, seatType: SeatType.middle),
+      SeatColumnLayout(label: 'C', centerX: 139, aisleIndex: 0, seatType: SeatType.aisle),
+      SeatColumnLayout(label: 'D', centerX: 275, aisleIndex: 0, seatType: SeatType.aisle),
     ],
     rowDefaultZones: [5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5],
     aisles: [
       BoardingAisleLayout(
         id: 'main',
-        centerX: 180,
+        centerX: 207,
         width: 32,
         capacity: 38,
         minimumSpacingRows: 0.4,
@@ -34,15 +34,15 @@ abstract final class LevelTwo {
       ),
     ],
     seatBlocks: [
-      SeatBlockLayout(left: 51, right: 155),
-      SeatBlockLayout(left: 205, right: 309),
+      SeatBlockLayout(left: 36, right: 158),
+      SeatBlockLayout(left: 256, right: 294),
     ],
-    windowCentersX: [31, 319],
+    windowCentersX: [18, 319],
     cabinShell: CabinRegion(
       left: 20,
       top: 28,
       width: 320,
-      height: 700,
+      height: 690,
       cornerRadius: 54,
     ),
     flightDeck: CabinRegion(
@@ -55,7 +55,7 @@ abstract final class LevelTwo {
     gateLabelY: 14,
     entranceDoorY: 67,
     entranceDoorHeight: 13,
-    seatLayout: ['A', 'B', 'W', 'C', 'D'],
-    blockerRules: {'A': ['B'], 'B': [], 'C': [], 'D': ['C']},
+    seatLayout: ['A', 'B', 'C', 'W', 'D'],
+    blockerRules: {'A': ['B', 'C'], 'B': ['C'], 'C': [], 'D': []},
   );
 }
