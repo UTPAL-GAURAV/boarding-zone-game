@@ -109,6 +109,12 @@ class _BoardingHomeShellState extends State<BoardingHomeShell> {
     }
     unawaited(AppAudio.instance.init(enabled: soundEnabled));
 
+    // Ensure profile row exists in Supabase from first launch onwards
+    unawaited(_rankings.upsertProfile(
+      playerId: profile.internalId,
+      displayName: profile.displayName,
+    ));
+
     // Auto-launch tutorial on first ever open
     final tutorialDone = await _store.isTutorialCompleted();
     if (!tutorialDone) {
@@ -166,28 +172,69 @@ class _BoardingHomeShellState extends State<BoardingHomeShell> {
     }
   }
 
-  Future<GoogleSignInAccount?> _signInForShop() => _shop.signIn();
+  Future<GoogleSignInAccount?> _signInForShop() async {
+    final account = await _shop.signIn();
+    if (account != null) {
+      final profile = _profile;
+      if (profile != null) {
+        unawaited(_rankings.linkGoogleId(
+          playerId: profile.internalId,
+          displayName: profile.displayName,
+          googleId: account.id,
+          email: account.email,
+        ));
+      }
+    }
+    return account;
+  }
+
+  void _openRazorpay(GoogleSignInAccount account) {
+    const key = String.fromEnvironment('RAZORPAY_KEY');
+    final options = <String, dynamic>{
+      'key': key,
+      'amount': 49900, // ₹499 in paise
+      'name': 'Boarding Bluster',
+      'description': 'Premium Fleet Pass',
+      'prefill': {
+        'contact': '',
+        'email': account.email,
+      },
+      'external': {
+        'wallets': ['paytm'],
+      },
+    };
+    try {
+      _razorpay.open(options);
+    } catch (e, st) {
+      Sentry.captureException(
+        e,
+        stackTrace: st,
+        hint: Hint.withMap({'place': '_openRazorpay'}),
+      );
+    }
+  }
 
   Future<void> _onPaymentSuccess(PaymentSuccessResponse response) async {
     final paymentId = response.paymentId ?? 'unknown';
     final googleId = (await _shop.cachedGoogleId()) ?? '';
+    final email = (await _shop.cachedEmail()) ?? '';
     Sentry.addBreadcrumb(Breadcrumb(
-      message: 'Payment success: $paymentId',
+      message: 'Payment success: $paymentId googleId: $googleId',
       category: 'shop',
       level: SentryLevel.info,
     ));
 
-    // Re-get google ID from sign-in account if cache is empty
-    String resolvedGoogleId = googleId;
-    if (resolvedGoogleId.isEmpty) {
-      final account = await _shop.signIn();
-      resolvedGoogleId = account?.id ?? '';
-    }
-
-    if (resolvedGoogleId.isNotEmpty) {
+    if (googleId.isNotEmpty) {
       await _shop.recordPurchase(
-        googleId: resolvedGoogleId,
+        googleId: googleId,
+        email: email,
         paymentId: paymentId,
+      );
+    } else {
+      // Should never happen — google ID is cached at sign-in time
+      await Sentry.captureMessage(
+        'Payment success but no cached googleId — paymentId: $paymentId',
+        level: SentryLevel.error,
       );
     }
 
@@ -438,6 +485,22 @@ class _BoardingHomeShellState extends State<BoardingHomeShell> {
   }
 
   void _showLockedRequirement(Aircraft aircraft) {
+    String message;
+    if (aircraft.unlockType == AircraftUnlockType.progression) {
+      final all = AircraftCatalog.all;
+      final prevIndex = all.indexWhere((a) => a.id == aircraft.id) - 1;
+      if (prevIndex >= 0) {
+        final prev = all[prevIndex];
+        final secs = prev.targetSeconds;
+        final mm = (secs ~/ 60).toString();
+        final ss = (secs % 60).toString().padLeft(2, '0');
+        message = 'Complete ${prev.displayName} under $mm:$ss.000';
+      } else {
+        message = 'Complete the previous mission.';
+      }
+    } else {
+      message = aircraft.unlockRequirement ?? aircraft.priceLabel ?? 'Locked aircraft';
+    }
     showDialog<void>(
       context: context,
       builder: (context) => AlertDialog(
@@ -445,7 +508,7 @@ class _BoardingHomeShellState extends State<BoardingHomeShell> {
         icon: const Icon(Icons.lock_rounded, color: _accent),
         title: Text(aircraft.displayName, style: const TextStyle(color: Colors.white)),
         content: Text(
-          aircraft.unlockRequirement ?? 'Complete the previous mission.',
+          message,
           style: const TextStyle(color: _muted),
         ),
         actions: [
@@ -522,6 +585,7 @@ class _BoardingHomeShellState extends State<BoardingHomeShell> {
               _ShopTab(
                 premiumUnlocked: _premiumUnlocked,
                 signIn: _signInForShop,
+                onPurchase: _openRazorpay,
                 onRestore: _restorePurchase,
               ),
             ],
@@ -1699,10 +1763,12 @@ class _ShopTab extends StatefulWidget {
   const _ShopTab({
     required this.premiumUnlocked,
     required this.signIn,
+    required this.onPurchase,
     required this.onRestore,
   });
   final bool premiumUnlocked;
   final Future<GoogleSignInAccount?> Function() signIn;
+  final void Function(GoogleSignInAccount) onPurchase;
   final VoidCallback onRestore;
 
   @override
@@ -1734,25 +1800,9 @@ class _ShopTabState extends State<_ShopTab> {
   }
 
   void _handlePurchase() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Row(
-          children: [
-            const Icon(Icons.rocket_launch_rounded, color: _accent, size: 18),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Text(
-                'Coming soon — payments aren\'t live yet. Stay tuned!',
-                style: const TextStyle(color: Colors.white),
-              ),
-            ),
-          ],
-        ),
-        backgroundColor: _panel,
-        behavior: SnackBarBehavior.floating,
-        duration: const Duration(seconds: 3),
-      ),
-    );
+    final account = _account;
+    if (account == null) return;
+    widget.onPurchase(account);
   }
 
   @override
@@ -1777,7 +1827,7 @@ class _ShopTabState extends State<_ShopTab> {
                 signedInAccount: _account,
                 signingIn: _signingIn,
                 onSignIn: _handleSignIn,
-                onPurchase: _handlePurchase,
+                onPurchase: _account != null ? _handlePurchase : null,
                 onRestore: widget.onRestore,
               ),
 
@@ -1806,7 +1856,7 @@ class _PremiumPackCard extends StatelessWidget {
   final GoogleSignInAccount? signedInAccount;
   final bool signingIn;
   final VoidCallback onSignIn;
-  final VoidCallback onPurchase;
+  final VoidCallback? onPurchase;
   final VoidCallback onRestore;
 
   @override
@@ -2208,7 +2258,9 @@ class _Pill extends StatelessWidget {
 }
 
 String _formatTime(int milliseconds) {
-  final seconds = milliseconds ~/ 1000;
-  final fraction = milliseconds % 1000;
-  return '${seconds.toString().padLeft(3, '0')}.${fraction.toString().padLeft(3, '0')}';
+  final totalSeconds = milliseconds ~/ 1000;
+  final m = totalSeconds ~/ 60;
+  final s = (totalSeconds % 60).toString().padLeft(2, '0');
+  final ms = (milliseconds % 1000).toString().padLeft(3, '0');
+  return '$m:$s.$ms';
 }

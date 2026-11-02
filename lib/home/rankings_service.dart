@@ -20,6 +20,55 @@ class RankingsService {
 
   final SupabaseClient _db;
 
+  /// Links a Google ID to the player's profile row.
+  /// Called only when internet is confirmed on (user just signed in).
+  /// Retries ×3 and uses upsert so the profile row is created if missing.
+  Future<void> linkGoogleId({
+    required String playerId,
+    required String displayName,
+    required String googleId,
+    required String email,
+  }) async {
+    Sentry.addBreadcrumb(Breadcrumb(
+      message: 'linkGoogleId: $playerId -> $googleId',
+      category: 'rankings',
+      level: SentryLevel.info,
+    ));
+    for (var attempt = 0; attempt < 3; attempt++) {
+      try {
+        await _db.from('profiles').upsert(
+          {
+            'id': playerId,
+            'display_name': displayName,
+            'google_id': googleId,
+            'email': email,
+          },
+          onConflict: 'id',
+        );
+        Sentry.addBreadcrumb(Breadcrumb(
+          message: 'linkGoogleId ok',
+          category: 'rankings',
+          level: SentryLevel.info,
+        ));
+        return;
+      } catch (e, st) {
+        if (attempt == 2) {
+          await Sentry.captureException(
+            e,
+            stackTrace: st,
+            hint: Hint.withMap({
+              'place': 'linkGoogleId',
+              'player_id': playerId,
+              'attempt': attempt,
+            }),
+          );
+          return;
+        }
+        await Future<void>.delayed(const Duration(milliseconds: 800));
+      }
+    }
+  }
+
   Future<void> upsertProfile({
     required String playerId,
     required String displayName,
@@ -43,7 +92,7 @@ class RankingsService {
           'player_id': playerId,
         }),
       );
-      rethrow;
+      // Swallowed — offline play must never crash on a failed profile sync.
     }
   }
 
@@ -131,7 +180,7 @@ class RankingsService {
               'attempt': attempt,
             }),
           );
-          rethrow;
+          return const [];
         }
         await Future<void>.delayed(const Duration(milliseconds: 800));
       }

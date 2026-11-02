@@ -137,6 +137,8 @@ Levels 31–42 have layouts but are premium-locked.
 
 `seatBlocks` in `AircraftLayout` is render-only (used to draw overhead bin panels and row numbers) and is separate from `seatLayout`.
 
+`typicalSeats` in `aircraft_fleet.json` must always equal `cabin.rows × non-"W" entries in cabin.seatLayout`. It is enforced manually — if you change `rows` or `seatLayout`, update `typicalSeats` to match.
+
 ### Row counts (real-world economy cabin rows)
 
 | Layout | Row count | Basis |
@@ -158,7 +160,7 @@ Levels 31–42 have layouts but are premium-locked.
 ### LocalProfileStore (`lib/home/local_profile_store.dart`)
 - Generates a UUID player ID on first launch (stored in SharedPreferences)
 - Auto-generates display names: `<Word><3-digit number>` e.g. `Falcon847` — max 12 chars
-- 20 word pool: Falcon, Skyhawk, Comet, Orion, Bluebird, Jetstar, Nimbus, Zephyr, Stratos, Vortex, Cirrus, Altair, Solaris, Tempest, Quasar, Aether, Boreal, Cygnus, Dawnjet, Equinox
+- 40 word pool (max 9 chars each so total stays ≤12): Falcon, Skyhawk, Comet, Orion, Bluebird, Jetstar, Nimbus, Zephyr, Stratos, Vortex, Cirrus, Altair, Solaris, Tempest, Quasar, Aether, Boreal, Cygnus, Dawnjet, Equinox, Zenith, Aurora, Corvus, Mistral, Polaris, Halcyon, Typhoon, Cumulus, Pegasus, Solstice, Spectra, Stormfly, Horizon, Skyburn, Nebula, Draco, Jetwave, Sunrift, Windfall, Arclight
 - Stores best times, fleet progress, seat zone configs offline
 
 ### RankingsService (`lib/home/rankings_service.dart`)
@@ -209,9 +211,15 @@ Key parameters:
 
 Header layout: `← | Aircraft Name | [photo thumbnail] | ↺`
 
+**Time format** everywhere (personal best, rankings, in-game timer, target, unlock dialog): `M:SS.mmm` — e.g. `0:22.000`, `1:05.431`. Both `_formatTime` (home shell) and `_formatMs`/`_timer` (game page) use this format.
+
+**Unlock dialog** (`_showLockedRequirement`): for `progression` aircraft, the message is generated dynamically from the previous aircraft's `targetSeconds` in `AircraftCatalog.all` — never from the stale `unlockRequirement` JSON field. Premium aircraft still use `unlockRequirement`/`priceLabel` from JSON.
+
 Completion popup shows:
 - `REPLAY` (outlined) — calls `_replay()`, resets simulation without resetting zone paint
 - `NEXT FLIGHT` (filled, 2× width) — calls `_nextFlight()`
+
+If boarding reaches 9:59.999 (600 s) without completing, the game freezes and shows a **timeout dialog**: "You made boarding impossible!" with a count of remaining passengers and two buttons — `TRY AGAIN` (full replay) and `NEXT FLIGHT`. `_timedOut` bool gates this; reset in `_replay()`.
 
 `_currentBestMilliseconds` is mutable state (not `widget.previousBestMilliseconds`) — updates in-session so BEST shows correctly after replaying.
 
@@ -254,7 +262,7 @@ App never crashes on network failure — errors are swallowed after 3 retries an
 
 1. **Razorpay go-live** — after Play Store publication and Razorpay account verification:
    - Replace the SnackBar "coming soon" stub in `_ShopTabState._handlePurchase()` with the actual Razorpay `open()` call
-   - Replace `rzp_test_SpygPfgyLGh3TU` in `lib/config/secrets.dart` with the live key
+   - Replace the test key in `lib/config/secrets.dart` with the live key
    - Tighten Supabase RLS on `purchases` table to verify payment server-side (currently permissive)
 
 ### Medium priority
@@ -269,7 +277,16 @@ App never crashes on network failure — errors are swallowed after 3 retries an
 
 ## Developer notes
 
-- **Never commit `lib/config/secrets.dart`** — it's gitignored. Use `secrets.template.dart` as reference.
+- **Never commit `lib/config/secrets.dart`** — it's gitignored. Actual Razorpay keys (test + live) are stored there. Use `secrets.template.dart` as reference.
+- **Razorpay key** is injected at build time via `--dart-define`. Keys are in the gitignored `lib/config/secrets.dart`:
+  ```bash
+  # Release build for Play Store — always use razorpayLiveKey from secrets.dart
+  flutter build appbundle --dart-define=RAZORPAY_KEY=<razorpayLiveKey>
+
+  # Local debug/test build — use razorpayTestKey from secrets.dart
+  flutter run --dart-define=RAZORPAY_KEY=<razorpayTestKey>
+  ```
+  **When asked for a release/build command, always use `razorpayLiveKey` from `secrets.dart`, never the test key.**
 - `unawaited()` is used intentionally for fire-and-forget Supabase calls (score submission, profile upsert) so the game UI doesn't block on network.
 - The `leaderboard` Supabase view is read-only; scores are written to the `scores` table directly.
 - Player UUID is generated client-side (`_newUuid()` in `LocalProfileStore`) — not tied to any auth system for anonymous play.

@@ -56,6 +56,7 @@ class _BoardingGamePageState extends State<BoardingGamePage> {
   int _selectedZone = 5;
   bool _reportedCompletion = false;
   bool _isNewRecord = false;
+  bool _timedOut = false;
   bool _paintPointerActive = false;
   double _lastPointerGlobalY = 0;
   double _lastPointerGlobalX = 0;
@@ -111,6 +112,14 @@ class _BoardingGamePageState extends State<BoardingGamePage> {
       if (!widget.tutorialMode) _completionSave = widget.onCompleted?.call(ms);
       unawaited(AppAudio.instance.stopBgMusic());
     }
+    if (_simulation.isBoarding &&
+        !_simulation.isComplete &&
+        !_timedOut &&
+        _simulation.elapsedSeconds >= 600) {
+      _timedOut = true;
+      _game.paused = true;
+      unawaited(AppAudio.instance.stopBgMusic());
+    }
     if (mounted) setState(() {});
   }
 
@@ -124,6 +133,8 @@ class _BoardingGamePageState extends State<BoardingGamePage> {
     _simulation.reset();
     _reportedCompletion = false;
     _isNewRecord = false;
+    _timedOut = false;
+    _game.paused = false;
     _completionSave = null;
     if (mounted) setState(() {});
   }
@@ -188,15 +199,19 @@ class _BoardingGamePageState extends State<BoardingGamePage> {
 
   String get _timer {
     final milliseconds = (_simulation.elapsedSeconds * 1000).floor();
-    final seconds = milliseconds ~/ 1000;
-    final fraction = milliseconds % 1000;
-    return '${seconds.toString().padLeft(3, '0')}.${fraction.toString().padLeft(3, '0')}';
+    final totalSeconds = milliseconds ~/ 1000;
+    final m = totalSeconds ~/ 60;
+    final s = (totalSeconds % 60).toString().padLeft(2, '0');
+    final ms = (milliseconds % 1000).toString().padLeft(3, '0');
+    return '$m:$s.$ms';
   }
 
   String _formatMs(int milliseconds) {
-    final seconds = milliseconds ~/ 1000;
-    final fraction = milliseconds % 1000;
-    return '${seconds.toString().padLeft(3, '0')}.${fraction.toString().padLeft(3, '0')}';
+    final totalSeconds = milliseconds ~/ 1000;
+    final m = totalSeconds ~/ 60;
+    final s = (totalSeconds % 60).toString().padLeft(2, '0');
+    final ms = (milliseconds % 1000).toString().padLeft(3, '0');
+    return '$m:$s.$ms';
   }
 
   String get _boardingStatus {
@@ -534,6 +549,7 @@ class _BoardingGamePageState extends State<BoardingGamePage> {
                   ),
                 ),
                 if (complete) _buildCompletionCard(),
+                if (_timedOut) _buildTimeoutCard(),
               ],
             );
           },
@@ -700,6 +716,118 @@ class _BoardingGamePageState extends State<BoardingGamePage> {
     );
   }
 
+  Widget _buildTimeoutCard() {
+    final boarded = _simulation.boardedCount;
+    final total = _simulation.passengerCount;
+    final remaining = total - boarded;
+    return Positioned.fill(
+      child: Container(
+        color: Colors.black.withValues(alpha: 0.6),
+        child: Center(
+          child: Container(
+            margin: const EdgeInsets.symmetric(horizontal: 32),
+            padding: const EdgeInsets.all(28),
+            decoration: BoxDecoration(
+              color: const Color(0xFF151C2E),
+              borderRadius: BorderRadius.circular(24),
+              border: Border.all(color: Colors.red.withValues(alpha: 0.4)),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.red.withValues(alpha: 0.08),
+                  blurRadius: 32,
+                  offset: const Offset(0, 12),
+                ),
+              ],
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 62,
+                  height: 62,
+                  decoration: BoxDecoration(
+                    color: Colors.red.withValues(alpha: 0.15),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.flight_land_rounded,
+                    color: Colors.redAccent,
+                    size: 36,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                const Text(
+                  'You made boarding\nimpossible!',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w900,
+                    fontSize: 22,
+                    letterSpacing: -0.5,
+                    height: 1.2,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  '$remaining passenger${remaining == 1 ? '' : 's'} gave up and took the train.',
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(color: _muted, fontSize: 14, height: 1.4),
+                ),
+                const SizedBox(height: 6),
+                const Text(
+                  'The captain has filed a strongly-worded complaint.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: _muted, fontSize: 13, height: 1.4),
+                ),
+                const SizedBox(height: 22),
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        onPressed: _replay,
+                        icon: const Icon(Icons.replay_rounded, size: 18),
+                        label: const Text('TRY AGAIN'),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: Colors.white,
+                          side: BorderSide(
+                              color: Colors.white.withValues(alpha: 0.25)),
+                          padding: const EdgeInsets.symmetric(vertical: 13),
+                          textStyle: const TextStyle(
+                            fontWeight: FontWeight.w800,
+                            fontSize: 13,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      flex: 2,
+                      child: ElevatedButton.icon(
+                        onPressed: widget.onNext,
+                        icon: const Icon(Icons.skip_next_rounded, size: 18),
+                        label: const Text('NEXT FLIGHT'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: _accent,
+                          foregroundColor: const Color(0xFF0A0E1A),
+                          padding: const EdgeInsets.symmetric(vertical: 13),
+                          textStyle: const TextStyle(
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildStartButton(bool complete) {
     final boarding = _simulation.isBoarding;
     final preview = widget.previewOnly;
@@ -707,10 +835,12 @@ class _BoardingGamePageState extends State<BoardingGamePage> {
         ? 'PREMIUM — UNLOCK TO BOARD'
         : complete
         ? 'FLIGHT COMPLETE'
+        : _timedOut
+        ? 'BOARDING FAILED'
         : boarding
         ? 'BOARDING…'
         : 'START BOARDING';
-    final inactive = boarding || complete;
+    final inactive = boarding || complete || _timedOut;
     return SizedBox(
       height: 48,
       child: DecoratedBox(
