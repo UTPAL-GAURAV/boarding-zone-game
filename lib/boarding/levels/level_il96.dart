@@ -1,0 +1,90 @@
+import '../aircraft_layout.dart';
+
+/// Ilyushin Il-96-300 — outer-aisle 7-abreast (W-A-B-C-D-E-F-G-W, 2 aisles), 36 rows, 252 seats.
+/// Walking aisles on both outer edges; A-D board from left aisle, E-G from right aisle.
+abstract final class LevelIl96 {
+  static const AircraftLayout aircraft = AircraftLayout(
+    id: 'level_il96',
+    designWidth: 380,
+    designHeight: 1158,
+    rowCount: 36,
+    zoneCount: 6,
+    rowStartY: 114,
+    rowSpacing: 29,
+    seatWidth: 26,
+    seatHeight: 24,
+    seatColumns: [
+      SeatColumnLayout(label: 'A', centerX: 72,  aisleIndex: 0, seatType: SeatType.aisle),
+      SeatColumnLayout(label: 'B', centerX: 102, aisleIndex: 0, seatType: SeatType.middle),
+      SeatColumnLayout(label: 'C', centerX: 132, aisleIndex: 0, seatType: SeatType.middle),
+      SeatColumnLayout(label: 'D', centerX: 162, aisleIndex: 0, seatType: SeatType.middle),
+      SeatColumnLayout(label: 'E', centerX: 198, aisleIndex: 1, seatType: SeatType.middle),
+      SeatColumnLayout(label: 'F', centerX: 228, aisleIndex: 1, seatType: SeatType.middle),
+      SeatColumnLayout(label: 'G', centerX: 258, aisleIndex: 1, seatType: SeatType.aisle),
+    ],
+    rowDefaultZones: [
+      5, 5, 5, 5, 5, 5, 5, 5, 5, 5,
+      5, 5, 5, 5, 5, 5, 5, 5, 5, 5,
+      5, 5, 5, 5, 5, 5, 5, 5, 5, 5,
+      5, 5, 5, 5, 5, 5,
+    ],
+    aisles: [
+      BoardingAisleLayout(
+        id: 'left',
+        centerX: 42,
+        width: 30,
+        capacity: 60,
+        minimumSpacingRows: 0.4,
+        entryIntervalSeconds: 0.24,
+        walkingSpeedRowsPerSecond: 2.45,
+        turnDurationSeconds: 0.74,
+        entranceRow: -6.0,
+        floorTop: 89,
+      ),
+      BoardingAisleLayout(
+        id: 'right',
+        centerX: 308,
+        width: 30,
+        capacity: 60,
+        minimumSpacingRows: 0.4,
+        entryIntervalSeconds: 0.24,
+        walkingSpeedRowsPerSecond: 2.45,
+        turnDurationSeconds: 0.74,
+        entranceRow: -6.0,
+        floorTop: 89,
+      ),
+    ],
+    seatBlocks: [
+      SeatBlockLayout(left: 58, right: 175),
+      SeatBlockLayout(left: 185, right: 271),
+    ],
+    windowCentersX: [20, 360],
+    cabinShell: CabinRegion(
+      left: 10,
+      top: 38,
+      width: 360,
+      height: 1088,
+      cornerRadius: 58,
+    ),
+    flightDeck: CabinRegion(
+      left: 130,
+      top: 42,
+      width: 120,
+      height: 24,
+      cornerRadius: 12,
+    ),
+    gateLabelY: 24,
+    entranceDoorY: 77,
+    entranceDoorHeight: 13,
+    seatLayout: ['W', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'W'],
+    blockerRules: {
+      'A': [],
+      'B': ['A'],
+      'C': ['A', 'B'],
+      'D': ['A', 'B', 'C'],
+      'E': ['G', 'F'],
+      'F': ['G'],
+      'G': [],
+    },
+  );
+}

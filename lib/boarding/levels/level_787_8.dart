@@ -1,0 +1,82 @@
+import '../aircraft_layout.dart';
+
+/// Boeing 787-8 Dreamliner — 2-3-2 wide-body (7 abreast, 2 aisles), 36 rows, 252 seats.
+abstract final class Level787_8 {
+  static const AircraftLayout aircraft = AircraftLayout(
+    id: 'level_787_8',
+    designWidth: 380,
+    designHeight: 1158,
+    rowCount: 36,
+    zoneCount: 6,
+    rowStartY: 114,
+    rowSpacing: 29,
+    seatWidth: 28,
+    seatHeight: 24,
+    seatColumns: [
+      SeatColumnLayout(label: 'A', centerX: 70,  aisleIndex: 0, seatType: SeatType.window),
+      SeatColumnLayout(label: 'B', centerX: 102,  aisleIndex: 0, seatType: SeatType.aisle),
+      SeatColumnLayout(label: 'C', centerX: 158, aisleIndex: 0, seatType: SeatType.aisle),
+      SeatColumnLayout(label: 'D', centerX: 190, aisleIndex: 0, seatType: SeatType.middle),
+      SeatColumnLayout(label: 'E', centerX: 222, aisleIndex: 1, seatType: SeatType.aisle),
+      SeatColumnLayout(label: 'F', centerX: 278, aisleIndex: 1, seatType: SeatType.aisle),
+      SeatColumnLayout(label: 'G', centerX: 310, aisleIndex: 1, seatType: SeatType.window),
+    ],
+    rowDefaultZones: [
+      5, 5, 5, 5, 5, 5, 5, 5, 5, 5,
+      5, 5, 5, 5, 5, 5, 5, 5, 5, 5,
+      5, 5, 5, 5, 5, 5, 5, 5, 5, 5,
+      5, 5, 5, 5, 5, 5,
+    ],
+    aisles: [
+      BoardingAisleLayout(
+        id: 'left',
+        centerX: 130,
+        width: 30,
+        capacity: 60,
+        minimumSpacingRows: 0.4,
+        entryIntervalSeconds: 0.24,
+        walkingSpeedRowsPerSecond: 2.45,
+        turnDurationSeconds: 0.74,
+        entranceRow: -6.0,
+        floorTop: 89,
+      ),
+      BoardingAisleLayout(
+        id: 'right',
+        centerX: 250,
+        width: 30,
+        capacity: 60,
+        minimumSpacingRows: 0.4,
+        entryIntervalSeconds: 0.24,
+        walkingSpeedRowsPerSecond: 2.45,
+        turnDurationSeconds: 0.74,
+        entranceRow: -6.0,
+        floorTop: 89,
+      ),
+    ],
+    seatBlocks: [
+      SeatBlockLayout(left: 56, right: 116),
+      SeatBlockLayout(left: 144, right: 236),
+      SeatBlockLayout(left: 264, right: 324),
+    ],
+    windowCentersX: [44, 336],
+    cabinShell: CabinRegion(
+      left: 10,
+      top: 38,
+      width: 360,
+      height: 1088,
+      cornerRadius: 58,
+    ),
+    flightDeck: CabinRegion(
+      left: 130,
+      top: 42,
+      width: 120,
+      height: 24,
+      cornerRadius: 12,
+    ),
+    gateLabelY: 24,
+    entranceDoorY: 77,
+    entranceDoorHeight: 13,
+    seatLayout: ['A', 'B', 'W', 'C', 'D', 'E', 'W', 'F', 'G'],
+    blockerRules: {'A': ['B'], 'B': [], 'C': [], 'D': ['C'], 'E': [], 'F': [], 'G': ['F']},
+  );
+}

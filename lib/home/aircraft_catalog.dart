@@ -30,8 +30,16 @@ import '../boarding/levels/level_dual_aisle.dart';
 import '../boarding/levels/level_b757.dart';
 import '../boarding/levels/level_a321xlr.dart';
 import '../boarding/levels/level_767.dart';
-import '../boarding/levels/level_wide_232.dart';
-import '../boarding/levels/level_wide_333.dart';
+import '../boarding/levels/level_a330_200.dart';
+import '../boarding/levels/level_787_8.dart';
+import '../boarding/levels/level_il96.dart';
+import '../boarding/levels/level_a330_300.dart';
+import '../boarding/levels/level_787_9.dart';
+import '../boarding/levels/level_777_200er.dart';
+import '../boarding/levels/level_a350_900.dart';
+import '../boarding/levels/level_a350_1000.dart';
+import '../boarding/levels/level_777_300er.dart';
+import '../boarding/levels/level_747_8.dart';
 import '../boarding/levels/level_a380.dart';
 
 void registerAircraftCatalog() {
@@ -474,12 +482,12 @@ void registerAircraftCatalog() {
       description:
           'A versatile wide-body that made long thin routes economically viable.',
       imageAsset: 'assets/aircraft/a330-200.jpeg',
-      typicalSeats: 248,
+      typicalSeats: 252,
       targetSeconds: 960,
       unlockType: AircraftUnlockType.premium,
       priceLabel: 'Premium aircraft',
       unlockRequirement: 'Complete 767-300ER under 15:00',
-      layout: LevelWide232.aircraft,
+      layout: LevelA330_200.aircraft,
     ),
     const Aircraft(
       id: 'boeing-787-8',
@@ -489,12 +497,12 @@ void registerAircraftCatalog() {
       description:
           'A composite-built wide-body that slashed fuel burns on long-haul routes.',
       imageAsset: 'assets/aircraft/787-8.jpeg',
-      typicalSeats: 248,
+      typicalSeats: 252,
       targetSeconds: 960,
       unlockType: AircraftUnlockType.premium,
       priceLabel: 'Premium aircraft',
       unlockRequirement: 'Complete A330-200 under 16:00',
-      layout: LevelWide232.aircraft,
+      layout: Level787_8.aircraft,
     ),
     const Aircraft(
       id: 'ilyushin-il-96-300',
@@ -509,7 +517,7 @@ void registerAircraftCatalog() {
       unlockType: AircraftUnlockType.premium,
       priceLabel: 'Premium aircraft',
       unlockRequirement: 'Complete 787-8 Dreamliner under 16:00',
-      layout: LevelWide232.aircraft,
+      layout: LevelIl96.aircraft,
     ),
     const Aircraft(
       id: 'airbus-a330-300',
@@ -524,7 +532,7 @@ void registerAircraftCatalog() {
       unlockType: AircraftUnlockType.premium,
       priceLabel: 'Premium aircraft',
       unlockRequirement: 'Complete Il-96-300 under 16:30',
-      layout: LevelWide232.aircraft,
+      layout: LevelA330_300.aircraft,
     ),
     const Aircraft(
       id: 'boeing-787-9',
@@ -539,7 +547,7 @@ void registerAircraftCatalog() {
       unlockType: AircraftUnlockType.premium,
       priceLabel: 'Premium aircraft',
       unlockRequirement: 'Complete A330-300 under 17:00',
-      layout: LevelWide232.aircraft,
+      layout: Level787_9.aircraft,
     ),
     const Aircraft(
       id: 'boeing-777-200er',
@@ -549,12 +557,12 @@ void registerAircraftCatalog() {
       description:
           'The twin-jet giant that made non-stop ultra-long-haul flying routine.',
       imageAsset: 'assets/aircraft/777-200er.jpeg',
-      typicalSeats: 315,
+      typicalSeats: 360,
       targetSeconds: 1080,
       unlockType: AircraftUnlockType.premium,
       priceLabel: 'Premium aircraft',
       unlockRequirement: 'Complete 787-9 Dreamliner under 17:30',
-      layout: LevelWide232.aircraft,
+      layout: Level777_200er.aircraft,
     ),
     const Aircraft(
       id: 'airbus-a350-900',
@@ -564,11 +572,11 @@ void registerAircraftCatalog() {
       description:
           'A carbon-fibre wide-body engineered for efficiency on ultra-long-haul routes.',
       imageAsset: 'assets/aircraft/a350.jpeg',
-      typicalSeats: 315,
+      typicalSeats: 360,
       targetSeconds: 1080,
       unlockType: AircraftUnlockType.premium,
       priceLabel: 'Premium aircraft',
-      layout: LevelWide333.aircraft,
+      layout: LevelA350_900.aircraft,
     ),
     const Aircraft(
       id: 'airbus-a350-1000',
@@ -583,7 +591,7 @@ void registerAircraftCatalog() {
       unlockType: AircraftUnlockType.premium,
       priceLabel: 'Premium aircraft',
       unlockRequirement: 'Complete 777-200ER under 18:00',
-      layout: LevelWide333.aircraft,
+      layout: LevelA350_1000.aircraft,
     ),
     const Aircraft(
       id: 'boeing-777-300er',
@@ -598,7 +606,7 @@ void registerAircraftCatalog() {
       unlockType: AircraftUnlockType.premium,
       priceLabel: 'Premium aircraft',
       unlockRequirement: 'Complete A350-1000 under 19:30',
-      layout: LevelWide333.aircraft,
+      layout: Level777_300er.aircraft,
     ),
     const Aircraft(
       id: 'boeing-747-8',
@@ -612,7 +620,7 @@ void registerAircraftCatalog() {
       targetSeconds: 1350,
       unlockType: AircraftUnlockType.premium,
       priceLabel: 'Premium aircraft',
-      layout: LevelWide333.aircraft,
+      layout: Level747_8.aircraft,
     ),
     const Aircraft(
       id: 'airbus-a380-800',

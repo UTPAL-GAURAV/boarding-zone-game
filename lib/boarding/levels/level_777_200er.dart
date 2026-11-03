@@ -1,0 +1,82 @@
+import '../aircraft_layout.dart';
+
+/// Boeing 777-200ER — 4+4 wide-body (A-B-C-W-W-D-E-F-G, twin center aisles, 8 abreast), 45 rows, 360 seats.
+abstract final class Level777_200er {
+  static const AircraftLayout aircraft = AircraftLayout(
+    id: 'level_777_200er',
+    designWidth: 380,
+    designHeight: 1419,
+    rowCount: 45,
+    zoneCount: 6,
+    rowStartY: 114,
+    rowSpacing: 29,
+    seatWidth: 28,
+    seatHeight: 24,
+    seatColumns: [
+      SeatColumnLayout(label: 'A', centerX: 53,  aisleIndex: 0, seatType: SeatType.window),
+      SeatColumnLayout(label: 'B', centerX: 85,  aisleIndex: 0, seatType: SeatType.middle),
+      SeatColumnLayout(label: 'C', centerX: 117, aisleIndex: 0, seatType: SeatType.aisle),
+      SeatColumnLayout(label: 'D', centerX: 231, aisleIndex: 1, seatType: SeatType.aisle),
+      SeatColumnLayout(label: 'E', centerX: 263, aisleIndex: 1, seatType: SeatType.middle),
+      SeatColumnLayout(label: 'F', centerX: 295, aisleIndex: 1, seatType: SeatType.middle),
+      SeatColumnLayout(label: 'G', centerX: 327, aisleIndex: 1, seatType: SeatType.window),
+    ],
+    rowDefaultZones: [
+      5, 5, 5, 5, 5, 5, 5, 5, 5, 5,
+      5, 5, 5, 5, 5, 5, 5, 5, 5, 5,
+      5, 5, 5, 5, 5, 5, 5, 5, 5, 5,
+      5, 5, 5, 5, 5, 5, 5, 5, 5, 5,
+      5, 5, 5, 5, 5,
+    ],
+    aisles: [
+      BoardingAisleLayout(
+        id: 'left',
+        centerX: 161,
+        width: 30,
+        capacity: 72,
+        minimumSpacingRows: 0.4,
+        entryIntervalSeconds: 0.24,
+        walkingSpeedRowsPerSecond: 2.45,
+        turnDurationSeconds: 0.74,
+        entranceRow: -6.0,
+        floorTop: 89,
+      ),
+      BoardingAisleLayout(
+        id: 'right',
+        centerX: 197,
+        width: 30,
+        capacity: 72,
+        minimumSpacingRows: 0.4,
+        entryIntervalSeconds: 0.24,
+        walkingSpeedRowsPerSecond: 2.45,
+        turnDurationSeconds: 0.74,
+        entranceRow: -6.0,
+        floorTop: 89,
+      ),
+    ],
+    seatBlocks: [
+      SeatBlockLayout(left: 39, right: 131),
+      SeatBlockLayout(left: 217, right: 341),
+    ],
+    windowCentersX: [27, 353],
+    cabinShell: CabinRegion(
+      left: 10,
+      top: 38,
+      width: 360,
+      height: 1349,
+      cornerRadius: 58,
+    ),
+    flightDeck: CabinRegion(
+      left: 130,
+      top: 42,
+      width: 120,
+      height: 24,
+      cornerRadius: 12,
+    ),
+    gateLabelY: 24,
+    entranceDoorY: 77,
+    entranceDoorHeight: 13,
+    seatLayout: ['A', 'B', 'C', 'W', 'W', 'D', 'E', 'F', 'G'],
+    blockerRules: {'A': ['B', 'C'], 'B': ['C'], 'C': [], 'D': [], 'E': ['D'], 'F': ['D', 'E'], 'G': ['D', 'E', 'F']},
+  );
+}
