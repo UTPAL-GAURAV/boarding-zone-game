@@ -16,7 +16,7 @@ abstract final class LevelDualAisle {
       SeatColumnLayout(label: 'A', centerX: 40,  aisleIndex: 0, seatType: SeatType.window),
       SeatColumnLayout(label: 'B', centerX: 72,  aisleIndex: 0, seatType: SeatType.aisle),
       SeatColumnLayout(label: 'C', centerX: 130, aisleIndex: 0, seatType: SeatType.aisle),
-      SeatColumnLayout(label: 'D', centerX: 165, aisleIndex: 1, seatType: SeatType.middle),
+      SeatColumnLayout(label: 'D', centerX: 165, aisleIndex: 0, seatType: SeatType.middle),
       SeatColumnLayout(label: 'E', centerX: 200, aisleIndex: 1, seatType: SeatType.aisle),
       SeatColumnLayout(label: 'F', centerX: 258, aisleIndex: 1, seatType: SeatType.aisle),
       SeatColumnLayout(label: 'G', centerX: 290, aisleIndex: 1, seatType: SeatType.window),
@@ -76,6 +76,6 @@ abstract final class LevelDualAisle {
     entranceDoorY: 77,
     entranceDoorHeight: 13,
     seatLayout: ['A', 'B', 'W', 'C', 'D', 'E', 'W', 'F', 'G'],
-    blockerRules: {'A': ['B'], 'B': [], 'C': [], 'D': ['C'], 'E': ['C', 'D'], 'F': [], 'G': ['F']},
+    blockerRules: {'A': ['B'], 'B': [], 'C': [], 'D': ['C'], 'E': [], 'F': [], 'G': ['F']},
   );
 }

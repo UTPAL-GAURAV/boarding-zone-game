@@ -1,6 +1,6 @@
 import '../aircraft_layout.dart';
 
-/// 6-abreast narrow-body (A-B-C-W-D-E-F): 33 rows, 198 seats. Used by Boeing 757-200.
+/// 6-abreast narrow-body (A-B-W-C-D-E-F): 33 rows, 198 seats. Used by Boeing 757-200.
 abstract final class LevelB757 {
   static const AircraftLayout aircraft = AircraftLayout(
     id: 'level_6abreast_33row',
@@ -13,12 +13,12 @@ abstract final class LevelB757 {
     seatWidth: 32,
     seatHeight: 26,
     seatColumns: [
-      SeatColumnLayout(label: 'A', centerX: 50,  aisleIndex: 0, seatType: SeatType.window),
-      SeatColumnLayout(label: 'B', centerX: 88,  aisleIndex: 0, seatType: SeatType.middle),
-      SeatColumnLayout(label: 'C', centerX: 126, aisleIndex: 0, seatType: SeatType.aisle),
-      SeatColumnLayout(label: 'D', centerX: 214, aisleIndex: 0, seatType: SeatType.aisle),
-      SeatColumnLayout(label: 'E', centerX: 252, aisleIndex: 0, seatType: SeatType.middle),
-      SeatColumnLayout(label: 'F', centerX: 290, aisleIndex: 0, seatType: SeatType.window),
+      SeatColumnLayout(label: 'A', centerX: 88,  aisleIndex: 0, seatType: SeatType.window),
+      SeatColumnLayout(label: 'B', centerX: 126, aisleIndex: 0, seatType: SeatType.aisle),
+      SeatColumnLayout(label: 'C', centerX: 214, aisleIndex: 0, seatType: SeatType.aisle),
+      SeatColumnLayout(label: 'D', centerX: 252, aisleIndex: 0, seatType: SeatType.middle),
+      SeatColumnLayout(label: 'E', centerX: 290, aisleIndex: 0, seatType: SeatType.middle),
+      SeatColumnLayout(label: 'F', centerX: 328, aisleIndex: 0, seatType: SeatType.window),
     ],
     rowDefaultZones: [5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5],
     aisles: [
@@ -36,10 +36,10 @@ abstract final class LevelB757 {
       ),
     ],
     seatBlocks: [
-      SeatBlockLayout(left: 31, right: 145),
-      SeatBlockLayout(left: 195, right: 309),
+      SeatBlockLayout(left: 69, right: 145),
+      SeatBlockLayout(left: 195, right: 347),
     ],
-    windowCentersX: [18, 322],
+    windowCentersX: [56, 360],
     cabinShell: CabinRegion(
       left: 20,
       top: 28,
@@ -57,7 +57,7 @@ abstract final class LevelB757 {
     gateLabelY: 14,
     entranceDoorY: 71,
     entranceDoorHeight: 13,
-    seatLayout: ['A', 'B', 'C', 'W', 'D', 'E', 'F'],
-    blockerRules: {'A': ['B', 'C'], 'B': ['C'], 'C': [], 'D': [], 'E': ['D'], 'F': ['D', 'E']},
+    seatLayout: ['A', 'B', 'W', 'C', 'D', 'E', 'F'],
+    blockerRules: {'A': ['B'], 'B': [], 'C': [], 'D': ['C'], 'E': ['C', 'D'], 'F': ['C', 'D', 'E']},
   );
 }
