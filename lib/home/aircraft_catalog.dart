@@ -68,7 +68,7 @@ void registerAircraftCatalog() {
       typicalSeats: 20,
       targetSeconds: 26,
       unlockType: AircraftUnlockType.progression,
-      unlockRequirement: 'Complete Grand Caravan EX under 05:00',
+      unlockRequirement: 'Complete Grand Caravan EX under 0:22',
       layout: LevelSkyCourier.aircraft,
     ),
     const Aircraft(
@@ -82,7 +82,7 @@ void registerAircraftCatalog() {
       typicalSeats: 34,
       targetSeconds: 32,
       unlockType: AircraftUnlockType.progression,
-      unlockRequirement: 'Complete SkyCourier under 06:00',
+      unlockRequirement: 'Complete SkyCourier under 0:26',
       layout: LevelSaab340.aircraft,
     ),
     const Aircraft(
@@ -95,7 +95,7 @@ void registerAircraftCatalog() {
       typicalSeats: 48,
       targetSeconds: 56,
       unlockType: AircraftUnlockType.progression,
-      unlockRequirement: 'Complete 340B under 07:00',
+      unlockRequirement: 'Complete 340B under 0:32',
       layout: LevelAtr42.aircraft,
     ),
     const Aircraft(
@@ -108,7 +108,7 @@ void registerAircraftCatalog() {
       typicalSeats: 52,
       targetSeconds: 66,
       unlockType: AircraftUnlockType.progression,
-      unlockRequirement: 'Complete 42-600 under 08:00',
+      unlockRequirement: 'Complete 42-600 under 0:56',
       layout: Level4Abreast.aircraft,
     ),
     const Aircraft(
@@ -122,7 +122,7 @@ void registerAircraftCatalog() {
       typicalSeats: 52,
       targetSeconds: 70,
       unlockType: AircraftUnlockType.progression,
-      unlockRequirement: 'Complete ERJ-145 under 08:30',
+      unlockRequirement: 'Complete ERJ-145 under 1:06',
       layout: LevelSaab2000.aircraft,
     ),
     const Aircraft(
@@ -136,7 +136,7 @@ void registerAircraftCatalog() {
       typicalSeats: 60,
       targetSeconds: 72,
       unlockType: AircraftUnlockType.progression,
-      unlockRequirement: 'Complete Saab 2000 under 08:30',
+      unlockRequirement: 'Complete Saab 2000 under 1:10',
       layout: LevelIl114.aircraft,
     ),
     const Aircraft(
@@ -149,7 +149,7 @@ void registerAircraftCatalog() {
       typicalSeats: 72,
       targetSeconds: 78,
       unlockType: AircraftUnlockType.progression,
-      unlockRequirement: 'Complete Il-114-300 under 09:00',
+      unlockRequirement: 'Complete Il-114-300 under 1:12',
       layout: LevelCrj700.aircraft,
     ),
     const Aircraft(
@@ -162,7 +162,7 @@ void registerAircraftCatalog() {
       typicalSeats: 72,
       targetSeconds: 90,
       unlockType: AircraftUnlockType.progression,
-      unlockRequirement: 'Complete CRJ-700 under 09:15',
+      unlockRequirement: 'Complete CRJ-700 under 1:18',
       layout: LevelAtr72.aircraft,
     ),
     const Aircraft(
@@ -176,7 +176,7 @@ void registerAircraftCatalog() {
       typicalSeats: 72,
       targetSeconds: 110,
       unlockType: AircraftUnlockType.progression,
-      unlockRequirement: 'Complete 72-600 under 09:00',
+      unlockRequirement: 'Complete 72-600 under 1:30',
       layout: LevelE170.aircraft,
     ),
     const Aircraft(
@@ -190,7 +190,7 @@ void registerAircraftCatalog() {
       typicalSeats: 80,
       targetSeconds: 90,
       unlockType: AircraftUnlockType.progression,
-      unlockRequirement: 'Complete E170 under 09:15',
+      unlockRequirement: 'Complete E170 under 1:50',
       layout: LevelDash8.aircraft,
     ),
     const Aircraft(
@@ -204,7 +204,7 @@ void registerAircraftCatalog() {
       typicalSeats: 80,
       targetSeconds: 84,
       unlockType: AircraftUnlockType.progression,
-      unlockRequirement: 'Complete Dash 8-400 under 09:30',
+      unlockRequirement: 'Complete Dash 8-400 under 1:30',
       layout: LevelE175.aircraft,
     ),
     const Aircraft(
@@ -218,7 +218,7 @@ void registerAircraftCatalog() {
       typicalSeats: 85,
       targetSeconds: 110,
       unlockType: AircraftUnlockType.progression,
-      unlockRequirement: 'Complete E175 under 09:30',
+      unlockRequirement: 'Complete E175 under 1:24',
       layout: LevelAn148.aircraft,
     ),
     const Aircraft(
@@ -232,7 +232,7 @@ void registerAircraftCatalog() {
       typicalSeats: 90,
       targetSeconds: 110,
       unlockType: AircraftUnlockType.progression,
-      unlockRequirement: 'Complete An-148 under 10:00',
+      unlockRequirement: 'Complete An-148 under 1:50',
       layout: LevelArj21.aircraft,
     ),
     const Aircraft(
@@ -246,7 +246,7 @@ void registerAircraftCatalog() {
       typicalSeats: 100,
       targetSeconds: 120,
       unlockType: AircraftUnlockType.progression,
-      unlockRequirement: 'Complete ARJ21-700 under 10:15',
+      unlockRequirement: 'Complete ARJ21-700 under 1:50',
       layout: LevelAn158.aircraft,
     ),
     const Aircraft(
@@ -260,7 +260,7 @@ void registerAircraftCatalog() {
       typicalSeats: 100,
       targetSeconds: 120,
       unlockType: AircraftUnlockType.progression,
-      unlockRequirement: 'Complete An-158 under 10:30',
+      unlockRequirement: 'Complete An-158 under 2:00',
       layout: LevelE190.aircraft,
     ),
     const Aircraft(
@@ -274,7 +274,7 @@ void registerAircraftCatalog() {
       typicalSeats: 100,
       targetSeconds: 130,
       unlockType: AircraftUnlockType.progression,
-      unlockRequirement: 'Complete E190 under 10:30',
+      unlockRequirement: 'Complete E190 under 2:00',
       layout: LevelSuperjet.aircraft,
     ),
     const Aircraft(
@@ -288,7 +288,7 @@ void registerAircraftCatalog() {
       typicalSeats: 125,
       targetSeconds: 130,
       unlockType: AircraftUnlockType.progression,
-      unlockRequirement: 'Complete Superjet 100 under 10:30',
+      unlockRequirement: 'Complete Superjet 100 under 2:10',
       layout: LevelA220_100.aircraft,
     ),
     const Aircraft(
@@ -302,7 +302,7 @@ void registerAircraftCatalog() {
       typicalSeats: 130,
       targetSeconds: 134,
       unlockType: AircraftUnlockType.progression,
-      unlockRequirement: 'Complete A220-100 under 11:15',
+      unlockRequirement: 'Complete A220-100 under 2:10',
       layout: LevelE195.aircraft,
     ),
     const Aircraft(
@@ -316,7 +316,7 @@ void registerAircraftCatalog() {
       typicalSeats: 138,
       targetSeconds: 150,
       unlockType: AircraftUnlockType.progression,
-      unlockRequirement: 'Complete E195-E2 under 11:30',
+      unlockRequirement: 'Complete E195-E2 under 2:14',
       layout: LevelA319.aircraft,
     ),
     const Aircraft(
@@ -330,7 +330,7 @@ void registerAircraftCatalog() {
       typicalSeats: 138,
       targetSeconds: 160,
       unlockType: AircraftUnlockType.progression,
-      unlockRequirement: 'Complete A319neo under 12:00',
+      unlockRequirement: 'Complete A319neo under 2:30',
       layout: LevelB737_700.aircraft,
     ),
     const Aircraft(
@@ -344,7 +344,7 @@ void registerAircraftCatalog() {
       typicalSeats: 145,
       targetSeconds: 150,
       unlockType: AircraftUnlockType.progression,
-      unlockRequirement: 'Complete 737-700 under 12:00',
+      unlockRequirement: 'Complete 737-700 under 2:40',
       layout: LevelA220_300.aircraft,
     ),
     const Aircraft(
@@ -358,7 +358,7 @@ void registerAircraftCatalog() {
       typicalSeats: 150,
       targetSeconds: 150,
       unlockType: AircraftUnlockType.progression,
-      unlockRequirement: 'Complete A220-300 under 12:00',
+      unlockRequirement: 'Complete A220-300 under 2:30',
       layout: LevelA320.aircraft,
     ),
     const Aircraft(
@@ -372,7 +372,7 @@ void registerAircraftCatalog() {
       typicalSeats: 156,
       targetSeconds: 200,
       unlockType: AircraftUnlockType.progression,
-      unlockRequirement: 'Complete A320 under 12:30',
+      unlockRequirement: 'Complete A320 under 2:30',
       layout: LevelC919.aircraft,
     ),
     const Aircraft(
@@ -386,7 +386,7 @@ void registerAircraftCatalog() {
       typicalSeats: 174,
       targetSeconds: 180,
       unlockType: AircraftUnlockType.progression,
-      unlockRequirement: 'Complete C919 under 12:45',
+      unlockRequirement: 'Complete C919 under 3:20',
       layout: LevelB737_800.aircraft,
     ),
     const Aircraft(
@@ -400,7 +400,7 @@ void registerAircraftCatalog() {
       typicalSeats: 186,
       targetSeconds: 180,
       unlockType: AircraftUnlockType.progression,
-      unlockRequirement: 'Complete 737-800 under 13:30',
+      unlockRequirement: 'Complete 737-800 under 3:00',
       layout: LevelA321neo.aircraft,
     ),
     const Aircraft(
@@ -414,7 +414,7 @@ void registerAircraftCatalog() {
       typicalSeats: 192,
       targetSeconds: 180,
       unlockType: AircraftUnlockType.progression,
-      unlockRequirement: 'Complete A321neo under 14:00',
+      unlockRequirement: 'Complete A321neo under 3:00',
       layout: LevelB737_9.aircraft,
     ),
     const Aircraft(
@@ -428,7 +428,7 @@ void registerAircraftCatalog() {
       typicalSeats: 196,
       targetSeconds: 160,
       unlockType: AircraftUnlockType.progression,
-      unlockRequirement: 'Complete 737-9 MAX under 14:15',
+      unlockRequirement: 'Complete 737-9 MAX under 3:00',
       layout: LevelDualAisle.aircraft,
     ),
     const Aircraft(
@@ -442,7 +442,7 @@ void registerAircraftCatalog() {
       typicalSeats: 198,
       targetSeconds: 180,
       unlockType: AircraftUnlockType.progression,
-      unlockRequirement: 'Complete Tu-214 under 14:30',
+      unlockRequirement: 'Complete Tu-214 under 2:40',
       layout: LevelB757.aircraft,
     ),
     const Aircraft(
@@ -456,7 +456,7 @@ void registerAircraftCatalog() {
       typicalSeats: 204,
       targetSeconds: 180,
       unlockType: AircraftUnlockType.progression,
-      unlockRequirement: 'Complete 757-200 under 14:30',
+      unlockRequirement: 'Complete 757-200 under 3:00',
       layout: LevelA321xlr.aircraft,
     ),
     const Aircraft(
@@ -471,7 +471,6 @@ void registerAircraftCatalog() {
       targetSeconds: 900,
       unlockType: AircraftUnlockType.premium,
       priceLabel: 'Premium aircraft',
-      unlockRequirement: 'Complete A321XLR under 14:45',
       layout: Level767.aircraft,
     ),
     const Aircraft(
@@ -486,7 +485,6 @@ void registerAircraftCatalog() {
       targetSeconds: 960,
       unlockType: AircraftUnlockType.premium,
       priceLabel: 'Premium aircraft',
-      unlockRequirement: 'Complete 767-300ER under 15:00',
       layout: LevelA330_200.aircraft,
     ),
     const Aircraft(
@@ -501,7 +499,6 @@ void registerAircraftCatalog() {
       targetSeconds: 960,
       unlockType: AircraftUnlockType.premium,
       priceLabel: 'Premium aircraft',
-      unlockRequirement: 'Complete A330-200 under 16:00',
       layout: Level787_8.aircraft,
     ),
     const Aircraft(
@@ -516,7 +513,6 @@ void registerAircraftCatalog() {
       targetSeconds: 990,
       unlockType: AircraftUnlockType.premium,
       priceLabel: 'Premium aircraft',
-      unlockRequirement: 'Complete 787-8 Dreamliner under 16:00',
       layout: LevelIl96.aircraft,
     ),
     const Aircraft(
@@ -531,7 +527,6 @@ void registerAircraftCatalog() {
       targetSeconds: 1020,
       unlockType: AircraftUnlockType.premium,
       priceLabel: 'Premium aircraft',
-      unlockRequirement: 'Complete Il-96-300 under 16:30',
       layout: LevelA330_300.aircraft,
     ),
     const Aircraft(
@@ -546,7 +541,6 @@ void registerAircraftCatalog() {
       targetSeconds: 1050,
       unlockType: AircraftUnlockType.premium,
       priceLabel: 'Premium aircraft',
-      unlockRequirement: 'Complete A330-300 under 17:00',
       layout: Level787_9.aircraft,
     ),
     const Aircraft(
@@ -561,7 +555,6 @@ void registerAircraftCatalog() {
       targetSeconds: 1080,
       unlockType: AircraftUnlockType.premium,
       priceLabel: 'Premium aircraft',
-      unlockRequirement: 'Complete 787-9 Dreamliner under 17:30',
       layout: Level777_200er.aircraft,
     ),
     const Aircraft(
@@ -590,7 +583,6 @@ void registerAircraftCatalog() {
       targetSeconds: 1170,
       unlockType: AircraftUnlockType.premium,
       priceLabel: 'Premium aircraft',
-      unlockRequirement: 'Complete 777-200ER under 18:00',
       layout: LevelA350_1000.aircraft,
     ),
     const Aircraft(
@@ -605,7 +597,6 @@ void registerAircraftCatalog() {
       targetSeconds: 1230,
       unlockType: AircraftUnlockType.premium,
       priceLabel: 'Premium aircraft',
-      unlockRequirement: 'Complete A350-1000 under 19:30',
       layout: Level777_300er.aircraft,
     ),
     const Aircraft(
