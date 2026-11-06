@@ -1,0 +1,34 @@
+{
+  "project_info": {
+    "project_number": "284949944908",
+    "project_id": "boarding-bluster",
+    "storage_bucket": ""
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:284949944908:android:boardingbluster",
+        "android_client_info": {
+          "package_name": "com.nordiclabs.boardingbluster"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "284949944908-2j3p30poivtnbpn6f2q55i6hsru54ijo.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.nordiclabs.boardingbluster",
+            "certificate_hash": "086caa5ade68a09364bf3f1ec81ce1abdf55d6c9"
+          }
+        },
+        {
+          "client_id": "284949944908-sa94cbj5g93pv51fr500rb61ktn1pcq5.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [],
+      "services": {}
+    }
+  ],
+  "configuration_version": "1"
+}
