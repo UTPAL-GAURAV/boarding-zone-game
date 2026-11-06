@@ -271,17 +271,37 @@ App never crashes on network failure — errors are swallowed after 3 retries an
 ## Android config
 
 - **Min SDK:** 26 (raised from flutter default to satisfy `sentry_flutter ^10.x` and `google_sign_in ^7.x`)
-- **OAuth client ID:** `284949944908-2j3p30poivtnbpn6f2q55i6hsru54ijo.apps.googleusercontent.com`
-- **Debug SHA-1:** `08:6C:AA:5A:DE:68:A0:93:64:BF:3F:1E:C8:1C:E1:AB:DF:55:D6:C9`
 - ProGuard enabled for release builds (`proguard-rules.pro`)
 - `cronet_http` used instead of `dart:io` HttpClient to work around Android network issues
+
+### Google Sign-In / OAuth
+
+All credentials live in the **"Swipe IQ" Google Cloud project** (project number `284949944908`). The project name is unrelated to this app — credentials were added there intentionally and work fine.
+
+**OAuth consent screen:** External, **In production** (any Google account can sign in — no test user list).  
+**Privacy policy URL:** `https://github.com/UTPAL-GAURAV/BoardingBluster-Privacy-Policy`
+
+**OAuth 2.0 Client IDs:**
+
+| Name | Type | Client ID | SHA-1 |
+|---|---|---|---|
+| Boarding Bluster | Android (debug) | `284949944908-2j3p30poivtnbpn6f2q55i6hsru54ijo` | `08:6C:AA:5A:DE:68:A0:93:64:BF:3F:1E:C8:1C:E1:AB:DF:55:D6:C9` |
+| Boarding Bluster Release | Android (Play/release) | `284949944908-gle4s7vp94b4fgn0i4njjftfs5l9vi6r` | `7B:C0:E5:64:72:A3:9C:02:A2:CC:F2:63:D6:49:09:9F:F1:4C:6A:CA` |
+| Boarding Bluster Web | Web application | `284949944908-sa94cbj5g93pv51fr500rb61ktn1pcq5` | — |
+
+- The **Web client ID** is used as `serverClientId` in `lib/home/shop_service.dart`
+- The **release SHA-1** (`7B:C0...`) comes from Play Console → Release → Setup → App signing → **App signing key certificate** (Google-managed key). Do NOT use the local upload keystore SHA-1 — Play re-signs the APK with its own managed key.
+
+**`google-services.json`** (`android/app/google-services.json`):
+- Hand-crafted — there is no Firebase project
+- Contains both Android OAuth clients (debug + release) and the web client
+- Safe to commit to git (no secrets)
 
 ---
 
 ## Known issues / limitations
 
 - **Corporate VPN (SAP)** blocks HTTPS to `supabase.co` on the Android emulator. Rankings and score submission only work on a real device or without the VPN. This is not a code bug.
-- **`anonKey` deprecation warning** in `lib/main.dart` — rename to `publishableKey` when upgrading `supabase_flutter`.
 
 ---
 

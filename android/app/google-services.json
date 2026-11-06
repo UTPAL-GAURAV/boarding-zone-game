@@ -22,6 +22,14 @@
           }
         },
         {
+          "client_id": "284949944908-gle4s7vp94b4fgn0i4njjftfs5l9vi6r.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.nordiclabs.boardingbluster",
+            "certificate_hash": "7bc0e56472a39c02a2ccf263d649099ff14c6aca"
+          }
+        },
+        {
           "client_id": "284949944908-sa94cbj5g93pv51fr500rb61ktn1pcq5.apps.googleusercontent.com",
           "client_type": 3
         }
