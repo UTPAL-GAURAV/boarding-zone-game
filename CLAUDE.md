@@ -8,7 +8,7 @@ Built with the Flame engine. Each aircraft is a timed puzzle — zone seats, boa
 **App name:** Boarding Bluster  
 **Package:** `com.nordiclabs.boardingbluster`  
 **Pubspec name:** `boarding_bluster`  
-**Version:** 1.0.0+1
+**Version:** 1.0.2+3
 
 ---
 
