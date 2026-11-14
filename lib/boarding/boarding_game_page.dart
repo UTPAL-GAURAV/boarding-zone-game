@@ -733,7 +733,7 @@ class _BoardingGamePageState extends State<BoardingGamePage>
     final tutorialBlocked = widget.tutorialMode &&
         _tutorialStep < TutorialStep.values.indexOf(TutorialStep.boardNow);
 
-    final inactive = boarding || complete || _timedOut || tutorialBlocked;
+    final inactive = boarding || complete || _timedOut || tutorialBlocked || preview;
 
     String label;
     IconData icon;

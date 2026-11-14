@@ -356,42 +356,10 @@ class CabinGame extends FlameGame {
     for (var row = 0; row < layout.rowCount; row++) {
       final y = layout.rowStartY + row * layout.rowSpacing;
 
-      // Row numbers
-      final rowNumColor = _isDark ? const Color(0xFF4A7AB0) : const Color(0xFF6A8AB8);
-      _text(canvas, '${row + 1}',
-          Offset(layout.seatBlocks.first.left - 4, y), 9, rowNumColor,
-          bold: true);
-      _text(canvas, '${row + 1}',
-          Offset(layout.seatBlocks.last.right + 4, y), 9, rowNumColor,
-          bold: true);
-
-      // Overhead bin panels
-      for (final block in layout.seatBlocks) {
-        // Bin tray
-        canvas.drawRRect(
-          RRect.fromRectAndRadius(
-            Rect.fromLTWH(block.left, y - 18, block.right - block.left, 5),
-            const Radius.circular(2.5),
-          ),
-          Paint()
-            ..color = _isDark ? const Color(0xFF1E3050) : const Color(0xFFD0DCF0),
-        );
-        // Bin handle groove
-        canvas.drawRRect(
-          RRect.fromRectAndRadius(
-            Rect.fromLTWH(
-                block.left + (block.right - block.left) / 2 - 8, y - 16, 16, 2),
-            const Radius.circular(1),
-          ),
-          Paint()
-            ..color = _isDark ? const Color(0xFF2E4870) : const Color(0xFFB0C0DC),
-        );
-      }
-
       // Draw seats
       for (var column = 0; column < layout.seatsPerRow; column++) {
         final seat = simulation.seats[row * layout.seatsPerRow + column];
-        _drawSeat(canvas, _seatRect(row, column), seat.zone, seat.label);
+        _drawSeat(canvas, _seatRect(row, column), seat.zone, '${row + 1}${seat.label}');
       }
     }
   }
@@ -428,7 +396,7 @@ class CabinGame extends FlameGame {
       canvas,
       label,
       Offset(rect.center.dx, rect.center.dy + 4),
-      7,
+      6,
       _isDark ? color.withValues(alpha: 0.9) : const Color(0x9A000000),
       bold: true,
     );
