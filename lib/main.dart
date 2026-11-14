@@ -24,7 +24,7 @@ Future<void> main() async {
         'FLUTTER_ENV',
         defaultValue: 'production',
       );
-      options.release = 'boarding-bluster@1.0.2+5';
+      options.release = 'boarding-bluster@1.0.3+6';
       options.tracesSampleRate = 0.2;
       options.attachScreenshot = false;
       options.sendDefaultPii = false;

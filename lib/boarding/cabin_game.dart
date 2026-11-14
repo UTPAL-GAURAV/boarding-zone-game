@@ -3,6 +3,7 @@ import 'dart:ui' as ui;
 
 import 'package:flame/game.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import 'boarding_simulation.dart';
 import 'aircraft_layout.dart';
@@ -17,6 +18,8 @@ class CabinGame extends FlameGame {
   @override
   bool paused = false;
   bool _isDark;
+  ui.Image? _noseLightImage;
+  ui.Image? _noseDarkImage;
 
   /// Update the light/dark theme without recreating the game.
   set isDark(bool value) => _isDark = value;
@@ -39,6 +42,20 @@ class CabinGame extends FlameGame {
   @override
   Color backgroundColor() =>
       _isDark ? const Color(0xFF0D1428) : const Color(0xFFEDF3FF);
+
+  Future<ui.Image> _loadImage(String asset) async {
+    final data = await rootBundle.load(asset);
+    final codec = await ui.instantiateImageCodec(data.buffer.asUint8List());
+    final frame = await codec.getNextFrame();
+    return frame.image;
+  }
+
+  @override
+  Future<void> onLoad() async {
+    await super.onLoad();
+    _noseLightImage = await _loadImage('assets/plane_nose_light.png');
+    _noseDarkImage  = await _loadImage('assets/plane_nose_dark.png');
+  }
 
   @override
   void update(double dt) {
@@ -148,45 +165,95 @@ class CabinGame extends FlameGame {
       shadow,
     );
 
-    // Fuselage fill
+    // Nose image first — fuselage fill painted on top covers white artifacts
+    // outside the nose outline that background-removal tools leave behind.
+    _drawNose(canvas);
+
+    // Bottom = just below the last seat row, no extra space, square corners
+    final bodyBottom = layout.rowStartY +
+        (layout.rowCount - 1) * layout.rowSpacing +
+        layout.seatHeight / 2 + 14;
+
+    // Fuselage fill — starts at entranceDoorY so the nose image shows through
+    // the full nose section without being clipped by the white rect.
+    // The nose image outline is already vertical at this point, so the border
+    // line we draw below aligns perfectly with no gap or step.
     final shell = Paint()
-      ..color = _isDark ? const Color(0xFF111C36) : const Color(0xFFF5F8FF);
-    canvas.drawRRect(
-      RRect.fromRectAndRadius(
-        Rect.fromLTWH(
-          layout.cabinShell.left,
-          layout.cabinShell.top,
-          layout.cabinShell.width,
-          layout.cabinShell.height,
-        ),
-        Radius.circular(layout.cabinShell.cornerRadius),
+      ..color = _isDark ? const Color(0xFF111C36) : const Color(0xFFFFFFFF);
+    canvas.drawRect(
+      Rect.fromLTWH(
+        layout.cabinShell.left,
+        layout.entranceDoorY.toDouble(),
+        layout.cabinShell.width,
+        bodyBottom - layout.entranceDoorY,
       ),
       shell,
     );
 
-    // Fuselage border
-    final outline = Paint()
-      ..color = _isDark ? const Color(0xFF2A4A7A) : const Color(0xFFB0C4E8)
+    // Fuselage side + bottom border — continues the nose image outline.
+    // Border center in nose image is inset 8px from left edge and 9.5px from right
+    // edge (out of 417px content width). Stroke width is ~14px in 417px content.
+    // These fractions are applied to cabinShell.width to stay proportional across
+    // all aircraft layouts (narrow-body, wide-body, A380, etc.).
+    // Border line picks up exactly where the nose image outline ends (entranceDoorY).
+    // Border measured from nose image: 4px wide opaque blue strip, centered ~2.5px
+    // from left content edge and ~3.5px from right. Use 3/417 symmetric for both.
+    // StrokeWidth = 4/417 * cabinShell.width scales across all aircraft layouts.
+    final nosBorderStrokeW = (4.0 / 417.0) * layout.cabinShell.width;
+    final nosInset = (3.0 / 417.0) * layout.cabinShell.width;
+    final lBorder = layout.cabinShell.left + nosInset;
+    final rBorder = layout.cabinShell.left + layout.cabinShell.width - nosInset;
+    final borderPaint = Paint()
+      ..color = const Color(0xFFB6C7E5)
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.5;
-    canvas.drawRRect(
-      RRect.fromRectAndRadius(
-        Rect.fromLTWH(
-          layout.cabinShell.left,
-          layout.cabinShell.top,
-          layout.cabinShell.width,
-          layout.cabinShell.height,
-        ),
-        Radius.circular(layout.cabinShell.cornerRadius),
-      ),
-      outline,
-    );
+      ..strokeWidth = nosBorderStrokeW
+      ..strokeCap = StrokeCap.square;
+    // Start at entranceDoorY — the exact bottom edge of the nose image — so the
+    // line continues seamlessly from the nose outline without any gap or overlap.
+    final sidePath = Path()
+      ..moveTo(lBorder, layout.entranceDoorY.toDouble())
+      ..lineTo(lBorder, bodyBottom)
+      ..lineTo(rBorder, bodyBottom)
+      ..lineTo(rBorder, layout.entranceDoorY.toDouble());
+    canvas.drawPath(sidePath, borderPaint);
 
     _drawCockpit(canvas);
     _drawEntrance(canvas);
     _drawAisle(canvas);
     _drawWindows(canvas);
     _drawRows(canvas);
+  }
+
+  void _drawNose(Canvas canvas) {
+    final img = _isDark ? _noseDarkImage : _noseLightImage;
+    if (img == null) return;
+
+    const imgW = 583.0;
+    const imgH = 428.0;
+    const contentLeft = 83.0;
+    const contentWidth = 417.0;
+    const contentTop = 15.0;
+    const contentHeight = 412.0;
+
+    final scale = layout.cabinShell.width / contentWidth;
+    final destW = imgW * scale;
+    final destH = imgH * scale;
+    final destLeft = layout.cabinShell.left - contentLeft * scale;
+    final destTop = layout.entranceDoorY - (contentTop + contentHeight) * scale;
+
+    // Paint background color over the full image rect first so any
+    // semi-transparent artifact pixels outside the nose outline are invisible.
+    canvas.drawRect(
+      Rect.fromLTWH(destLeft, destTop, destW, destH),
+      Paint()..color = _isDark ? const Color(0xFF0D1428) : const Color(0xFFEDF3FF),
+    );
+
+    canvas.drawImageRect(
+      img,
+      Rect.fromLTWH(0, 0, imgW, imgH),
+      Rect.fromLTWH(destLeft, destTop, destW, destH),
+      Paint(),
+    );
   }
 
   void _drawCockpit(Canvas canvas) {

@@ -627,13 +627,20 @@ class _BoardingGamePageState extends State<BoardingGamePage>
             builder: (context, constraints) {
               final designW = _simulation.layout.designWidth;
               final designH = _simulation.layout.designHeight;
+              final cabinShellW = _simulation.layout.cabinShell.width;
+              final entranceDoorY = _simulation.layout.entranceDoorY;
+              final noseScale = cabinShellW / 417.0;
+              // How far above y=0 the nose tip extends in design coords
+              final noseAboveDesign = ((15.0 + 412.0) * noseScale - entranceDoorY).clamp(0.0, double.infinity);
               final scale = designW > constraints.maxWidth
                   ? 1.0
                   : constraints.maxWidth / designW;
               final contentW = designW * scale;
               final contentH = designH * scale;
+              // Extra scroll space above the game canvas for the nose tip
+              final noseSpacerH = noseAboveDesign * scale;
               final needsHScroll = contentW > constraints.maxWidth + 1;
-              final needsVScroll = contentH > constraints.maxHeight + 1;
+              final needsVScroll = contentH + noseSpacerH > constraints.maxHeight + 1;
               return Stack(
                 fit: StackFit.expand,
                 children: [
@@ -649,65 +656,76 @@ class _BoardingGamePageState extends State<BoardingGamePage>
                         child: SingleChildScrollView(
                           controller: _cabinScrollController,
                           physics: const NeverScrollableScrollPhysics(),
-                          child: SizedBox(
-                            width: contentW,
-                            height: contentH,
-                            child: Listener(
-                              behavior: HitTestBehavior.opaque,
-                              onPointerDown: (e) {
-                                if (widget.tutorialMode &&
-                                    _tutorialStep <
-                                        TutorialStep.paintZoneA.index) {
-                                  return;
-                                }
+                          child: Listener(
+                            behavior: HitTestBehavior.opaque,
+                            onPointerDown: (e) {
+                              if (widget.tutorialMode &&
+                                  _tutorialStep < TutorialStep.paintZoneA.index) {
+                                return;
+                              }
+                              // localPosition.dy is relative to Column top.
+                              // Spacer occupies 0..noseSpacerH; GameWidget starts at noseSpacerH.
+                              final gameY = e.localPosition.dy - noseSpacerH;
+                              final noseThreshold = _simulation.layout.entranceDoorY * scale;
+                              if (gameY < noseThreshold) {
+                                _paintPointerActive = false;
+                              } else {
                                 _paintPointerActive = _game.beginPaintingAt(
-                                    e.localPosition, _selectedZone);
-                                _lastPointerGlobalY = e.position.dy;
-                                _lastPointerGlobalX = e.position.dx;
-                              },
-                              onPointerMove: (e) {
-                                if (widget.tutorialMode &&
-                                    _tutorialStep <
-                                        TutorialStep.paintZoneA.index) {
-                                  return;
+                                    Offset(e.localPosition.dx, gameY), _selectedZone);
+                              }
+                              _lastPointerGlobalY = e.position.dy;
+                              _lastPointerGlobalX = e.position.dx;
+                            },
+                            onPointerMove: (e) {
+                              if (widget.tutorialMode &&
+                                  _tutorialStep < TutorialStep.paintZoneA.index) {
+                                return;
+                              }
+                              final gameY = e.localPosition.dy - noseSpacerH;
+                              final noseThreshold = _simulation.layout.entranceDoorY * scale;
+                              if (_paintPointerActive) {
+                                _game.continuePaintingAt(
+                                    Offset(e.localPosition.dx, gameY), _selectedZone);
+                              } else {
+                                if (_cabinScrollController.hasClients) {
+                                  final dy = _lastPointerGlobalY - e.position.dy;
+                                  _cabinScrollController.jumpTo(
+                                    (_cabinScrollController.offset + dy).clamp(
+                                        0.0,
+                                        _cabinScrollController.position.maxScrollExtent),
+                                  );
                                 }
-                                if (_paintPointerActive) {
-                                  _game.continuePaintingAt(
-                                      e.localPosition, _selectedZone);
-                                } else {
-                                  if (needsVScroll &&
-                                      _cabinScrollController.hasClients) {
-                                    final dy = _lastPointerGlobalY - e.position.dy;
-                                    _cabinScrollController.jumpTo(
-                                      (_cabinScrollController.offset + dy).clamp(
-                                          0.0,
-                                          _cabinScrollController
-                                              .position.maxScrollExtent),
-                                    );
-                                  }
-                                  if (needsHScroll &&
-                                      _cabinHScrollController.hasClients) {
-                                    final dx = _lastPointerGlobalX - e.position.dx;
-                                    _cabinHScrollController.jumpTo(
-                                      (_cabinHScrollController.offset + dx).clamp(
-                                          0.0,
-                                          _cabinHScrollController
-                                              .position.maxScrollExtent),
-                                    );
-                                  }
+                                if (needsHScroll && _cabinHScrollController.hasClients) {
+                                  final dx = _lastPointerGlobalX - e.position.dx;
+                                  _cabinHScrollController.jumpTo(
+                                    (_cabinHScrollController.offset + dx).clamp(
+                                        0.0,
+                                        _cabinHScrollController.position.maxScrollExtent),
+                                  );
                                 }
-                                _lastPointerGlobalY = e.position.dy;
-                                _lastPointerGlobalX = e.position.dx;
-                              },
-                              onPointerUp: (_) {
-                                _paintPointerActive = false;
-                                _game.endPainting();
-                              },
-                              onPointerCancel: (_) {
-                                _paintPointerActive = false;
-                                _game.endPainting();
-                              },
-                              child: GameWidget(game: _game),
+                              }
+                              _lastPointerGlobalY = e.position.dy;
+                              _lastPointerGlobalX = e.position.dx;
+                            },
+                            onPointerUp: (_) {
+                              _paintPointerActive = false;
+                              _game.endPainting();
+                            },
+                            onPointerCancel: (_) {
+                              _paintPointerActive = false;
+                              _game.endPainting();
+                            },
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                // Transparent spacer — scrolling here reveals the nose tip.
+                                SizedBox(width: contentW, height: noseSpacerH),
+                                SizedBox(
+                                  width: contentW,
+                                  height: contentH,
+                                  child: GameWidget(game: _game),
+                                ),
+                              ],
                             ),
                           ),
                         ),
