@@ -77,6 +77,8 @@ flutter:
     - assets/pointing.png
     - assets/plane_nose_light.png
     - assets/plane_nose_dark.png
+    - assets/plane_tail_light.png
+    - assets/plane_tail_dark.png
 
   # To add assets to your application, add an assets section, like this:
   # assets:

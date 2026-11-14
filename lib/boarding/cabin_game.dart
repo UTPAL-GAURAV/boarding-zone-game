@@ -20,6 +20,8 @@ class CabinGame extends FlameGame {
   bool _isDark;
   ui.Image? _noseLightImage;
   ui.Image? _noseDarkImage;
+  ui.Image? _tailLightImage;
+  ui.Image? _tailDarkImage;
 
   /// Update the light/dark theme without recreating the game.
   set isDark(bool value) => _isDark = value;
@@ -55,6 +57,8 @@ class CabinGame extends FlameGame {
     await super.onLoad();
     _noseLightImage = await _loadImage('assets/plane_nose_light.png');
     _noseDarkImage  = await _loadImage('assets/plane_nose_dark.png');
+    _tailLightImage = await _loadImage('assets/plane_tail_light.png');
+    _tailDarkImage  = await _loadImage('assets/plane_tail_dark.png');
   }
 
   @override
@@ -95,12 +99,9 @@ class CabinGame extends FlameGame {
 
   bool _paintAt(Offset point, int zone) {
     if (simulation.isBoarding || size.x == 0 || size.y == 0) return false;
-    final scale = math.min(
-      size.x / layout.designWidth,
-      size.y / layout.designHeight,
-    );
-    final left = (size.x - layout.designWidth * scale) / 2;
-    final top = (size.y - layout.designHeight * scale) / 2;
+    final scale = size.x / layout.designWidth;
+    const left = 0.0;
+    const top = 0.0;
     final x = (point.dx - left) / scale;
     final y = (point.dy - top) / scale;
     for (final seat in simulation.seats) {
@@ -117,13 +118,10 @@ class CabinGame extends FlameGame {
     super.render(canvas);
     if (size.x <= 0 || size.y <= 0) return;
     canvas.save();
-    final scale = math.min(
-      size.x / layout.designWidth,
-      size.y / layout.designHeight,
-    );
+    final scale = size.x / layout.designWidth;
     canvas.translate(
-      (size.x - layout.designWidth * scale) / 2,
-      (size.y - layout.designHeight * scale) / 2,
+      0,
+      0,
     );
     canvas.scale(scale);
     _drawCabin(canvas);
@@ -165,19 +163,15 @@ class CabinGame extends FlameGame {
       shadow,
     );
 
-    // Nose image first — fuselage fill painted on top covers white artifacts
-    // outside the nose outline that background-removal tools leave behind.
+    // Nose image first — fuselage fill painted on top covers artifacts.
     _drawNose(canvas);
 
-    // Bottom = just below the last seat row, no extra space, square corners
+    // Bottom = just below the last seat row, no extra space, square corners.
     final bodyBottom = layout.rowStartY +
         (layout.rowCount - 1) * layout.rowSpacing +
         layout.seatHeight / 2 + 14;
 
-    // Fuselage fill — starts at entranceDoorY so the nose image shows through
-    // the full nose section without being clipped by the white rect.
-    // The nose image outline is already vertical at this point, so the border
-    // line we draw below aligns perfectly with no gap or step.
+    // Fuselage fill — starts at entranceDoorY so the nose image shows through.
     final shell = Paint()
       ..color = _isDark ? const Color(0xFF111C36) : const Color(0xFFFFFFFF);
     canvas.drawRect(
@@ -190,15 +184,8 @@ class CabinGame extends FlameGame {
       shell,
     );
 
-    // Fuselage side + bottom border — continues the nose image outline.
-    // Border center in nose image is inset 8px from left edge and 9.5px from right
-    // edge (out of 417px content width). Stroke width is ~14px in 417px content.
-    // These fractions are applied to cabinShell.width to stay proportional across
-    // all aircraft layouts (narrow-body, wide-body, A380, etc.).
-    // Border line picks up exactly where the nose image outline ends (entranceDoorY).
-    // Border measured from nose image: 4px wide opaque blue strip, centered ~2.5px
-    // from left content edge and ~3.5px from right. Use 3/417 symmetric for both.
-    // StrokeWidth = 4/417 * cabinShell.width scales across all aircraft layouts.
+    // Side border — measured from nose image: 4px opaque strip, ~3px inset from
+    // content edge (fraction of 417px nose content width). Same color both modes.
     final nosBorderStrokeW = (4.0 / 417.0) * layout.cabinShell.width;
     final nosInset = (3.0 / 417.0) * layout.cabinShell.width;
     final lBorder = layout.cabinShell.left + nosInset;
@@ -208,14 +195,18 @@ class CabinGame extends FlameGame {
       ..style = PaintingStyle.stroke
       ..strokeWidth = nosBorderStrokeW
       ..strokeCap = StrokeCap.square;
-    // Start at entranceDoorY — the exact bottom edge of the nose image — so the
-    // line continues seamlessly from the nose outline without any gap or overlap.
+    // Extend lines 4 units past bodyBottom so the tail image (drawn after) covers
+    // the overlap and eliminates any sub-pixel gap at the junction.
+    final sideOverlap = bodyBottom + 4.0;
     final sidePath = Path()
       ..moveTo(lBorder, layout.entranceDoorY.toDouble())
-      ..lineTo(lBorder, bodyBottom)
-      ..lineTo(rBorder, bodyBottom)
-      ..lineTo(rBorder, layout.entranceDoorY.toDouble());
+      ..lineTo(lBorder, sideOverlap)
+      ..moveTo(rBorder, layout.entranceDoorY.toDouble())
+      ..lineTo(rBorder, sideOverlap);
     canvas.drawPath(sidePath, borderPaint);
+
+    // Tail image drawn below the cabin body.
+    _drawTail(canvas, bodyBottom);
 
     _drawCockpit(canvas);
     _drawEntrance(canvas);
@@ -246,6 +237,42 @@ class CabinGame extends FlameGame {
     canvas.drawRect(
       Rect.fromLTWH(destLeft, destTop, destW, destH),
       Paint()..color = _isDark ? const Color(0xFF0D1428) : const Color(0xFFEDF3FF),
+    );
+
+    canvas.drawImageRect(
+      img,
+      Rect.fromLTWH(0, 0, imgW, imgH),
+      Rect.fromLTWH(destLeft, destTop, destW, destH),
+      Paint(),
+    );
+  }
+
+  void _drawTail(Canvas canvas, double bodyBottom) {
+    final img = _isDark ? _tailDarkImage : _tailLightImage;
+    if (img == null) return;
+
+    const imgW = 583.0;
+    const imgH = 428.0;
+    // Border centers at top of tail image: left=148.5, right=433.0 (span=284.5px).
+    // contentLeft/contentWidth chosen so border centers map to the same design x as
+    // the straight side-border lines (inset 3/417 of cabinShell.width from each edge).
+    // Exact solution: contentWidth=288.65, contentLeft=146.42 → rounded to 289/146.
+    const contentLeft = 146.0;
+    const contentWidth = 289.0;
+
+    final scale = layout.cabinShell.width / contentWidth;
+    final destW = imgW * scale;
+    final destH = imgH * scale;
+    final destLeft = layout.cabinShell.left - contentLeft * scale;
+    // Start the tail image at lastRowBottom (bodyBottom - 14) so its white interior
+    // overlaps the empty cabin margin, removing the visible white gap.
+    final destTop = bodyBottom - 14.0;
+
+    // Background color under the tail to hide transparent-edge artifacts.
+    canvas.drawRect(
+      Rect.fromLTWH(destLeft, destTop, destW, destH),
+      Paint()
+        ..color = _isDark ? const Color(0xFF0D1428) : const Color(0xFFEDF3FF),
     );
 
     canvas.drawImageRect(
