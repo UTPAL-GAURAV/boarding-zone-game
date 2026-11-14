@@ -8,7 +8,7 @@ Built with the Flame engine. Each aircraft is a timed puzzle — zone seats, boa
 **App name:** Boarding Bluster  
 **Package:** `com.nordiclabs.boardingbluster`  
 **Pubspec name:** `boarding_bluster`  
-**Version:** 1.0.2+3
+**Version:** 1.0.3+7
 
 ---
 
@@ -325,6 +325,11 @@ All credentials live in the **"Swipe IQ" Google Cloud project** (project number 
 ---
 
 ## Developer notes
+
+- **Version bumps require changes in exactly 2 places:**
+  1. `pubspec.yaml` — `version:` field (e.g. `1.0.3+7`)
+  2. `lib/main.dart` — Sentry release string (e.g. `options.release = 'boarding-bluster@1.0.3+7'`)
+  Also update the `**Version:**` line at the top of this file.
 
 - **Never commit `lib/config/secrets.dart`** — it's gitignored. Actual Razorpay keys (test + live) are stored there. Use `secrets.template.dart` as reference.
 - **Razorpay key** is injected at build time via `--dart-define`. Keys are in the gitignored `lib/config/secrets.dart`:
