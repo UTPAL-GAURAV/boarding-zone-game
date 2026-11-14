@@ -69,7 +69,11 @@ class _BoardingHomeShellState extends State<BoardingHomeShell> {
   Set<String> _unlockedAircraftIds = {};
   Set<String> _premiumOwnedAircraftIds = {};
   bool _premiumUnlocked = false;
+  bool _tutorialCompleted = false;
+  bool _showHomeTutorial = false;
+  bool _homeTutWelcomeDone = false;
   bool _soundEnabled = true;
+  int _fleetScrollVersion = 0;
   String _selectedId = 'cessna-grand-caravan-ex';
   int _destination = 0;
 
@@ -99,6 +103,7 @@ class _BoardingHomeShellState extends State<BoardingHomeShell> {
     final soundEnabled = await _store.loadSoundEnabled();
     final themeModeStr = await _store.loadThemeMode();
     bool premiumUnlocked = await _shop.isPremiumUnlocked();
+    final tutorialCompleted = await _store.isTutorialCompleted();
 
     // Auto-restore: if premium is not locally cached but a Google ID is stored,
     // silently check Supabase to recover after reinstall.
@@ -123,6 +128,8 @@ class _BoardingHomeShellState extends State<BoardingHomeShell> {
         _selectedId = newestUnlocked.id;
         _bestTimes = bestTimes;
         _premiumUnlocked = premiumUnlocked;
+        _tutorialCompleted = tutorialCompleted;
+        _showHomeTutorial = !tutorialCompleted;
         _soundEnabled = soundEnabled;
         _unlockedAircraftIds = {
           for (final entry in progress.entries)
@@ -155,7 +162,9 @@ class _BoardingHomeShellState extends State<BoardingHomeShell> {
   }
 
   bool _isUnlocked(Aircraft aircraft) {
-    if (aircraft.unlockType == AircraftUnlockType.free) return true;
+    if (aircraft.unlockType == AircraftUnlockType.free) {
+      return _tutorialCompleted;
+    }
     if (aircraft.unlockType == AircraftUnlockType.premium && _premiumUnlocked) {
       return true;
     }
@@ -546,6 +555,8 @@ class _BoardingHomeShellState extends State<BoardingHomeShell> {
 
   Future<void> _launchTutorial() async {
     if (!mounted) return;
+    // Dismiss home tutorial overlay before entering the game page.
+    if (_showHomeTutorial) setState(() => _showHomeTutorial = false);
     await Navigator.of(context).push(
       MaterialPageRoute<void>(
         builder: (context) {
@@ -569,6 +580,16 @@ class _BoardingHomeShellState extends State<BoardingHomeShell> {
         },
       ),
     );
+    // After returning from tutorial, check if completed and unlock cessna.
+    if (!mounted) return;
+    final completed = await _store.isTutorialCompleted();
+    if (completed && !_tutorialCompleted) {
+      setState(() {
+        _tutorialCompleted = true;
+        _fleetScrollVersion++;
+      });
+      await _reloadFleetProgress();
+    }
   }
 
   Future<void> _reloadFleetProgress() async {
@@ -596,7 +617,10 @@ class _BoardingHomeShellState extends State<BoardingHomeShell> {
 
   void _showLockedRequirement(Aircraft aircraft) {
     String message;
-    if (aircraft.unlockType == AircraftUnlockType.progression) {
+    if (!_tutorialCompleted && aircraft.unlockType == AircraftUnlockType.free) {
+      message =
+          'Complete the Training Flight first — swipe left in the fleet to find it!';
+    } else if (aircraft.unlockType == AircraftUnlockType.progression) {
       final all = AircraftCatalog.all;
       final prevIndex = all.indexWhere((a) => a.id == aircraft.id) - 1;
       if (prevIndex >= 0) {
@@ -673,9 +697,11 @@ class _BoardingHomeShellState extends State<BoardingHomeShell> {
       return Scaffold(
         backgroundColor: hc.bg,
         body: SafeArea(
-          child: IndexedStack(
-            index: _destination,
+          child: Stack(
             children: [
+              IndexedStack(
+                index: _destination,
+                children: [
               _HomeTab(
                 crewName: crewMember.displayName,
                 selected: AircraftCatalog.byId(_selectedId),
@@ -693,6 +719,7 @@ class _BoardingHomeShellState extends State<BoardingHomeShell> {
                   }
                 },
                 onHowToPlay: _launchTutorial,
+                scrollVersion: _fleetScrollVersion,
               ),
               _RankingsTab(
                 crewName: crewMember.displayName,
@@ -706,6 +733,18 @@ class _BoardingHomeShellState extends State<BoardingHomeShell> {
                 onRestore: _restorePurchase,
                 playerId: crewMember.internalId,
               ),
+            ],
+              ),
+              // Home tutorial overlay — shown on first launch
+              if (_showHomeTutorial)
+                Positioned.fill(
+                  child: _HomeTutorialOverlay(
+                    welcomeDone: _homeTutWelcomeDone,
+                    onLetSGo: () => setState(() => _homeTutWelcomeDone = true),
+                    onDismiss: () => setState(() => _showHomeTutorial = false),
+                    onTapTutorial: _launchTutorial,
+                  ),
+                ),
             ],
           ),
         ),
@@ -737,6 +776,203 @@ class _BoardingHomeShellState extends State<BoardingHomeShell> {
       );
     },
   );
+}
+
+// ─── Home tutorial overlay ────────────────────────────────────────────────────
+
+class _HomeTutorialOverlay extends StatelessWidget {
+  const _HomeTutorialOverlay({
+    required this.welcomeDone,
+    required this.onLetSGo,
+    required this.onDismiss,
+    required this.onTapTutorial,
+  });
+
+  final bool welcomeDone;
+  final VoidCallback onLetSGo;
+  final VoidCallback onDismiss;
+  final VoidCallback onTapTutorial;
+
+  static const _accent = Color(0xFFFFB930);
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final scrim = isDark ? const Color(0xFF060A1C) : const Color(0xFFF0F5FF);
+    final bgColor = isDark ? const Color(0xFF12192E) : Colors.white;
+    final titleColor = isDark ? Colors.white : const Color(0xFF0A1628);
+    final bodyColor = isDark ? const Color(0xFFB0B8CC) : const Color(0xFF5A6A8A);
+
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: () {},
+      child: Container(
+        color: scrim,
+        child: SafeArea(
+          child: welcomeDone ? _buildTapCue(isDark, bgColor, titleColor, bodyColor) : _buildWelcome(isDark, bgColor, titleColor, bodyColor),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildWelcome(bool isDark, Color bg, Color titleColor, Color bodyColor) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+          child: ConstrainedBox(
+            constraints: BoxConstraints(minHeight: constraints.maxHeight - 40),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Image.asset('assets/maya.png', height: 160, fit: BoxFit.contain),
+                const SizedBox(height: 16),
+                Material(
+                  color: Colors.transparent,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: bg,
+                      borderRadius: BorderRadius.circular(18),
+                      border: Border.all(color: _accent.withValues(alpha: 0.45)),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: isDark ? 0.5 : 0.10),
+                          blurRadius: 20,
+                          offset: const Offset(0, 6),
+                        ),
+                      ],
+                    ),
+                    padding: const EdgeInsets.fromLTRB(16, 16, 16, 14),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'MAYA  ·  Crew Trainer',
+                          style: TextStyle(
+                            color: _accent.withValues(alpha: 0.75),
+                            fontSize: 9,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: 1.0,
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          'Welcome!',
+                          style: TextStyle(
+                            color: titleColor,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                        Text(
+                          "I'm Maya, your crew trainer. Boarding passengers sounds simple — but doing it FAST is an art. I'll teach you in 2 minutes.",
+                          style: TextStyle(color: bodyColor, fontSize: 13, height: 1.45),
+                        ),
+                        const SizedBox(height: 14),
+                        Align(
+                          alignment: Alignment.centerRight,
+                          child: FilledButton(
+                            onPressed: onLetSGo,
+                            style: FilledButton.styleFrom(
+                              backgroundColor: _accent,
+                              foregroundColor: const Color(0xFF0A0E1A),
+                              padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 11),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              textStyle: const TextStyle(
+                                fontWeight: FontWeight.w800,
+                                fontSize: 13,
+                              ),
+                            ),
+                            child: const Text("LET'S GO →"),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildTapCue(bool isDark, Color bg, Color titleColor, Color bodyColor) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+      child: Column(
+        children: [
+          const Spacer(),
+          Image.asset('assets/maya.png', height: 130, fit: BoxFit.contain),
+          const SizedBox(height: 16),
+          Material(
+            color: Colors.transparent,
+            child: Container(
+              decoration: BoxDecoration(
+                color: bg,
+                borderRadius: BorderRadius.circular(18),
+                border: Border.all(color: _accent.withValues(alpha: 0.45)),
+              ),
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 14),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'MAYA  ·  Crew Trainer',
+                    style: TextStyle(
+                      color: _accent.withValues(alpha: 0.75),
+                      fontSize: 9,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 1.0,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    'Tap our training shuttle to begin.',
+                    style: TextStyle(
+                      color: titleColor,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Swipe up to find the "Training Flight" card, then tap it.',
+                    style: TextStyle(color: bodyColor, fontSize: 13, height: 1.4),
+                  ),
+                  const SizedBox(height: 14),
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: FilledButton(
+                      onPressed: onTapTutorial,
+                      style: FilledButton.styleFrom(
+                        backgroundColor: _accent,
+                        foregroundColor: const Color(0xFF0A0E1A),
+                        padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 11),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        textStyle: const TextStyle(
+                          fontWeight: FontWeight.w800,
+                          fontSize: 13,
+                        ),
+                      ),
+                      child: const Text("TAKE ME THERE →"),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const Spacer(flex: 2),
+        ],
+      ),
+    );
+  }
 }
 
 class _ProfileDialog extends StatefulWidget {
@@ -1097,6 +1333,7 @@ class _HomeTab extends StatefulWidget {
     required this.onPlay,
     required this.onLockedTap,
     required this.onHowToPlay,
+    this.scrollVersion = 0,
   });
 
   final String crewName;
@@ -1108,6 +1345,7 @@ class _HomeTab extends StatefulWidget {
   final ValueChanged<Aircraft> onPlay;
   final ValueChanged<Aircraft> onLockedTap;
   final VoidCallback onHowToPlay;
+  final int scrollVersion;
 
   @override
   State<_HomeTab> createState() => _HomeTabState();
@@ -1117,9 +1355,12 @@ class _HomeTabState extends State<_HomeTab> {
   static const _cardExtent = 312.0;
   late final ScrollController _fleetController;
 
-  int get _selectedIndex => AircraftCatalog.all
-      .indexWhere((aircraft) => aircraft.id == widget.selected.id)
-      .clamp(0, AircraftCatalog.all.length - 1);
+  // +1 because index 0 is the tutorial card; real aircraft start at 1.
+  int get _selectedIndex =>
+      AircraftCatalog.all
+          .indexWhere((aircraft) => aircraft.id == widget.selected.id)
+          .clamp(0, AircraftCatalog.all.length - 1) +
+      1;
 
   @override
   void initState() {
@@ -1152,7 +1393,8 @@ class _HomeTabState extends State<_HomeTab> {
   @override
   void didUpdateWidget(covariant _HomeTab oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.selected.id != widget.selected.id) {
+    if (oldWidget.selected.id != widget.selected.id ||
+        oldWidget.scrollVersion != widget.scrollVersion) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         _scrollToSelected(animate: true);
       });
@@ -1189,10 +1431,13 @@ class _HomeTabState extends State<_HomeTab> {
               child: ListView.separated(
                 controller: _fleetController,
                 scrollDirection: Axis.horizontal,
-                itemCount: AircraftCatalog.all.length,
+                itemCount: AircraftCatalog.all.length + 1,
                 separatorBuilder: (_, _) => const SizedBox(width: 12),
                 itemBuilder: (context, index) {
-                  final aircraft = AircraftCatalog.all[index];
+                  if (index == 0) {
+                    return _TutorialTile(onTap: widget.onHowToPlay);
+                  }
+                  final aircraft = AircraftCatalog.all[index - 1];
                   final unlocked = widget.isUnlocked(aircraft);
                   return _AircraftTile(
                     aircraft: aircraft,
@@ -1287,27 +1532,6 @@ class _HomeTabState extends State<_HomeTab> {
                 ],
               ),
             ),
-            Align(
-              alignment: Alignment.center,
-              child: Padding(
-                padding: const EdgeInsets.only(top: 8),
-                child: TextButton.icon(
-                  onPressed: widget.onHowToPlay,
-                  icon: const Icon(Icons.school_rounded, size: 14),
-                  label: Text('How to play'),
-                  style: TextButton.styleFrom(
-                    foregroundColor: _accent,
-                    textStyle: GoogleFonts.rajdhani(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w700,
-                    ),
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
-                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                  ),
-                ),
-              ),
-            ),
           ],
         ),
       ),
@@ -1337,7 +1561,7 @@ class _HomeHeader extends StatelessWidget {
         child: ClipRRect(
           borderRadius: BorderRadius.circular(14),
           child: Image.asset(
-            'assets/boarding_bluster_logo.png',
+            'assets/boarding_bluster_logo.jpg',
             width: 42,
             height: 42,
             fit: BoxFit.cover,
@@ -1392,6 +1616,151 @@ class _HomeHeader extends StatelessWidget {
       ),
     ],
   );
+  }
+}
+
+class _TutorialTile extends StatelessWidget {
+  const _TutorialTile({required this.onTap});
+
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final hc = _HC.from(context);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return SizedBox(
+      width: 300,
+      child: Material(
+        color: hc.surface,
+        borderRadius: BorderRadius.circular(22),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: onTap,
+          child: Container(
+            decoration: BoxDecoration(
+              border: Border.all(color: _accent.withValues(alpha: 0.55), width: 2),
+              borderRadius: BorderRadius.circular(22),
+              boxShadow: [
+                BoxShadow(
+                  color: _accent.withValues(alpha: 0.10),
+                  blurRadius: 20,
+                  spreadRadius: 1,
+                ),
+              ],
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Banner area with Maya
+                SizedBox(
+                  height: 184,
+                  width: double.infinity,
+                  child: Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      Container(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            colors: isDark
+                                ? [const Color(0xFF0A1628), const Color(0xFF1C2E4A)]
+                                : [const Color(0xFFD8E8F8), const Color(0xFFEBF3FF)],
+                          ),
+                        ),
+                      ),
+                      // Maya portrait — centered
+                      Positioned.fill(
+                        child: Image.asset(
+                          'assets/maya.png',
+                          fit: BoxFit.contain,
+                          alignment: Alignment.bottomCenter,
+                        ),
+                      ),
+                      // HOW TO PLAY badge
+                      const Positioned(
+                        left: 12,
+                        top: 12,
+                        child: _Pill(
+                          label: 'HOW TO PLAY',
+                          icon: Icons.school_rounded,
+                          color: _accent,
+                        ),
+                      ),
+                      // FREE badge
+                      Positioned(
+                        right: 12,
+                        top: 12,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 5),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF22C55E).withValues(alpha: 0.15),
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(
+                                color: const Color(0xFF22C55E), width: 1),
+                          ),
+                          child: const Text(
+                            'FREE',
+                            style: TextStyle(
+                              color: Color(0xFF22C55E),
+                              fontSize: 9,
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: 0.6,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                // Info area
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 13, 16, 14),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Training Flight',
+                          style: GoogleFonts.rajdhani(
+                            color: hc.ink,
+                            fontSize: 19,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'New here? Learn to zone seats, board passengers, and beat the clock.',
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          softWrap: true,
+                          style: GoogleFonts.barlow(
+                            color: hc.muted,
+                            fontSize: 12,
+                            height: 1.25,
+                          ),
+                        ),
+                        const Spacer(),
+                        Text(
+                          "MAYA'S CREW TRAINING  ·  ~2 MIN",
+                          style: GoogleFonts.rajdhani(
+                            color: _accent,
+                            fontSize: 9,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: 0.4,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
   }
 }
 

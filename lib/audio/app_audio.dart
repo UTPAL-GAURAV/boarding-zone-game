@@ -14,7 +14,7 @@ class AppAudio {
     if (_initialized) return;
     _initialized = true;
     FlameAudio.bgm.initialize();
-    await FlameAudio.audioCache.loadAll(['bleep.wav', 'bg_music.mp3']);
+    await FlameAudio.audioCache.loadAll(['bleep.mp3', 'bg_music.mp3']);
   }
 
   void setEnabled(bool value) {
@@ -28,7 +28,7 @@ class AppAudio {
 
   Future<void> playBleep() async {
     if (!_enabled) return;
-    await FlameAudio.play('bleep.wav');
+    await FlameAudio.play('bleep.mp3');
   }
 
   Future<void> startBgMusic() async {

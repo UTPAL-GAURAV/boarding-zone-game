@@ -90,7 +90,17 @@ class _BoardingGamePageState extends State<BoardingGamePage>
   int? _currentBestMilliseconds;
   int? _previousBestMilliseconds;
   int _tutorialStep = 0;
-  bool _tutorialSeatsHaveBeenPainted = false;
+  int _tutZoneACnt = 0;
+  int _tutZoneBCnt = 0;
+  int? _tutBoardingTimeMs;
+  final _stackKey = GlobalKey();
+  final _timerCardKey = GlobalKey();
+  final _boardedPillKey = GlobalKey();
+  final _bestPillKey = GlobalKey();
+  final _zoneRowKey = GlobalKey();
+  final _zoneBChipKey = GlobalKey();
+  final _cabinKey = GlobalKey();
+  Map<TutorialStep, Rect> _anatomyRects = {};
 
   static const _zones = CabinGame.zoneColors;
 
@@ -112,6 +122,9 @@ class _BoardingGamePageState extends State<BoardingGamePage>
     _previousBestMilliseconds = widget.previousBestMilliseconds;
     _lastSavedZones = _zoneSnapshot();
     _game = CabinGame(simulation: _simulation, onChanged: _refresh);
+    if (widget.tutorialMode) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => _computeAnatomyRects());
+    }
   }
 
   @override
@@ -137,12 +150,16 @@ class _BoardingGamePageState extends State<BoardingGamePage>
       final step = _tutorialStep < TutorialStep.values.length
           ? TutorialStep.values[_tutorialStep]
           : null;
-      if (step == TutorialStep.startBoarding && _simulation.isBoarding) {
+      if (step == TutorialStep.boardNow && _simulation.isBoarding) {
+        // Boarding started — dismiss overlay so simulation runs unobstructed.
         setState(() => _tutorialStep = TutorialStep.values.length);
       }
       if (step == null && _simulation.isComplete) {
-        setState(
-            () => _tutorialStep = TutorialStep.values.indexOf(TutorialStep.done));
+        final ms = (_simulation.elapsedSeconds * 1000).round();
+        setState(() {
+          _tutBoardingTimeMs = ms;
+          _tutorialStep = TutorialStep.debrief.index;
+        });
       }
     }
     if (_simulation.isComplete && !_reportedCompletion) {
@@ -181,15 +198,25 @@ class _BoardingGamePageState extends State<BoardingGamePage>
   }
 
   void _advanceTutorial() {
+    if (!widget.tutorialMode) return;
+    final step = TutorialStep.values[_tutorialStep];
+    if (step == TutorialStep.paintZoneA && _tutZoneACnt < 4) return;
+    if (step == TutorialStep.paintZoneB && _tutZoneBCnt < 3) return;
     final next = _tutorialStep + 1;
+    if (next >= TutorialStep.values.length) {
+      _finishTutorial();
+      return;
+    }
     setState(() => _tutorialStep = next);
   }
 
   void _tutorialReplay() {
     _replay();
     setState(() {
-      _tutorialStep = TutorialStep.values.indexOf(TutorialStep.startBoarding);
-      _tutorialSeatsHaveBeenPainted = false;
+      _tutorialStep = TutorialStep.paintZoneA.index;
+      _tutZoneACnt = 0;
+      _tutZoneBCnt = 0;
+      _tutBoardingTimeMs = null;
     });
   }
 
@@ -206,14 +233,43 @@ class _BoardingGamePageState extends State<BoardingGamePage>
         List.generate(zones.length, (i) => i)
             .every((i) => zones[i] == _lastSavedZones[i])) return;
     _lastSavedZones = zones;
-    if (widget.tutorialMode &&
-        !_tutorialSeatsHaveBeenPainted &&
-        _tutorialStep ==
-            TutorialStep.values.indexOf(TutorialStep.paintSeats)) {
-      _tutorialSeatsHaveBeenPainted = true;
+    if (widget.tutorialMode) {
+      final zoneA = zones.where((z) => z == 0).length;
+      final zoneB = zones.where((z) => z == 1).length;
+      if (zoneA != _tutZoneACnt || zoneB != _tutZoneBCnt) {
+        setState(() {
+          _tutZoneACnt = zoneA;
+          _tutZoneBCnt = zoneB;
+        });
+      }
     }
     final cb = widget.onZonesChanged;
     if (cb != null) unawaited(cb(List.unmodifiable(zones)));
+  }
+
+  void _computeAnatomyRects() {
+    final stackBox = _stackKey.currentContext?.findRenderObject() as RenderBox?;
+    if (stackBox == null) return;
+    Rect? getRect(GlobalKey key) {
+      final box = key.currentContext?.findRenderObject() as RenderBox?;
+      if (box == null) return null;
+      final pos = box.localToGlobal(Offset.zero, ancestor: stackBox);
+      return pos & box.size;
+    }
+    final rects = <TutorialStep, Rect>{};
+    final timer = getRect(_timerCardKey);
+    if (timer != null) rects[TutorialStep.anatomyTime] = timer;
+    final boarded = getRect(_boardedPillKey);
+    if (boarded != null) rects[TutorialStep.anatomyBoarded] = boarded;
+    final best = getRect(_bestPillKey);
+    if (best != null) rects[TutorialStep.anatomyBest] = best;
+    final zones = getRect(_zoneRowKey);
+    if (zones != null) rects[TutorialStep.anatomyZones] = zones;
+    final cabin = getRect(_cabinKey);
+    if (cabin != null) rects[TutorialStep.anatomySeats] = cabin;
+    final zoneB = getRect(_zoneBChipKey);
+    if (zoneB != null) rects[TutorialStep.paintZoneB] = zoneB;
+    if (mounted) setState(() => _anatomyRects = rects);
   }
 
   Future<void> _backToFleet() async {
@@ -264,6 +320,7 @@ class _BoardingGamePageState extends State<BoardingGamePage>
       backgroundColor: c.bg,
       body: SafeArea(
         child: Stack(
+          key: _stackKey,
           children: [
             Column(
               children: [
@@ -278,8 +335,11 @@ class _BoardingGamePageState extends State<BoardingGamePage>
               Positioned.fill(
                 child: TutorialOverlay(
                   step: tutStep,
-                  seatsHaveBeenPainted: _tutorialSeatsHaveBeenPainted,
-                  onDismiss: tutStep == TutorialStep.done
+                  zoneACnt: _tutZoneACnt,
+                  zoneBCnt: _tutZoneBCnt,
+                  boardingTimeMs: _tutBoardingTimeMs,
+                  highlightRect: _anatomyRects[tutStep],
+                  onDismiss: tutStep == TutorialStep.graduation
                       ? _finishTutorial
                       : _advanceTutorial,
                   onReplay: _tutorialReplay,
@@ -396,6 +456,7 @@ class _BoardingGamePageState extends State<BoardingGamePage>
         children: [
           // ── Full-width timer ──────────────────────────────────────────────
           Container(
+            key: _timerCardKey,
             width: double.infinity,
             padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
             decoration: BoxDecoration(
@@ -469,6 +530,7 @@ class _BoardingGamePageState extends State<BoardingGamePage>
           Row(
             children: [
               Expanded(
+                key: _boardedPillKey,
                 child: _StatPill(
                   icon: Icons.airline_seat_recline_normal_rounded,
                   iconColor: _C.accent,
@@ -481,6 +543,7 @@ class _BoardingGamePageState extends State<BoardingGamePage>
               ),
               const SizedBox(width: 8),
               Expanded(
+                key: _bestPillKey,
                 child: _StatPill(
                   icon: Icons.emoji_events_outlined,
                   iconColor: _C.accent,
@@ -501,6 +564,7 @@ class _BoardingGamePageState extends State<BoardingGamePage>
 
   Widget _buildZoneSelector(_C c) {
     return Padding(
+      key: _zoneRowKey,
       padding: const EdgeInsets.fromLTRB(14, 10, 14, 0),
       child: Row(
         children: [
@@ -519,13 +583,20 @@ class _BoardingGamePageState extends State<BoardingGamePage>
               children: [
                 for (var z = 0; z < _simulation.layout.zoneCount; z++)
                   Expanded(
+                    key: z == 1 ? _zoneBChipKey : null,
                     child: Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 2),
                       child: _ZoneChip(
                         label: _zoneLabel(z),
                         color: _zones[z],
                         selected: z == _selectedZone,
-                        onTap: () => setState(() => _selectedZone = z),
+                        onTap: () {
+                          if (widget.tutorialMode &&
+                              _tutorialStep < TutorialStep.paintZoneA.index) {
+                            return;
+                          }
+                          setState(() => _selectedZone = z);
+                        },
                         darkMode: Theme.of(context).brightness == Brightness.dark,
                       ),
                     ),
@@ -542,6 +613,7 @@ class _BoardingGamePageState extends State<BoardingGamePage>
 
   Widget _buildCabin(_C c, bool complete) {
     return Padding(
+      key: _cabinKey,
       padding: const EdgeInsets.fromLTRB(14, 10, 14, 0),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(22),
@@ -585,7 +657,7 @@ class _BoardingGamePageState extends State<BoardingGamePage>
                               onPointerDown: (e) {
                                 if (widget.tutorialMode &&
                                     _tutorialStep <
-                                        TutorialStep.paintSeats.index) {
+                                        TutorialStep.paintZoneA.index) {
                                   return;
                                 }
                                 _paintPointerActive = _game.beginPaintingAt(
@@ -596,7 +668,7 @@ class _BoardingGamePageState extends State<BoardingGamePage>
                               onPointerMove: (e) {
                                 if (widget.tutorialMode &&
                                     _tutorialStep <
-                                        TutorialStep.paintSeats.index) {
+                                        TutorialStep.paintZoneA.index) {
                                   return;
                                 }
                                 if (_paintPointerActive) {
@@ -642,7 +714,7 @@ class _BoardingGamePageState extends State<BoardingGamePage>
                       ),
                     ),
                   ),
-                  if (complete) _buildCompletionOverlay(c),
+                  if (complete && !widget.tutorialMode) _buildCompletionOverlay(c),
                   if (_timedOut) _buildTimeoutOverlay(c),
                 ],
               );
@@ -659,7 +731,7 @@ class _BoardingGamePageState extends State<BoardingGamePage>
     final boarding = _simulation.isBoarding;
     final preview = widget.previewOnly;
     final tutorialBlocked = widget.tutorialMode &&
-        _tutorialStep < TutorialStep.values.indexOf(TutorialStep.startBoarding);
+        _tutorialStep < TutorialStep.values.indexOf(TutorialStep.boardNow);
 
     final inactive = boarding || complete || _timedOut || tutorialBlocked;
 
