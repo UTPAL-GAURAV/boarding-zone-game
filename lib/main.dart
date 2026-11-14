@@ -4,6 +4,7 @@ import 'dart:ui';
 import 'package:cronet_http/cronet_http.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -110,6 +111,7 @@ class _BoardingZoneAppState extends State<BoardingZoneApp> {
       theme: ThemeData(
         useMaterial3: true,
         brightness: Brightness.light,
+        textTheme: GoogleFonts.rajdhaniTextTheme(ThemeData.light().textTheme),
         scaffoldBackgroundColor: const Color(0xFFEDF3FF),
         colorScheme: ColorScheme.fromSeed(
           seedColor: const Color(0xFFFFB930),
@@ -119,6 +121,7 @@ class _BoardingZoneAppState extends State<BoardingZoneApp> {
       darkTheme: ThemeData(
         useMaterial3: true,
         brightness: Brightness.dark,
+        textTheme: GoogleFonts.rajdhaniTextTheme(ThemeData.dark().textTheme),
         scaffoldBackgroundColor: const Color(0xFF060A1C),
         colorScheme: ColorScheme.fromSeed(
           seedColor: const Color(0xFFFFB930),

@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import 'package:google_fonts/google_fonts.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:razorpay_flutter/razorpay_flutter.dart';
 
@@ -615,10 +616,10 @@ class _BoardingHomeShellState extends State<BoardingHomeShell> {
           backgroundColor: hc.surface,
           icon: const Icon(Icons.lock_rounded, color: _accent),
           title: Text(aircraft.displayName,
-              style: TextStyle(color: hc.ink)),
+              style: GoogleFonts.rajdhani(color: hc.ink)),
           content: Text(
             message,
-            style: TextStyle(color: hc.muted),
+            style: GoogleFonts.rajdhani(color: hc.muted),
           ),
           actions: [
             TextButton(
@@ -640,10 +641,10 @@ class _BoardingHomeShellState extends State<BoardingHomeShell> {
           backgroundColor: hc.surface,
           icon: const Icon(Icons.construction_rounded, color: _accent),
           title: Text(aircraft.displayName,
-              style: TextStyle(color: hc.ink)),
+              style: GoogleFonts.rajdhani(color: hc.ink)),
           content: Text(
             'This aircraft is unlocked. Its boarding level is coming soon.',
-            style: TextStyle(color: hc.muted),
+            style: GoogleFonts.rajdhani(color: hc.muted),
           ),
           actions: [
             TextButton(
@@ -823,9 +824,9 @@ class _ProfileDialogState extends State<_ProfileDialog> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
+                      Text(
                         'CREW PROFILE',
-                        style: TextStyle(
+                        style: GoogleFonts.rajdhani(
                           color: _accent,
                           fontSize: 9,
                           fontWeight: FontWeight.w800,
@@ -835,7 +836,7 @@ class _ProfileDialogState extends State<_ProfileDialog> {
                       const SizedBox(height: 2),
                       Text(
                         'Your callsign & settings',
-                        style: TextStyle(
+                        style: GoogleFonts.rajdhani(
                           color: hc.ink,
                           fontSize: 15,
                           fontWeight: FontWeight.w800,
@@ -855,7 +856,7 @@ class _ProfileDialogState extends State<_ProfileDialog> {
               children: [
                 Text(
                   'CALLSIGN',
-                  style: TextStyle(
+                  style: GoogleFonts.rajdhani(
                     color: hc.muted,
                     fontSize: 9,
                     fontWeight: FontWeight.w800,
@@ -867,18 +868,18 @@ class _ProfileDialogState extends State<_ProfileDialog> {
                   controller: _controller,
                   autofocus: false,
                   maxLength: 12,
-                  style: TextStyle(
+                  style: GoogleFonts.rajdhani(
                     color: hc.ink,
                     fontSize: 16,
                     fontWeight: FontWeight.w700,
                   ),
                   decoration: InputDecoration(
                     hintText: 'Enter callsign…',
-                    hintStyle: TextStyle(
+                    hintStyle: GoogleFonts.rajdhani(
                       color: hc.muted.withValues(alpha: 0.6),
                       fontWeight: FontWeight.w500,
                     ),
-                    counterStyle: TextStyle(color: hc.muted, fontSize: 10),
+                    counterStyle: GoogleFonts.rajdhani(color: hc.muted, fontSize: 10),
                     filled: true,
                     fillColor: hc.surfaceElevated,
                     contentPadding: const EdgeInsets.symmetric(
@@ -926,7 +927,7 @@ class _ProfileDialogState extends State<_ProfileDialog> {
                           children: [
                             Text(
                               'Sound',
-                              style: TextStyle(
+                              style: GoogleFonts.rajdhani(
                                 color: hc.ink,
                                 fontSize: 13,
                                 fontWeight: FontWeight.w700,
@@ -936,7 +937,7 @@ class _ProfileDialogState extends State<_ProfileDialog> {
                               _soundEnabled
                                   ? 'Music & effects on'
                                   : 'Music & effects off',
-                              style: TextStyle(
+                              style: GoogleFonts.rajdhani(
                                 color: hc.muted,
                                 fontSize: 11,
                               ),
@@ -984,7 +985,7 @@ class _ProfileDialogState extends State<_ProfileDialog> {
                           children: [
                             Text(
                               'Appearance',
-                              style: TextStyle(
+                              style: GoogleFonts.rajdhani(
                                 color: hc.ink,
                                 fontSize: 13,
                                 fontWeight: FontWeight.w700,
@@ -992,7 +993,7 @@ class _ProfileDialogState extends State<_ProfileDialog> {
                             ),
                             Text(
                               _darkMode ? 'Dark mode' : 'Light mode',
-                              style: TextStyle(
+                              style: GoogleFonts.rajdhani(
                                 color: hc.muted,
                                 fontSize: 11,
                               ),
@@ -1039,7 +1040,7 @@ class _ProfileDialogState extends State<_ProfileDialog> {
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(14),
                       ),
-                      textStyle: const TextStyle(
+                      textStyle: GoogleFonts.rajdhani(
                         fontWeight: FontWeight.w700,
                         fontSize: 13,
                       ),
@@ -1064,7 +1065,7 @@ class _ProfileDialogState extends State<_ProfileDialog> {
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(14),
                       ),
-                      textStyle: const TextStyle(
+                      textStyle: GoogleFonts.rajdhani(
                         fontWeight: FontWeight.w900,
                         fontSize: 13,
                         letterSpacing: 0.3,
@@ -1180,7 +1181,7 @@ class _HomeTabState extends State<_HomeTab> {
             const SizedBox(height: 8),
             Text(
               'Swipe the hangar and tap an aircraft to enter its cabin.',
-              style: TextStyle(color: hc.muted, fontSize: 12),
+              style: GoogleFonts.barlow(color: hc.muted, fontSize: 13),
             ),
             const SizedBox(height: 18),
             SizedBox(
@@ -1236,7 +1237,7 @@ class _HomeTabState extends State<_HomeTab> {
                       children: [
                         Text(
                           'SELECTED AIRCRAFT',
-                          style: TextStyle(
+                          style: GoogleFonts.rajdhani(
                             color: hc.muted,
                             fontSize: 8,
                             fontWeight: FontWeight.w800,
@@ -1248,7 +1249,7 @@ class _HomeTabState extends State<_HomeTab> {
                           widget.selected.displayName,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
+                          style: GoogleFonts.rajdhani(
                             color: hc.ink,
                             fontSize: 14,
                             fontWeight: FontWeight.w800,
@@ -1263,13 +1264,13 @@ class _HomeTabState extends State<_HomeTab> {
                         ? () => widget.onPlay(widget.selected)
                         : null,
                     icon: const Icon(Icons.play_arrow_rounded, size: 20),
-                    label: const Text('START ONBOARDING'),
+                    label: Text('START ONBOARDING'),
                     style: FilledButton.styleFrom(
                       backgroundColor: _accent,
                       foregroundColor: _HC.onAccent,
                       disabledBackgroundColor: hc.surfaceElevated,
                       disabledForegroundColor: hc.muted,
-                      textStyle: const TextStyle(
+                      textStyle: GoogleFonts.rajdhani(
                         fontSize: 10,
                         fontWeight: FontWeight.w900,
                         letterSpacing: 0.55,
@@ -1293,10 +1294,10 @@ class _HomeTabState extends State<_HomeTab> {
                 child: TextButton.icon(
                   onPressed: widget.onHowToPlay,
                   icon: const Icon(Icons.school_rounded, size: 14),
-                  label: const Text('How to play'),
+                  label: Text('How to play'),
                   style: TextButton.styleFrom(
                     foregroundColor: _accent,
-                    textStyle: const TextStyle(
+                    textStyle: GoogleFonts.rajdhani(
                       fontSize: 12,
                       fontWeight: FontWeight.w700,
                     ),
@@ -1347,7 +1348,7 @@ class _HomeHeader extends StatelessWidget {
       Expanded(
         child: Text(
           'Boarding Bluster',
-          style: TextStyle(
+          style: GoogleFonts.rajdhani(
             color: hc.ink,
             fontSize: 20,
             fontWeight: FontWeight.w900,
@@ -1365,7 +1366,7 @@ class _HomeHeader extends StatelessWidget {
             children: [
               Text(
                 crewName,
-                style: TextStyle(color: hc.muted, fontSize: 11),
+                style: GoogleFonts.rajdhani(color: hc.muted, fontSize: 11),
               ),
               const SizedBox(width: 6),
               Container(
@@ -1530,7 +1531,7 @@ class _AircraftTile extends StatelessWidget {
                           aircraft.displayName,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
+                          style: GoogleFonts.rajdhani(
                             color: hc.ink,
                             fontSize: 19,
                             fontWeight: FontWeight.w800,
@@ -1545,9 +1546,9 @@ class _AircraftTile extends StatelessWidget {
                                 maxLines: 2,
                                 overflow: TextOverflow.ellipsis,
                                 softWrap: true,
-                                style: TextStyle(
+                                style: GoogleFonts.barlow(
                                   color: hc.muted,
-                                  fontSize: 11,
+                                  fontSize: 12,
                                   height: 1.25,
                                 ),
                               ),
@@ -1566,7 +1567,7 @@ class _AircraftTile extends StatelessWidget {
                           detail,
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
+                          style: GoogleFonts.rajdhani(
                             color: unlocked ? _accent : hc.muted,
                             fontSize: 9,
                             fontWeight: FontWeight.w800,
@@ -1664,7 +1665,7 @@ class _ManufacturerLogoBadge extends StatelessWidget {
                 child: Text(
                   ManufacturerBrandAssets.monogramFor(manufacturer),
                   maxLines: 1,
-                  style: const TextStyle(
+                  style: GoogleFonts.rajdhani(
                     color: _HC.onAccent,
                     fontSize: 10,
                     fontWeight: FontWeight.w900,
@@ -1678,7 +1679,7 @@ class _ManufacturerLogoBadge extends StatelessWidget {
                 errorBuilder: (context, error, stackTrace) => Center(
                   child: Text(
                     ManufacturerBrandAssets.monogramFor(manufacturer),
-                    style: const TextStyle(
+                    style: GoogleFonts.rajdhani(
                       color: _HC.onAccent,
                       fontSize: 10,
                       fontWeight: FontWeight.w900,
@@ -1759,7 +1760,7 @@ class _RankingsTabState extends State<_RankingsTab> {
                       onSelected: (_) => _selectAircraft(item.id),
                       selectedColor: _accent,
                       backgroundColor: hc.surface,
-                      labelStyle: TextStyle(
+                      labelStyle: GoogleFonts.rajdhani(
                         color: active ? _HC.onAccent : hc.muted,
                         fontSize: 11,
                         fontWeight: FontWeight.w700,
@@ -1795,7 +1796,7 @@ class _RankingsTabState extends State<_RankingsTab> {
                       bottom: 15,
                       child: Text(
                         '${aircraft.displayName} · LEVEL ${aircraft.level}',
-                        style: const TextStyle(
+                        style: GoogleFonts.rajdhani(
                           color: Colors.white,
                           fontSize: 15,
                           fontWeight: FontWeight.w800,
@@ -1811,7 +1812,7 @@ class _RankingsTabState extends State<_RankingsTab> {
                   Expanded(
                     child: Text(
                       'WORLD RANKINGS',
-                      style: TextStyle(
+                      style: GoogleFonts.rajdhani(
                         color: hc.muted,
                         fontSize: 9,
                         fontWeight: FontWeight.w800,
@@ -1821,7 +1822,7 @@ class _RankingsTabState extends State<_RankingsTab> {
                   ),
                   Text(
                     'BEST TIME',
-                    style: TextStyle(
+                    style: GoogleFonts.rajdhani(
                       color: hc.muted,
                       fontSize: 9,
                       fontWeight: FontWeight.w800,
@@ -1855,9 +1856,9 @@ class _RankingsTabState extends State<_RankingsTab> {
                           ),
                           icon: const Icon(Icons.refresh_rounded,
                               color: _accent),
-                          label: const Text(
+                          label: Text(
                             'Retry',
-                            style: TextStyle(color: _accent),
+                            style: GoogleFonts.rajdhani(color: _accent),
                           ),
                         ),
                       ),
@@ -1874,7 +1875,7 @@ class _RankingsTabState extends State<_RankingsTab> {
                       child: Center(
                         child: Text(
                           'No scores yet — be the first!',
-                          style: TextStyle(color: hc.muted, fontSize: 13),
+                          style: GoogleFonts.barlow(color: hc.muted, fontSize: 13),
                         ),
                       ),
                     );
@@ -1941,7 +1942,7 @@ class _RankRow extends StatelessWidget {
           width: 30,
           child: Text(
             rank == null ? 'YOU' : '#${rank!}',
-            style: TextStyle(
+            style: GoogleFonts.rajdhani(
               color: highlighted ? _accent : hc.muted,
               fontSize: 12,
               fontWeight: FontWeight.w800,
@@ -1953,7 +1954,7 @@ class _RankRow extends StatelessWidget {
             name,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: TextStyle(
+            style: GoogleFonts.rajdhani(
               color: highlighted ? hc.ink : hc.muted,
               fontSize: 12,
               fontWeight: highlighted ? FontWeight.w800 : FontWeight.w600,
@@ -1962,7 +1963,7 @@ class _RankRow extends StatelessWidget {
         ),
         Text(
           time,
-          style: TextStyle(
+          style: GoogleFonts.rajdhani(
             color: hc.ink,
             fontSize: 13,
             fontWeight: FontWeight.w800,
@@ -2126,9 +2127,9 @@ class _PremiumPackCard extends StatelessWidget {
                           size: 18,
                         ),
                         const SizedBox(width: 7),
-                        const Text(
+                        Text(
                           'PREMIUM FLEET PASS',
-                          style: TextStyle(
+                          style: GoogleFonts.rajdhani(
                             color: Color(0xFFF0B963),
                             fontSize: 10,
                             fontWeight: FontWeight.w800,
@@ -2146,7 +2147,7 @@ class _PremiumPackCard extends StatelessWidget {
                               color: const Color(0xFF2E7D32),
                               borderRadius: BorderRadius.circular(20),
                             ),
-                            child: const Row(
+                            child: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
                                 Icon(
@@ -2157,7 +2158,7 @@ class _PremiumPackCard extends StatelessWidget {
                                 SizedBox(width: 5),
                                 Text(
                                   'UNLOCKED',
-                                  style: TextStyle(
+                                  style: GoogleFonts.rajdhani(
                                     color: Colors.white,
                                     fontSize: 9,
                                     fontWeight: FontWeight.w800,
@@ -2172,7 +2173,7 @@ class _PremiumPackCard extends StatelessWidget {
                     const SizedBox(height: 10),
                     Text(
                       'Unlock All ${aircraftList.length} Premium Aircraft',
-                      style: const TextStyle(
+                      style: GoogleFonts.rajdhani(
                         color: Colors.white,
                         fontSize: 18,
                         fontWeight: FontWeight.w800,
@@ -2233,7 +2234,7 @@ class _PremiumPackCard extends StatelessWidget {
                   children: [
                     Text(
                       '\$5.99',
-                      style: TextStyle(
+                      style: GoogleFonts.rajdhani(
                         color: hc.ink,
                         fontSize: 30,
                         fontWeight: FontWeight.w900,
@@ -2245,7 +2246,7 @@ class _PremiumPackCard extends StatelessWidget {
                       padding: const EdgeInsets.only(bottom: 5),
                       child: Text(
                         'one-time',
-                        style: TextStyle(
+                        style: GoogleFonts.rajdhani(
                           color: hc.muted,
                           fontSize: 12,
                         ),
@@ -2276,7 +2277,7 @@ class _PremiumPackCard extends StatelessWidget {
                         backgroundColor: _accent,
                         foregroundColor: _HC.onAccent,
                         padding: const EdgeInsets.symmetric(vertical: 16),
-                        textStyle: const TextStyle(
+                        textStyle: GoogleFonts.rajdhani(
                           fontSize: 14,
                           fontWeight: FontWeight.w800,
                           letterSpacing: 0.3,
@@ -2308,7 +2309,7 @@ class _PremiumPackCard extends StatelessWidget {
                             signedInAccount!.displayName ?? signedInAccount!.email,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
+                            style: GoogleFonts.rajdhani(
                               color: hc.ink,
                               fontSize: 12,
                               fontWeight: FontWeight.w600,
@@ -2317,7 +2318,7 @@ class _PremiumPackCard extends StatelessWidget {
                         ),
                         Text(
                           'Signed in',
-                          style: TextStyle(
+                          style: GoogleFonts.rajdhani(
                             color: hc.muted,
                             fontSize: 10,
                           ),
@@ -2331,12 +2332,12 @@ class _PremiumPackCard extends StatelessWidget {
                     child: FilledButton.icon(
                       onPressed: onPurchase,
                       icon: const Icon(Icons.flight_takeoff_rounded, size: 18),
-                      label: const Text('CLAIM YOUR SEAT'),
+                      label: Text('CLAIM YOUR SEAT'),
                       style: FilledButton.styleFrom(
                         backgroundColor: _accent,
                         foregroundColor: _HC.onAccent,
                         padding: const EdgeInsets.symmetric(vertical: 16),
-                        textStyle: const TextStyle(
+                        textStyle: GoogleFonts.rajdhani(
                           fontSize: 14,
                           fontWeight: FontWeight.w900,
                           letterSpacing: 0.5,
@@ -2355,7 +2356,7 @@ class _PremiumPackCard extends StatelessWidget {
                     onPressed: onRestore,
                     child: Text(
                       'Restore purchase',
-                      style: TextStyle(
+                      style: GoogleFonts.rajdhani(
                         color: hc.muted,
                         fontSize: 12,
                       ),
@@ -2374,7 +2375,7 @@ class _PremiumPackCard extends StatelessWidget {
                       const SizedBox(height: 8),
                       Text(
                         'You own all premium aircraft.',
-                        style: TextStyle(
+                        style: GoogleFonts.rajdhani(
                           color: hc.ink,
                           fontSize: 14,
                           fontWeight: FontWeight.w700,
@@ -2408,7 +2409,7 @@ class _Perk extends StatelessWidget {
       Flexible(
         child: Text(
           label,
-          style: TextStyle(
+          style: GoogleFonts.rajdhani(
             color: hc.ink.withValues(alpha: 0.8),
             fontSize: 12,
             fontWeight: FontWeight.w500,
@@ -2433,7 +2434,7 @@ class _PageTitle extends StatelessWidget {
     children: [
       Text(
         kicker,
-        style: const TextStyle(
+        style: GoogleFonts.rajdhani(
           color: _accent,
           fontSize: 9,
           fontWeight: FontWeight.w800,
@@ -2443,7 +2444,7 @@ class _PageTitle extends StatelessWidget {
       const SizedBox(height: 6),
       Text(
         title,
-        style: TextStyle(
+        style: GoogleFonts.rajdhani(
           color: hc.ink,
           fontSize: 25,
           fontWeight: FontWeight.w900,
@@ -2476,7 +2477,7 @@ class _Pill extends StatelessWidget {
         const SizedBox(width: 5),
         Text(
           label,
-          style: TextStyle(
+          style: GoogleFonts.rajdhani(
             color: color,
             fontSize: 9,
             fontWeight: FontWeight.w800,
@@ -2520,7 +2521,7 @@ class _ShopFooter extends StatelessWidget {
               const SizedBox(width: 6),
               Text(
                 'NordicLabs · Boarding Bluster',
-                style: TextStyle(
+                style: GoogleFonts.rajdhani(
                   color: hc.muted,
                   fontSize: 11,
                   fontWeight: FontWeight.w600,
@@ -2583,7 +2584,7 @@ class _FooterLinkButton extends StatelessWidget {
               const SizedBox(width: 7),
               Text(
                 label,
-                style: TextStyle(
+                style: GoogleFonts.rajdhani(
                   color: hc.ink,
                   fontSize: 12,
                   fontWeight: FontWeight.w700,
@@ -2656,7 +2657,7 @@ class _PrivacyPolicySheet extends StatelessWidget {
                       children: [
                         Text(
                           'Privacy Policy',
-                          style: TextStyle(
+                          style: GoogleFonts.rajdhani(
                             color: hc.ink,
                             fontSize: 18,
                             fontWeight: FontWeight.w900,
@@ -2664,7 +2665,7 @@ class _PrivacyPolicySheet extends StatelessWidget {
                         ),
                         Text(
                           'Effective 1 November 2026',
-                          style: TextStyle(color: hc.muted, fontSize: 11),
+                          style: GoogleFonts.rajdhani(color: hc.muted, fontSize: 11),
                         ),
                       ],
                     ),
@@ -2779,9 +2780,9 @@ class _PpSummaryCard extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             'TL;DR',
-            style: TextStyle(
+            style: GoogleFonts.rajdhani(
                 color: _accent,
                 fontSize: 10,
                 fontWeight: FontWeight.w800,
@@ -2812,7 +2813,7 @@ class _PpSection extends StatelessWidget {
       children: [
         Text(
           title,
-          style: TextStyle(
+          style: GoogleFonts.rajdhani(
             color: hc.ink,
             fontSize: 15,
             fontWeight: FontWeight.w800,
@@ -2835,7 +2836,7 @@ class _PpSubheading extends StatelessWidget {
       padding: const EdgeInsets.only(bottom: 6, top: 2),
       child: Text(
         text,
-        style: const TextStyle(
+        style: GoogleFonts.rajdhani(
           color: _accent,
           fontSize: 11,
           fontWeight: FontWeight.w700,
@@ -2867,7 +2868,7 @@ class _PpBullet extends StatelessWidget {
             child: Text(
               text,
               style:
-                  TextStyle(color: hc.muted, fontSize: 13, height: 1.45),
+                  GoogleFonts.barlow(color: hc.muted, fontSize: 13, height: 1.45),
             ),
           ),
         ],
@@ -2893,7 +2894,7 @@ class _PpTableRow extends StatelessWidget {
             width: 130,
             child: Text(
               key_,
-              style: TextStyle(
+              style: GoogleFonts.rajdhani(
                   color: hc.ink,
                   fontSize: 12,
                   fontWeight: FontWeight.w600),
@@ -2902,7 +2903,7 @@ class _PpTableRow extends StatelessWidget {
           Expanded(
             child: Text(
               value,
-              style: TextStyle(color: hc.muted, fontSize: 12, height: 1.4),
+              style: GoogleFonts.barlow(color: hc.muted, fontSize: 12, height: 1.4),
             ),
           ),
         ],
@@ -2981,7 +2982,7 @@ class _ContactSheet extends StatelessWidget {
                   const SizedBox(width: 12),
                   Text(
                     'Contact Us',
-                    style: TextStyle(
+                    style: GoogleFonts.rajdhani(
                       color: hc.ink,
                       fontSize: 18,
                       fontWeight: FontWeight.w900,
@@ -2992,7 +2993,7 @@ class _ContactSheet extends StatelessWidget {
               const SizedBox(height: 20),
               Text(
                 'Have a question, found a bug, or want to share feedback? We\'d love to hear from you.',
-                style: TextStyle(color: hc.muted, fontSize: 13, height: 1.5),
+                style: GoogleFonts.barlow(color: hc.muted, fontSize: 13, height: 1.5),
               ),
               const SizedBox(height: 20),
               _ContactActionTile(
@@ -3025,7 +3026,7 @@ class _ContactSheet extends StatelessWidget {
                     Expanded(
                       child: Text(
                         'NordicLabs · nordiclabsdev@gmail.com',
-                        style: TextStyle(color: hc.muted, fontSize: 12),
+                        style: GoogleFonts.barlow(color: hc.muted, fontSize: 12),
                       ),
                     ),
                   ],
@@ -3083,12 +3084,12 @@ class _ContactActionTile extends StatelessWidget {
                   children: [
                     Text(
                       title,
-                      style: TextStyle(color: hc.ink, fontSize: 14, fontWeight: FontWeight.w700),
+                      style: GoogleFonts.rajdhani(color: hc.ink, fontSize: 14, fontWeight: FontWeight.w700),
                     ),
                     const SizedBox(height: 2),
                     Text(
                       subtitle,
-                      style: TextStyle(color: hc.muted, fontSize: 12),
+                      style: GoogleFonts.barlow(color: hc.muted, fontSize: 12),
                     ),
                   ],
                 ),
