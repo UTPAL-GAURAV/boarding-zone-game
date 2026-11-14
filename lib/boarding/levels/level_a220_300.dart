@@ -38,7 +38,7 @@ abstract final class LevelA220_300 {
       SeatBlockLayout(left: 33, right: 115),
       SeatBlockLayout(left: 195, right: 321),
     ],
-    windowCentersX: [18, 335],
+    windowCentersX: [30, 328],
     cabinShell: CabinRegion(
       left: 20,
       top: 28,

@@ -74,6 +74,7 @@ class LocalProfileStore {
   static const _seatZonesPrefix = 'aircraft.seat_zones.v1.';
   static const _fleetProgressKey = 'fleet.aircraft_progress.v1';
   static const _soundEnabledKey = 'settings.sound_enabled';
+  static const _themeModeKey = 'settings.theme_mode';
   static const _tutorialCompletedKey = 'player.tutorial_completed';
   static const _crewNames = [
     'Falcon',
@@ -155,6 +156,14 @@ class LocalProfileStore {
 
   Future<void> saveSoundEnabled(bool value) async {
     await (await _preferences).setBool(_soundEnabledKey, value);
+  }
+
+  Future<String> loadThemeMode() async {
+    return (await _preferences).getString(_themeModeKey) ?? 'light';
+  }
+
+  Future<void> saveThemeMode(String value) async {
+    await (await _preferences).setString(_themeModeKey, value);
   }
 
   Future<bool> isTutorialCompleted() async {

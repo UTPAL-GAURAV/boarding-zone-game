@@ -39,7 +39,7 @@ abstract final class LevelB737_9 {
       SeatBlockLayout(left: 31, right: 145),
       SeatBlockLayout(left: 195, right: 309),
     ],
-    windowCentersX: [18, 322],
+    windowCentersX: [30, 350],
     cabinShell: CabinRegion(
       left: 20,
       top: 28,

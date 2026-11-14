@@ -57,7 +57,7 @@ abstract final class LevelDualAisle {
       SeatBlockLayout(left: 114, right: 216),
       SeatBlockLayout(left: 242, right: 306),
     ],
-    windowCentersX: [12, 318],
+    windowCentersX: [20, 360],
     cabinShell: CabinRegion(
       left: 10,
       top: 38,

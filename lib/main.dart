@@ -8,8 +8,12 @@ import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'home/boarding_home_shell.dart';
+import 'home/local_profile_store.dart';
 
 const _sentryDsn = 'https://2c6b906a81468551cdf862646d84cf5c@o4511406258257920.ingest.de.sentry.io/4512349082681424';
+
+/// Global theme-mode notifier — any widget can write to this and the root app rebuilds.
+final appThemeMode = ValueNotifier<ThemeMode>(ThemeMode.light);
 
 Future<void> main() async {
   await SentryFlutter.init(
@@ -27,7 +31,6 @@ Future<void> main() async {
     appRunner: () async {
       WidgetsFlutterBinding.ensureInitialized();
 
-      // Catch Flutter framework errors (widget build failures, etc.).
       FlutterError.onError = (details) {
         FlutterError.presentError(details);
         unawaited(Sentry.captureException(
@@ -40,7 +43,6 @@ Future<void> main() async {
         ));
       };
 
-      // Catch async Dart errors outside the Flutter zone.
       PlatformDispatcher.instance.onError = (error, stack) {
         unawaited(Sentry.captureException(
           error,
@@ -57,37 +59,85 @@ Future<void> main() async {
         httpClient: CronetClient.defaultCronetEngine(),
       );
 
+      // Restore persisted theme before the first frame.
+      final stored = await LocalProfileStore().loadThemeMode();
+      appThemeMode.value = _parseThemeMode(stored);
+
       runApp(const BoardingZoneApp());
     },
   );
 }
 
-class BoardingZoneApp extends StatelessWidget {
+ThemeMode _parseThemeMode(String value) => switch (value) {
+  'light' => ThemeMode.light,
+  'system' => ThemeMode.system,
+  _ => ThemeMode.dark,
+};
+
+class BoardingZoneApp extends StatefulWidget {
   const BoardingZoneApp({super.key});
 
   @override
-  Widget build(BuildContext context) => MaterialApp(
-    title: 'Boarding Bluster',
-    debugShowCheckedModeBanner: false,
-    theme: ThemeData(
-      useMaterial3: true,
-      brightness: Brightness.dark,
-      scaffoldBackgroundColor: const Color(0xFF0A0E1A),
-      colorScheme: ColorScheme.fromSeed(
-        seedColor: const Color(0xFFFFB930),
-        brightness: Brightness.dark,
-      ),
-      fontFamily: 'sans-serif',
-    ),
-    home: const BoardingHomeShell(),
-    builder: (context, child) => AnnotatedRegion<SystemUiOverlayStyle>(
-      value: const SystemUiOverlayStyle(
-        statusBarColor: Colors.transparent,
-        statusBarIconBrightness: Brightness.light,
-        systemNavigationBarColor: Color(0xFF151C2E),
-        systemNavigationBarIconBrightness: Brightness.light,
-      ),
-      child: child!,
-    ),
-  );
+  State<BoardingZoneApp> createState() => _BoardingZoneAppState();
 }
+
+class _BoardingZoneAppState extends State<BoardingZoneApp> {
+  @override
+  void initState() {
+    super.initState();
+    appThemeMode.addListener(_onThemeChanged);
+  }
+
+  @override
+  void dispose() {
+    appThemeMode.removeListener(_onThemeChanged);
+    super.dispose();
+  }
+
+  void _onThemeChanged() => setState(() {});
+
+  @override
+  Widget build(BuildContext context) {
+    final mode = appThemeMode.value;
+    final dark = mode == ThemeMode.dark ||
+        (mode == ThemeMode.system &&
+            MediaQuery.platformBrightnessOf(context) == Brightness.dark);
+
+    return MaterialApp(
+      title: 'Boarding Bluster',
+      debugShowCheckedModeBanner: false,
+      themeMode: mode,
+      theme: ThemeData(
+        useMaterial3: true,
+        brightness: Brightness.light,
+        scaffoldBackgroundColor: const Color(0xFFEDF3FF),
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: const Color(0xFFFFB930),
+          brightness: Brightness.light,
+        ),
+      ),
+      darkTheme: ThemeData(
+        useMaterial3: true,
+        brightness: Brightness.dark,
+        scaffoldBackgroundColor: const Color(0xFF060A1C),
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: const Color(0xFFFFB930),
+          brightness: Brightness.dark,
+        ),
+      ),
+      home: const BoardingHomeShell(),
+      builder: (context, child) => AnnotatedRegion<SystemUiOverlayStyle>(
+        value: SystemUiOverlayStyle(
+          statusBarColor: Colors.transparent,
+          statusBarIconBrightness: dark ? Brightness.light : Brightness.dark,
+          systemNavigationBarColor:
+              dark ? const Color(0xFF0D1428) : const Color(0xFFEDF3FF),
+          systemNavigationBarIconBrightness:
+              dark ? Brightness.light : Brightness.dark,
+        ),
+        child: child!,
+      ),
+    );
+  }
+}
+

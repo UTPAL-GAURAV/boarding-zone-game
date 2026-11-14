@@ -8,9 +8,18 @@ import 'boarding_simulation.dart';
 import 'aircraft_layout.dart';
 
 class CabinGame extends FlameGame {
-  CabinGame({required this.simulation, required this.onChanged});
+  CabinGame({
+    required this.simulation,
+    required this.onChanged,
+    bool isDark = true,
+  }) : _isDark = isDark;
 
+  @override
   bool paused = false;
+  bool _isDark;
+
+  /// Update the light/dark theme without recreating the game.
+  set isDark(bool value) => _isDark = value;
 
   final BoardingSimulation simulation;
   AircraftLayout get layout => simulation.layout;
@@ -19,16 +28,17 @@ class CabinGame extends FlameGame {
   Offset? _lastPaintPosition;
 
   static const List<Color> zoneColors = [
-    Color(0xFF4E91E5),
-    Color(0xFFF2A64A),
-    Color(0xFF56B991),
-    Color(0xFFAD7BE0),
-    Color(0xFFE56B6F),
-    Color(0xFF49A9B7),
+    Color(0xFF4A9EFF), // A — electric blue
+    Color(0xFFFF8C42), // B — vivid orange
+    Color(0xFF3DD68C), // C — emerald
+    Color(0xFFBF6EEA), // D — violet
+    Color(0xFFFF5C7A), // E — coral pink
+    Color(0xFFFFD60A), // F — vivid yellow (distinct from C emerald)
   ];
 
   @override
-  Color backgroundColor() => const Color(0xFF1E2840);
+  Color backgroundColor() =>
+      _isDark ? const Color(0xFF0D1428) : const Color(0xFFEDF3FF);
 
   @override
   void update(double dt) {
@@ -121,23 +131,26 @@ class CabinGame extends FlameGame {
   }
 
   void _drawCabin(Canvas canvas) {
+    // Outer shadow
     final shadow = Paint()
-      ..color = const Color(0x18202D40)
-      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 12);
+      ..color = Color(_isDark ? 0x22000000 : 0x18000000)
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 14);
     canvas.drawRRect(
       RRect.fromRectAndRadius(
         Rect.fromLTWH(
           layout.cabinShell.left + 4,
-          layout.cabinShell.top + 9,
+          layout.cabinShell.top + 10,
           layout.cabinShell.width - 8,
           layout.cabinShell.height - 8,
         ),
-        Radius.circular(layout.cabinShell.cornerRadius - 2),
+        Radius.circular(layout.cabinShell.cornerRadius),
       ),
       shadow,
     );
 
-    final shell = Paint()..color = const Color(0xFF1A2438);
+    // Fuselage fill
+    final shell = Paint()
+      ..color = _isDark ? const Color(0xFF111C36) : const Color(0xFFF5F8FF);
     canvas.drawRRect(
       RRect.fromRectAndRadius(
         Rect.fromLTWH(
@@ -150,10 +163,12 @@ class CabinGame extends FlameGame {
       ),
       shell,
     );
+
+    // Fuselage border
     final outline = Paint()
-      ..color = const Color(0xFF2E3F5C)
+      ..color = _isDark ? const Color(0xFF2A4A7A) : const Color(0xFFB0C4E8)
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 2;
+      ..strokeWidth = 1.5;
     canvas.drawRRect(
       RRect.fromRectAndRadius(
         Rect.fromLTWH(
@@ -175,7 +190,8 @@ class CabinGame extends FlameGame {
   }
 
   void _drawCockpit(Canvas canvas) {
-    final fill = Paint()..color = const Color(0xFF0F1828);
+    final fill = Paint()
+      ..color = _isDark ? const Color(0xFF0F1828) : const Color(0xFFDDE8F4);
     canvas.drawRRect(
       RRect.fromRectAndRadius(
         Rect.fromLTWH(
@@ -196,13 +212,14 @@ class CabinGame extends FlameGame {
         layout.flightDeck.top + layout.flightDeck.height / 2,
       ),
       9,
-      const Color(0xFF7A9BBF),
+      _isDark ? const Color(0xFF7A9BBF) : const Color(0xFF5A7A9A),
       bold: true,
     );
   }
 
   void _drawEntrance(Canvas canvas) {
-    final doorway = Paint()..color = const Color(0xFF152B45);
+    final doorway = Paint()
+      ..color = _isDark ? const Color(0xFF152B45) : const Color(0xFFCCDEF0);
     final glow = Paint()..color = const Color(0xFF74C4E8);
     for (final lane in layout.aisles) {
       canvas.drawRRect(
@@ -230,16 +247,17 @@ class CabinGame extends FlameGame {
         glow,
       );
     }
+    final labelColor = _isDark ? const Color(0xFF7A9BBF) : const Color(0xFF5A7A9A);
     _text(
       canvas,
       'BOARDING GATE',
       Offset(layout.designWidth / 2, layout.gateLabelY),
       10,
-      const Color(0xFF7A9BBF),
+      labelColor,
       bold: true,
     );
     final arrow = Paint()
-      ..color = const Color(0xFF7A9BBF)
+      ..color = labelColor
       ..strokeWidth = 1.6
       ..strokeCap = StrokeCap.round;
     for (final lane in layout.aisles) {
@@ -263,8 +281,8 @@ class CabinGame extends FlameGame {
   }
 
   void _drawAisle(Canvas canvas) {
-    final aisle = Paint()..color = const Color(0xFF0F1828);
     for (final lane in layout.aisles) {
+      // Aisle floor
       canvas.drawRRect(
         RRect.fromRectAndRadius(
           Rect.fromLTWH(
@@ -278,19 +296,19 @@ class CabinGame extends FlameGame {
           ),
           Radius.circular(lane.width / 2),
         ),
-        aisle,
+        Paint()
+          ..color = _isDark ? const Color(0xFF08101E) : const Color(0xFFDDE8F4),
       );
-    }
-    final dash = Paint()
-      ..color = const Color(0xFF2A3A52)
-      ..strokeWidth = 1.2
-      ..strokeCap = StrokeCap.round;
-    for (final lane in layout.aisles) {
+      // Center runner line
+      final dash = Paint()
+        ..color = _isDark ? const Color(0xFF1E3058) : const Color(0xFFB8CCE4)
+        ..strokeWidth = 1.5
+        ..strokeCap = StrokeCap.round;
       for (var row = 0; row < layout.rowCount; row++) {
         final y = layout.rowStartY + row * layout.rowSpacing;
         canvas.drawLine(
-          Offset(lane.centerX, y + 4),
-          Offset(lane.centerX, y + 14),
+          Offset(lane.centerX, y + 5),
+          Offset(lane.centerX, y + 13),
           dash,
         );
       }
@@ -298,20 +316,38 @@ class CabinGame extends FlameGame {
   }
 
   void _drawWindows(Canvas canvas) {
-    final window = Paint()..color = const Color(0xFF1A3050);
-    final windowBorder = Paint()
-      ..color = const Color(0xFF2A4870)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.2;
     for (var row = 0; row < layout.rowCount; row++) {
       final y = layout.rowStartY - 7 + row * layout.rowSpacing;
       for (final x in layout.windowCentersX) {
-        final rect = RRect.fromRectAndRadius(
-          Rect.fromCenter(center: Offset(x, y), width: 9, height: 20),
-          const Radius.circular(5),
+        // Outer porthole ring
+        canvas.drawRRect(
+          RRect.fromRectAndRadius(
+            Rect.fromCenter(center: Offset(x, y), width: 11, height: 22),
+            const Radius.circular(6),
+          ),
+          Paint()
+            ..color = _isDark ? const Color(0xFF1E3458) : const Color(0xFF8AAED8)
+            ..style = PaintingStyle.stroke
+            ..strokeWidth = 2.5,
         );
-        canvas.drawRRect(rect, window);
-        canvas.drawRRect(rect, windowBorder);
+        // Window glass
+        canvas.drawRRect(
+          RRect.fromRectAndRadius(
+            Rect.fromCenter(center: Offset(x, y), width: 8, height: 18),
+            const Radius.circular(4),
+          ),
+          Paint()
+            ..color = _isDark ? const Color(0xFF1A3A60) : const Color(0xFF5A9ED0),
+        );
+        // Window shine
+        canvas.drawRRect(
+          RRect.fromRectAndRadius(
+            Rect.fromCenter(
+                center: Offset(x - 1.5, y - 3), width: 3, height: 6),
+            const Radius.circular(2),
+          ),
+          Paint()..color = const Color(0x334A9EFF),
+        );
       }
     }
   }
@@ -319,34 +355,40 @@ class CabinGame extends FlameGame {
   void _drawRows(Canvas canvas) {
     for (var row = 0; row < layout.rowCount; row++) {
       final y = layout.rowStartY + row * layout.rowSpacing;
-      _text(
-        canvas,
-        '${row + 1}',
-        Offset(layout.seatBlocks.first.left - 3, y),
-        9,
-        const Color(0xFF7A9BBF),
-        bold: true,
-      );
-      _text(
-        canvas,
-        '${row + 1}',
-        Offset(layout.seatBlocks.last.right + 3, y),
-        9,
-        const Color(0xFF7A9BBF),
-        bold: true,
-      );
 
-      // Slim overhead-bin panels frame each row and make the cabin read as a plane.
-      final binPaint = Paint()..color = const Color(0xFF243348);
+      // Row numbers
+      final rowNumColor = _isDark ? const Color(0xFF4A7AB0) : const Color(0xFF6A8AB8);
+      _text(canvas, '${row + 1}',
+          Offset(layout.seatBlocks.first.left - 4, y), 9, rowNumColor,
+          bold: true);
+      _text(canvas, '${row + 1}',
+          Offset(layout.seatBlocks.last.right + 4, y), 9, rowNumColor,
+          bold: true);
+
+      // Overhead bin panels
       for (final block in layout.seatBlocks) {
+        // Bin tray
         canvas.drawRRect(
           RRect.fromRectAndRadius(
-            Rect.fromLTWH(block.left, y - 17, block.right - block.left, 4),
-            const Radius.circular(2),
+            Rect.fromLTWH(block.left, y - 18, block.right - block.left, 5),
+            const Radius.circular(2.5),
           ),
-          binPaint,
+          Paint()
+            ..color = _isDark ? const Color(0xFF1E3050) : const Color(0xFFD0DCF0),
+        );
+        // Bin handle groove
+        canvas.drawRRect(
+          RRect.fromRectAndRadius(
+            Rect.fromLTWH(
+                block.left + (block.right - block.left) / 2 - 8, y - 16, 16, 2),
+            const Radius.circular(1),
+          ),
+          Paint()
+            ..color = _isDark ? const Color(0xFF2E4870) : const Color(0xFFB0C0DC),
         );
       }
+
+      // Draw seats
       for (var column = 0; column < layout.seatsPerRow; column++) {
         final seat = simulation.seats[row * layout.seatsPerRow + column];
         _drawSeat(canvas, _seatRect(row, column), seat.zone, seat.label);
@@ -356,28 +398,38 @@ class CabinGame extends FlameGame {
 
   void _drawSeat(Canvas canvas, Rect rect, int zone, String label) {
     final color = zoneColors[zone];
-    final base = Paint()..color = color.withValues(alpha: 0.18);
-    final outline = Paint()
-      ..color = color.withValues(alpha: 0.9)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.4;
-    final shape = RRect.fromRectAndRadius(rect, const Radius.circular(7));
+    // Light mode needs a more opaque fill so seats pop against the bright fuselage
+    final fillAlpha = _isDark ? 0.20 : 0.22;
+    final base = Paint()..color = color.withValues(alpha: fillAlpha);
+    final shape = RRect.fromRectAndRadius(rect, const Radius.circular(8));
     canvas.drawRRect(shape, base);
+
+    // Outline — full opacity in light mode for better definition
+    final outlineAlpha = _isDark ? 0.85 : 1.0;
+    final outline = Paint()
+      ..color = color.withValues(alpha: outlineAlpha)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.5;
     canvas.drawRRect(shape, outline);
-    final headrest = Paint()..color = color.withValues(alpha: 0.44);
+
+    // Headrest bar
+    final headrest = Paint()..color = color.withValues(alpha: _isDark ? 0.55 : 0.65);
     canvas.drawRRect(
       RRect.fromRectAndRadius(
-        Rect.fromLTWH(rect.left + 4, rect.top + 3, rect.width - 8, 5),
+        Rect.fromLTWH(rect.left + 3.5, rect.top + 2.5, rect.width - 7, 5.5),
         const Radius.circular(3),
       ),
       headrest,
     );
+
+    // In light mode all labels are dark so they're legible regardless of zone color.
+    // In dark mode the vivid zone color reads well against the dark tinted seat.
     _text(
       canvas,
       label,
       Offset(rect.center.dx, rect.center.dy + 4),
       7,
-      const Color(0xFFB0C8E0),
+      _isDark ? color.withValues(alpha: 0.9) : const Color(0x9A000000),
       bold: true,
     );
   }
@@ -392,7 +444,6 @@ class CabinGame extends FlameGame {
     final aisleX = aisleLayout.centerX;
     final rowY = layout.rowStartY + passenger.rowPosition * layout.rowSpacing;
 
-    // Blocker offset: seated passengers slide out and back during shuffle phases.
     double shuffleOffsetX = 0;
     if (passenger.shufflePhase != ShufflePhase.none) {
       final toAisle = aisleX - seatRect.center.dx;
@@ -413,17 +464,14 @@ class CabinGame extends FlameGame {
     double x;
     double y;
     if (seated) {
-      // Fully seated at seat center.
       x = seatRect.center.dx;
       y = seatRect.center.dy + 1;
     } else if (sliding) {
-      // Sliding from aisle into seat (seatSliding or shuffleWait with blockers cleared).
       final eased = passenger.seatSlideProgress * passenger.seatSlideProgress *
           (3 - 2 * passenger.seatSlideProgress);
       x = ui.lerpDouble(aisleX, seatRect.center.dx, eased)!;
       y = ui.lerpDouble(rowY, seatRect.center.dy + 1, eased)!;
     } else {
-      // Walking, turning, stowing, shuffleWait-waiting — all stay at aisle X.
       x = aisleX;
       y = rowY;
     }
@@ -432,7 +480,6 @@ class CabinGame extends FlameGame {
     final bob = isWalking ? math.sin(passenger.animationTime * 16) * 1.6 : 0.0;
     final center = Offset(x + shuffleOffsetX, y + bob);
 
-    // Dim shuffleWait passengers who haven't started sliding yet.
     final alpha = (passenger.phase == PassengerPhase.shuffleWait &&
             passenger.seatSlideProgress == 0)
         ? 0.55
@@ -440,65 +487,77 @@ class CabinGame extends FlameGame {
             ? ui.lerpDouble(0.55, 1.0, passenger.seatSlideProgress)!
             : 1.0;
 
-    final shadow = Paint()..color = Color.fromRGBO(13, 34, 56, 0.19 * alpha);
+    final zoneColor = zoneColors[passenger.seat.zone];
+
+    // Shadow
     canvas.drawOval(
       Rect.fromCenter(
-        center: center + const Offset(0, 10),
-        width: 19,
-        height: 7,
-      ),
-      shadow,
+          center: center + const Offset(0, 10), width: 18, height: 6),
+      Paint()..color = Color.fromRGBO(0, 0, 0, 0.22 * alpha),
     );
-    final bag = Paint()..color = Color.fromRGBO(202, 112, 78, alpha);
+
+    // Luggage
+    final bagRect = Rect.fromCenter(
+      center: center + const Offset(-7, 2),
+      width: 6,
+      height: 10,
+    );
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(bagRect, const Radius.circular(2)),
+      Paint()..color = Color.fromRGBO(180, 100, 60, alpha),
+    );
+    // Bag handle
+    canvas.drawLine(
+      Offset(bagRect.left + 1.5, bagRect.top),
+      Offset(bagRect.right - 1.5, bagRect.top),
+      Paint()
+        ..color = Color.fromRGBO(130, 70, 40, alpha)
+        ..strokeWidth = 1.5
+        ..strokeCap = StrokeCap.round,
+    );
+
+    // Body — zone-colored with slight gradient feel via inner highlight
+    final bodyColor = zoneColor.withValues(alpha: alpha);
     canvas.drawRRect(
       RRect.fromRectAndRadius(
-        Rect.fromCenter(
-          center: center + const Offset(-6, 2),
-          width: 7,
-          height: 12,
-        ),
-        const Radius.circular(3),
-      ),
-      bag,
-    );
-    final bodyColor = zoneColors[passenger.seat.zone].withValues(alpha: alpha);
-    canvas.drawRRect(
-      RRect.fromRectAndRadius(
-        Rect.fromCenter(center: center, width: 12, height: 16),
-        const Radius.circular(6),
+        Rect.fromCenter(center: center, width: 11, height: 15),
+        const Radius.circular(5.5),
       ),
       Paint()..color = bodyColor,
     );
-    canvas.drawCircle(
-      center + const Offset(0, -9),
-      5.2,
-      Paint()..color = Color.fromRGBO(255, 213, 179, alpha),
+    // Body highlight strip
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(
+        Rect.fromCenter(
+            center: center + const Offset(0, -2), width: 4, height: 8),
+        const Radius.circular(2),
+      ),
+      Paint()
+        ..color = Colors.white.withValues(alpha: 0.18 * alpha),
     );
+
+    // Head
     canvas.drawCircle(
-      center + const Offset(-1.8, -10),
-      0.7,
-      Paint()..color = Color.fromRGBO(81, 59, 50, alpha),
+      center + const Offset(0, -9.5),
+      5.0,
+      Paint()..color = Color.fromRGBO(250, 210, 175, alpha),
     );
-    canvas.drawCircle(
-      center + const Offset(1.8, -10),
-      0.7,
-      Paint()..color = Color.fromRGBO(81, 59, 50, alpha),
-    );
-    final legs = Paint()
-      ..color = Color.fromRGBO(64, 81, 104, alpha)
-      ..strokeWidth = 2.2
+    // Eyes
+    canvas.drawCircle(center + const Offset(-1.6, -9.8), 0.7,
+        Paint()..color = Color.fromRGBO(70, 50, 40, alpha));
+    canvas.drawCircle(center + const Offset(1.6, -9.8), 0.7,
+        Paint()..color = Color.fromRGBO(70, 50, 40, alpha));
+
+    // Legs
+    final legPaint = Paint()
+      ..color = Color.fromRGBO(55, 72, 100, alpha)
+      ..strokeWidth = 2.0
       ..strokeCap = StrokeCap.round;
-    final stride = isWalking ? math.sin(passenger.animationTime * 16) * 2 : 0.0;
-    canvas.drawLine(
-      center + const Offset(-3, 7),
-      center + Offset(-4 - stride, 11),
-      legs,
-    );
-    canvas.drawLine(
-      center + const Offset(3, 7),
-      center + Offset(4 + stride, 11),
-      legs,
-    );
+    final stride = isWalking ? math.sin(passenger.animationTime * 16) * 2.2 : 0.0;
+    canvas.drawLine(center + const Offset(-2.5, 6.5),
+        center + Offset(-3.5 - stride, 11), legPaint);
+    canvas.drawLine(center + const Offset(2.5, 6.5),
+        center + Offset(3.5 + stride, 11), legPaint);
   }
 
   void _text(

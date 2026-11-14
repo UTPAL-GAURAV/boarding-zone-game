@@ -39,7 +39,7 @@ abstract final class LevelA319 {
       SeatBlockLayout(left: 25, right: 99),
       SeatBlockLayout(left: 133, right: 279),
     ],
-    windowCentersX: [12, 291],
+    windowCentersX: [27, 353],
     cabinShell: CabinRegion(
       left: 20,
       top: 28,

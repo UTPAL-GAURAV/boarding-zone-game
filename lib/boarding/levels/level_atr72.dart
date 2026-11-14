@@ -37,7 +37,7 @@ abstract final class LevelAtr72 {
       SeatBlockLayout(left: 36, right: 158),
       SeatBlockLayout(left: 256, right: 294),
     ],
-    windowCentersX: [18, 319],
+    windowCentersX: [30, 317],
     cabinShell: CabinRegion(
       left: 20,
       top: 28,

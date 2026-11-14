@@ -21,6 +21,8 @@ class AppAudio {
     _enabled = value;
     if (!value) {
       FlameAudio.bgm.stop();
+    } else {
+      FlameAudio.bgm.play('bg_music.mp3', volume: 0.25);
     }
   }
 

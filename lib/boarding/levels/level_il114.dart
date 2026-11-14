@@ -37,7 +37,7 @@ abstract final class LevelIl114 {
       SeatBlockLayout(left: 51, right: 155),
       SeatBlockLayout(left: 205, right: 309),
     ],
-    windowCentersX: [31, 319],
+    windowCentersX: [36, 324],
     cabinShell: CabinRegion(
       left: 20,
       top: 28,

@@ -60,7 +60,7 @@ abstract final class LevelWide333 {
       SeatBlockLayout(left: 126, right: 210),
       SeatBlockLayout(left: 236, right: 320),
     ],
-    windowCentersX: [8, 328],
+    windowCentersX: [18, 382],
     cabinShell: CabinRegion(
       left: 8,
       top: 38,

@@ -11,6 +11,7 @@ import 'package:razorpay_flutter/razorpay_flutter.dart';
 import '../audio/app_audio.dart';
 import '../boarding/boarding_game_page.dart';
 import '../boarding/levels/level_tutorial.dart';
+import '../main.dart' show appThemeMode;
 import 'aircraft.dart';
 import 'aircraft_catalog.dart';
 import 'local_profile_store.dart';
@@ -18,12 +19,34 @@ import 'manufacturer_brand_assets.dart';
 import 'rankings_service.dart';
 import 'shop_service.dart';
 
-const _navy = Color(0xFF0A0E1A);
-const _panel = Color(0xFF151C2E);
-const _panelLight = Color(0xFF1E2840);
-const _muted = Color(0xFF6B7A99);
 const _accent = Color(0xFFFFB930);
 const _accentGlow = Color(0x33FFB930);
+
+/// Adaptive color helper — reads brightness from MaterialApp's current theme.
+class _HC {
+  _HC._(this._dark);
+
+  factory _HC.from(BuildContext context) =>
+      _HC._(Theme.of(context).brightness == Brightness.dark);
+
+  final bool _dark;
+
+  Color get bg => _dark ? const Color(0xFF0A0E1A) : const Color(0xFFEDF3FF);
+  Color get surface => _dark ? const Color(0xFF151C2E) : const Color(0xFFFFFFFF);
+  Color get surfaceElevated =>
+      _dark ? const Color(0xFF1E2840) : const Color(0xFFF0F5FF);
+  Color get muted =>
+      _dark ? const Color(0xFF6B7A99) : const Color(0xFF5A6A8A);
+  Color get ink => _dark ? Colors.white : const Color(0xFF0A1628);
+  Color get border => _dark
+      ? Colors.white.withValues(alpha: 0.08)
+      : const Color(0xFF0A1628).withValues(alpha: 0.10);
+  Color get divider =>
+      _dark ? const Color(0xFF1E2840) : const Color(0xFFCDD7F0);
+
+  /// Text/icon color that always reads well on the amber _accent button.
+  static const Color onAccent = Color(0xFF0A0E1A);
+}
 
 class BoardingHomeShell extends StatefulWidget {
   const BoardingHomeShell({super.key, this.store});
@@ -73,6 +96,7 @@ class _BoardingHomeShellState extends State<BoardingHomeShell> {
     final profile = await _store.loadProfile();
     final progress = await _store.loadFleetProgress(AircraftCatalog.all);
     final soundEnabled = await _store.loadSoundEnabled();
+    final themeModeStr = await _store.loadThemeMode();
     bool premiumUnlocked = await _shop.isPremiumUnlocked();
 
     // Auto-restore: if premium is not locally cached but a Google ID is stored,
@@ -108,6 +132,13 @@ class _BoardingHomeShellState extends State<BoardingHomeShell> {
             if (entry.value.premiumOwned) entry.key,
         };
       });
+      // Apply persisted theme (main.dart already loaded it before first frame,
+      // but this ensures shell-level init is consistent if ever loaded later).
+      appThemeMode.value = switch (themeModeStr) {
+        'light' => ThemeMode.light,
+        'system' => ThemeMode.system,
+        _ => ThemeMode.dark,
+      };
     }
     unawaited(AppAudio.instance.init(enabled: soundEnabled).then((_) {
       AppAudio.instance.startBgMusic();
@@ -141,7 +172,10 @@ class _BoardingHomeShellState extends State<BoardingHomeShell> {
         initialSoundEnabled: _soundEnabled,
       ),
     );
-    if (result == null) return;
+    if (result == null) {
+      AppAudio.instance.setEnabled(_soundEnabled);
+      return;
+    }
     final name = result.name.trim();
     final newSound = result.soundEnabled;
     if (name.isNotEmpty) {
@@ -164,7 +198,15 @@ class _BoardingHomeShellState extends State<BoardingHomeShell> {
       AppAudio.instance.setEnabled(newSound);
       if (mounted) setState(() => _soundEnabled = newSound);
     }
+    // Persist whatever theme mode the toggle left us at.
+    await _store.saveThemeMode(_themeModeKey(appThemeMode.value));
   }
+
+  String _themeModeKey(ThemeMode mode) => switch (mode) {
+    ThemeMode.light => 'light',
+    ThemeMode.system => 'system',
+    _ => 'dark',
+  };
 
   Future<GoogleSignInAccount?> _signInForShop() async {
     final account = await _shop.signIn();
@@ -268,6 +310,10 @@ class _BoardingHomeShellState extends State<BoardingHomeShell> {
   }
 
   void _openRazorpay(GoogleSignInAccount account) {
+    unawaited(_shop.logPurchaseIntent(
+      googleId: account.id,
+      email: account.email,
+    ));
     const key = String.fromEnvironment('RAZORPAY_KEY');
     final options = <String, dynamic>{
       'key': key,
@@ -387,22 +433,17 @@ class _BoardingHomeShellState extends State<BoardingHomeShell> {
         if (!mounted) return;
         await Navigator.of(context).push(
           MaterialPageRoute<void>(
-            builder: (_) => Theme(
-              data: ThemeData(
-                useMaterial3: true,
-                brightness: Brightness.dark,
-                scaffoldBackgroundColor: const Color(0xFF0A0E1A),
-                colorScheme: ColorScheme.fromSeed(
-                  seedColor: const Color(0xFFFFB930),
-                  brightness: Brightness.dark,
-                ),
-                fontFamily: 'sans-serif',
-              ),
-              child: AnnotatedRegion<SystemUiOverlayStyle>(
-                value: const SystemUiOverlayStyle(
-                  statusBarIconBrightness: Brightness.light,
-                  systemNavigationBarColor: Color(0xFF0A0E1A),
-                  systemNavigationBarIconBrightness: Brightness.light,
+            builder: (context) {
+              final dark = Theme.of(context).brightness == Brightness.dark;
+              return AnnotatedRegion<SystemUiOverlayStyle>(
+                value: SystemUiOverlayStyle(
+                  statusBarIconBrightness:
+                      dark ? Brightness.light : Brightness.dark,
+                  systemNavigationBarColor: dark
+                      ? const Color(0xFF0A0E1A)
+                      : const Color(0xFFEDF3FF),
+                  systemNavigationBarIconBrightness:
+                      dark ? Brightness.light : Brightness.dark,
                 ),
                 child: BoardingGamePage(
                   aircraftName: aircraft.displayName,
@@ -411,8 +452,8 @@ class _BoardingHomeShellState extends State<BoardingHomeShell> {
                   previewOnly: true,
                   onUnlockTap: () => setState(() => _destination = 2),
                 ),
-              ),
-            ),
+              );
+            },
           ),
         );
         return;
@@ -433,22 +474,16 @@ class _BoardingHomeShellState extends State<BoardingHomeShell> {
     if (!mounted) return;
     await Navigator.of(context).push(
       MaterialPageRoute<void>(
-        builder: (_) => Theme(
-          data: ThemeData(
-            useMaterial3: true,
-            brightness: Brightness.dark,
-            scaffoldBackgroundColor: const Color(0xFF0A0E1A),
-            colorScheme: ColorScheme.fromSeed(
-              seedColor: const Color(0xFFFFB930),
-              brightness: Brightness.dark,
-            ),
-            fontFamily: 'sans-serif',
-          ),
-          child: AnnotatedRegion<SystemUiOverlayStyle>(
-            value: const SystemUiOverlayStyle(
-              statusBarIconBrightness: Brightness.light,
-              systemNavigationBarColor: Color(0xFF0A0E1A),
-              systemNavigationBarIconBrightness: Brightness.light,
+        builder: (context) {
+          final dark = Theme.of(context).brightness == Brightness.dark;
+          return AnnotatedRegion<SystemUiOverlayStyle>(
+            value: SystemUiOverlayStyle(
+              statusBarIconBrightness:
+                  dark ? Brightness.light : Brightness.dark,
+              systemNavigationBarColor:
+                  dark ? const Color(0xFF0A0E1A) : const Color(0xFFEDF3FF),
+              systemNavigationBarIconBrightness:
+                  dark ? Brightness.light : Brightness.dark,
             ),
             child: BoardingGamePage(
               aircraftName: aircraft.displayName,
@@ -463,8 +498,8 @@ class _BoardingHomeShellState extends State<BoardingHomeShell> {
                   _recordBestTime(aircraft, milliseconds),
               onNext: () => _selectNextAircraft(aircraft),
             ),
-          ),
-        ),
+          );
+        },
       ),
     );
     await _reloadFleetProgress();
@@ -512,22 +547,16 @@ class _BoardingHomeShellState extends State<BoardingHomeShell> {
     if (!mounted) return;
     await Navigator.of(context).push(
       MaterialPageRoute<void>(
-        builder: (_) => Theme(
-          data: ThemeData(
-            useMaterial3: true,
-            brightness: Brightness.dark,
-            scaffoldBackgroundColor: const Color(0xFF0A0E1A),
-            colorScheme: ColorScheme.fromSeed(
-              seedColor: const Color(0xFFFFB930),
-              brightness: Brightness.dark,
-            ),
-            fontFamily: 'sans-serif',
-          ),
-          child: AnnotatedRegion<SystemUiOverlayStyle>(
-            value: const SystemUiOverlayStyle(
-              statusBarIconBrightness: Brightness.light,
-              systemNavigationBarColor: Color(0xFF0A0E1A),
-              systemNavigationBarIconBrightness: Brightness.light,
+        builder: (context) {
+          final dark = Theme.of(context).brightness == Brightness.dark;
+          return AnnotatedRegion<SystemUiOverlayStyle>(
+            value: SystemUiOverlayStyle(
+              statusBarIconBrightness:
+                  dark ? Brightness.light : Brightness.dark,
+              systemNavigationBarColor:
+                  dark ? const Color(0xFF0A0E1A) : const Color(0xFFEDF3FF),
+              systemNavigationBarIconBrightness:
+                  dark ? Brightness.light : Brightness.dark,
             ),
             child: BoardingGamePage(
               aircraftName: 'Tutorial Flight',
@@ -535,8 +564,8 @@ class _BoardingHomeShellState extends State<BoardingHomeShell> {
               tutorialMode: true,
               onCompleted: (_) async => _store.setTutorialCompleted(),
             ),
-          ),
-        ),
+          );
+        },
       ),
     );
   }
@@ -580,42 +609,50 @@ class _BoardingHomeShellState extends State<BoardingHomeShell> {
     }
     showDialog<void>(
       context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: _panel,
-        icon: const Icon(Icons.lock_rounded, color: _accent),
-        title: Text(aircraft.displayName, style: const TextStyle(color: Colors.white)),
-        content: Text(
-          message,
-          style: const TextStyle(color: _muted),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Got it'),
+      builder: (context) {
+        final hc = _HC.from(context);
+        return AlertDialog(
+          backgroundColor: hc.surface,
+          icon: const Icon(Icons.lock_rounded, color: _accent),
+          title: Text(aircraft.displayName,
+              style: TextStyle(color: hc.ink)),
+          content: Text(
+            message,
+            style: TextStyle(color: hc.muted),
           ),
-        ],
-      ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Got it'),
+            ),
+          ],
+        );
+      },
     );
   }
 
   void _showComingSoon(Aircraft aircraft) {
     showDialog<void>(
       context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: _panel,
-        icon: const Icon(Icons.construction_rounded, color: _accent),
-        title: Text(aircraft.displayName, style: const TextStyle(color: Colors.white)),
-        content: const Text(
-          'This aircraft is unlocked. Its boarding level is coming soon.',
-          style: TextStyle(color: _muted),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Got it'),
+      builder: (context) {
+        final hc = _HC.from(context);
+        return AlertDialog(
+          backgroundColor: hc.surface,
+          icon: const Icon(Icons.construction_rounded, color: _accent),
+          title: Text(aircraft.displayName,
+              style: TextStyle(color: hc.ink)),
+          content: Text(
+            'This aircraft is unlocked. Its boarding level is coming soon.',
+            style: TextStyle(color: hc.muted),
           ),
-        ],
-      ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Got it'),
+            ),
+          ],
+        );
+      },
     );
   }
 
@@ -623,16 +660,17 @@ class _BoardingHomeShellState extends State<BoardingHomeShell> {
   Widget build(BuildContext context) => FutureBuilder<PlayerProfile>(
     future: _profileFuture,
     builder: (context, snapshot) {
+      final hc = _HC.from(context);
       if (snapshot.connectionState != ConnectionState.done ||
           _profile == null) {
-        return const Scaffold(
-          backgroundColor: _navy,
-          body: Center(child: CircularProgressIndicator(color: _accent)),
+        return Scaffold(
+          backgroundColor: hc.bg,
+          body: const Center(child: CircularProgressIndicator(color: _accent)),
         );
       }
       final crewMember = _profile!;
       return Scaffold(
-        backgroundColor: _navy,
+        backgroundColor: hc.bg,
         body: SafeArea(
           child: IndexedStack(
             index: _destination,
@@ -671,25 +709,26 @@ class _BoardingHomeShellState extends State<BoardingHomeShell> {
           ),
         ),
         bottomNavigationBar: NavigationBar(
-          backgroundColor: _panel,
+          backgroundColor: hc.surface,
           indicatorColor: _accentGlow,
           selectedIndex: _destination,
           onDestinationSelected: (value) =>
               setState(() => _destination = value),
-          destinations: const [
+          destinations: [
             NavigationDestination(
-              icon: Icon(Icons.flight_outlined, color: _muted),
-              selectedIcon: Icon(Icons.flight_rounded, color: _accent),
+              icon: Icon(Icons.flight_outlined, color: hc.muted),
+              selectedIcon: const Icon(Icons.flight_rounded, color: _accent),
               label: 'Fleet',
             ),
             NavigationDestination(
-              icon: Icon(Icons.emoji_events_outlined, color: _muted),
-              selectedIcon: Icon(Icons.emoji_events_rounded, color: _accent),
+              icon: Icon(Icons.emoji_events_outlined, color: hc.muted),
+              selectedIcon: const Icon(Icons.emoji_events_rounded, color: _accent),
               label: 'Rankings',
             ),
             NavigationDestination(
-              icon: Icon(Icons.storefront_outlined, color: _muted),
-              selectedIcon: Icon(Icons.storefront_rounded, color: _accent),
+              icon: Icon(Icons.storefront_outlined, color: hc.muted),
+              selectedIcon:
+                  const Icon(Icons.storefront_rounded, color: _accent),
               label: 'Shop',
             ),
           ],
@@ -715,12 +754,14 @@ class _ProfileDialog extends StatefulWidget {
 class _ProfileDialogState extends State<_ProfileDialog> {
   late final TextEditingController _controller;
   late bool _soundEnabled;
+  late bool _darkMode;
 
   @override
   void initState() {
     super.initState();
     _controller = TextEditingController(text: widget.initialName);
     _soundEnabled = widget.initialSoundEnabled;
+    _darkMode = appThemeMode.value != ThemeMode.light;
   }
 
   @override
@@ -730,14 +771,19 @@ class _ProfileDialogState extends State<_ProfileDialog> {
   }
 
   @override
-  Widget build(BuildContext context) => Dialog(
-    backgroundColor: Colors.transparent,
-    insetPadding: const EdgeInsets.symmetric(horizontal: 28, vertical: 24),
-    child: Container(
-      decoration: BoxDecoration(
-        color: _panel,
+  Widget build(BuildContext context) {
+    return ListenableBuilder(
+      listenable: appThemeMode,
+      builder: (context, _) {
+        final hc = _HC.from(context);
+        return Dialog(
+        backgroundColor: Colors.transparent,
+        insetPadding: const EdgeInsets.symmetric(horizontal: 28, vertical: 24),
+        child: Container(
+          decoration: BoxDecoration(
+            color: hc.surface,
         borderRadius: BorderRadius.circular(28),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+        border: Border.all(color: hc.border),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.5),
@@ -754,7 +800,7 @@ class _ProfileDialogState extends State<_ProfileDialog> {
             padding: const EdgeInsets.fromLTRB(24, 24, 24, 20),
             decoration: BoxDecoration(
               border: Border(
-                bottom: BorderSide(color: Colors.white.withValues(alpha: 0.07)),
+                bottom: BorderSide(color: hc.border),
               ),
             ),
             child: Row(
@@ -773,11 +819,11 @@ class _ProfileDialogState extends State<_ProfileDialog> {
                   ),
                 ),
                 const SizedBox(width: 14),
-                const Expanded(
+                Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
+                      const Text(
                         'CREW PROFILE',
                         style: TextStyle(
                           color: _accent,
@@ -786,11 +832,11 @@ class _ProfileDialogState extends State<_ProfileDialog> {
                           letterSpacing: 1.4,
                         ),
                       ),
-                      SizedBox(height: 2),
+                      const SizedBox(height: 2),
                       Text(
                         'Your callsign & settings',
                         style: TextStyle(
-                          color: Colors.white,
+                          color: hc.ink,
                           fontSize: 15,
                           fontWeight: FontWeight.w800,
                         ),
@@ -807,10 +853,10 @@ class _ProfileDialogState extends State<_ProfileDialog> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                Text(
                   'CALLSIGN',
                   style: TextStyle(
-                    color: _muted,
+                    color: hc.muted,
                     fontSize: 9,
                     fontWeight: FontWeight.w800,
                     letterSpacing: 1.1,
@@ -819,22 +865,22 @@ class _ProfileDialogState extends State<_ProfileDialog> {
                 const SizedBox(height: 8),
                 TextField(
                   controller: _controller,
-                  autofocus: true,
+                  autofocus: false,
                   maxLength: 12,
-                  style: const TextStyle(
-                    color: Colors.white,
+                  style: TextStyle(
+                    color: hc.ink,
                     fontSize: 16,
                     fontWeight: FontWeight.w700,
                   ),
                   decoration: InputDecoration(
                     hintText: 'Enter callsign…',
                     hintStyle: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.25),
+                      color: hc.muted.withValues(alpha: 0.6),
                       fontWeight: FontWeight.w500,
                     ),
-                    counterStyle: const TextStyle(color: _muted, fontSize: 10),
+                    counterStyle: TextStyle(color: hc.muted, fontSize: 10),
                     filled: true,
-                    fillColor: _panelLight,
+                    fillColor: hc.surfaceElevated,
                     contentPadding: const EdgeInsets.symmetric(
                       horizontal: 16,
                       vertical: 14,
@@ -845,24 +891,24 @@ class _ProfileDialogState extends State<_ProfileDialog> {
                     ),
                     enabledBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(14),
-                      borderSide: BorderSide(
-                        color: Colors.white.withValues(alpha: 0.08),
-                      ),
+                      borderSide: BorderSide(color: hc.border),
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(14),
-                      borderSide: const BorderSide(color: _accent, width: 1.5),
+                      borderSide:
+                          const BorderSide(color: _accent, width: 1.5),
                     ),
                   ),
                 ),
                 const SizedBox(height: 16),
                 // Sound toggle row
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                   decoration: BoxDecoration(
-                    color: _panelLight,
+                    color: hc.surfaceElevated,
                     borderRadius: BorderRadius.circular(14),
-                    border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+                    border: Border.all(color: hc.border),
                   ),
                   child: Row(
                     children: [
@@ -870,7 +916,7 @@ class _ProfileDialogState extends State<_ProfileDialog> {
                         _soundEnabled
                             ? Icons.volume_up_rounded
                             : Icons.volume_off_rounded,
-                        color: _soundEnabled ? _accent : _muted,
+                        color: _soundEnabled ? _accent : hc.muted,
                         size: 20,
                       ),
                       const SizedBox(width: 12),
@@ -878,10 +924,10 @@ class _ProfileDialogState extends State<_ProfileDialog> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Text(
+                            Text(
                               'Sound',
                               style: TextStyle(
-                                color: Colors.white,
+                                color: hc.ink,
                                 fontSize: 13,
                                 fontWeight: FontWeight.w700,
                               ),
@@ -890,8 +936,8 @@ class _ProfileDialogState extends State<_ProfileDialog> {
                               _soundEnabled
                                   ? 'Music & effects on'
                                   : 'Music & effects off',
-                              style: const TextStyle(
-                                color: _muted,
+                              style: TextStyle(
+                                color: hc.muted,
                                 fontSize: 11,
                               ),
                             ),
@@ -900,12 +946,73 @@ class _ProfileDialogState extends State<_ProfileDialog> {
                       ),
                       Switch(
                         value: _soundEnabled,
-                        onChanged: (value) =>
-                            setState(() => _soundEnabled = value),
+                        onChanged: (value) {
+                          setState(() => _soundEnabled = value);
+                          AppAudio.instance.setEnabled(value);
+                        },
                         activeThumbColor: _accent,
                         activeTrackColor: _accent.withValues(alpha: 0.3),
-                        inactiveThumbColor: _muted,
-                        inactiveTrackColor: _panelLight,
+                        inactiveThumbColor: hc.muted,
+                        inactiveTrackColor: hc.surfaceElevated,
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 8),
+                // Theme toggle row
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  decoration: BoxDecoration(
+                    color: hc.surfaceElevated,
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: hc.border),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        _darkMode
+                            ? Icons.dark_mode_rounded
+                            : Icons.light_mode_rounded,
+                        color: _darkMode ? _accent : const Color(0xFF8AAAF0),
+                        size: 20,
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Appearance',
+                              style: TextStyle(
+                                color: hc.ink,
+                                fontSize: 13,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                            Text(
+                              _darkMode ? 'Dark mode' : 'Light mode',
+                              style: TextStyle(
+                                color: hc.muted,
+                                fontSize: 11,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Switch(
+                        value: _darkMode,
+                        onChanged: (value) {
+                          setState(() => _darkMode = value);
+                          final mode =
+                              value ? ThemeMode.dark : ThemeMode.light;
+                          appThemeMode.value = mode;
+                        },
+                        activeThumbColor: _accent,
+                        activeTrackColor: _accent.withValues(alpha: 0.3),
+                        inactiveThumbColor: const Color(0xFF8AAAF0),
+                        inactiveTrackColor:
+                            const Color(0xFF8AAAF0).withValues(alpha: 0.25),
                       ),
                     ],
                   ),
@@ -921,10 +1028,13 @@ class _ProfileDialogState extends State<_ProfileDialog> {
               children: [
                 Expanded(
                   child: OutlinedButton(
-                    onPressed: () => Navigator.pop(context),
+                    onPressed: () {
+                      AppAudio.instance.setEnabled(widget.initialSoundEnabled);
+                      Navigator.pop(context);
+                    },
                     style: OutlinedButton.styleFrom(
-                      foregroundColor: _muted,
-                      side: BorderSide(color: Colors.white.withValues(alpha: 0.15)),
+                      foregroundColor: hc.muted,
+                      side: BorderSide(color: hc.border),
                       padding: const EdgeInsets.symmetric(vertical: 14),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(14),
@@ -942,11 +1052,14 @@ class _ProfileDialogState extends State<_ProfileDialog> {
                   child: FilledButton(
                     onPressed: () => Navigator.pop(
                       context,
-                      (name: _controller.text.trim(), soundEnabled: _soundEnabled),
+                      (
+                        name: _controller.text.trim(),
+                        soundEnabled: _soundEnabled
+                      ),
                     ),
                     style: FilledButton.styleFrom(
                       backgroundColor: _accent,
-                      foregroundColor: _navy,
+                      foregroundColor: _HC.onAccent,
                       padding: const EdgeInsets.symmetric(vertical: 14),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(14),
@@ -966,7 +1079,10 @@ class _ProfileDialogState extends State<_ProfileDialog> {
         ],
       ),
     ),
-  );
+        );
+      },
+    );
+  }
 }
 
 class _HomeTab extends StatefulWidget {
@@ -1049,7 +1165,9 @@ class _HomeTabState extends State<_HomeTab> {
   }
 
   @override
-  Widget build(BuildContext context) => CustomScrollView(
+  Widget build(BuildContext context) {
+    final hc = _HC.from(context);
+    return CustomScrollView(
     key: const PageStorageKey('fleet-scroll'),
     slivers: [
       SliverPadding(
@@ -1060,9 +1178,9 @@ class _HomeTabState extends State<_HomeTab> {
             const SizedBox(height: 36),
             const _PageTitle(kicker: 'SELECT YOUR AIRCRAFT', title: 'Fleet'),
             const SizedBox(height: 8),
-            const Text(
+            Text(
               'Swipe the hangar and tap an aircraft to enter its cabin.',
-              style: TextStyle(color: _muted, fontSize: 12),
+              style: TextStyle(color: hc.muted, fontSize: 12),
             ),
             const SizedBox(height: 18),
             SizedBox(
@@ -1099,7 +1217,7 @@ class _HomeTabState extends State<_HomeTab> {
             Container(
               padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
               decoration: BoxDecoration(
-                color: _panel,
+                color: hc.surface,
                 borderRadius: BorderRadius.circular(18),
                 border: Border.all(color: _accent.withValues(alpha: 0.2)),
                 boxShadow: [
@@ -1116,10 +1234,10 @@ class _HomeTabState extends State<_HomeTab> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
+                        Text(
                           'SELECTED AIRCRAFT',
                           style: TextStyle(
-                            color: _muted,
+                            color: hc.muted,
                             fontSize: 8,
                             fontWeight: FontWeight.w800,
                             letterSpacing: 0.8,
@@ -1130,8 +1248,8 @@ class _HomeTabState extends State<_HomeTab> {
                           widget.selected.displayName,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            color: Colors.white,
+                          style: TextStyle(
+                            color: hc.ink,
                             fontSize: 14,
                             fontWeight: FontWeight.w800,
                           ),
@@ -1148,9 +1266,9 @@ class _HomeTabState extends State<_HomeTab> {
                     label: const Text('START ONBOARDING'),
                     style: FilledButton.styleFrom(
                       backgroundColor: _accent,
-                      foregroundColor: _navy,
-                      disabledBackgroundColor: _panelLight,
-                      disabledForegroundColor: _muted,
+                      foregroundColor: _HC.onAccent,
+                      disabledBackgroundColor: hc.surfaceElevated,
+                      disabledForegroundColor: hc.muted,
                       textStyle: const TextStyle(
                         fontSize: 10,
                         fontWeight: FontWeight.w900,
@@ -1182,7 +1300,8 @@ class _HomeTabState extends State<_HomeTab> {
                       fontSize: 12,
                       fontWeight: FontWeight.w700,
                     ),
-                    padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
                     tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                   ),
                 ),
@@ -1193,6 +1312,7 @@ class _HomeTabState extends State<_HomeTab> {
       ),
     ],
   );
+  }
 }
 
 class _HomeHeader extends StatelessWidget {
@@ -1202,7 +1322,9 @@ class _HomeHeader extends StatelessWidget {
   final VoidCallback onTap;
 
   @override
-  Widget build(BuildContext context) => Row(
+  Widget build(BuildContext context) {
+    final hc = _HC.from(context);
+    return Row(
     children: [
       Container(
         width: 42,
@@ -1222,11 +1344,11 @@ class _HomeHeader extends StatelessWidget {
         ),
       ),
       const SizedBox(width: 11),
-      const Expanded(
+      Expanded(
         child: Text(
           'Boarding Bluster',
           style: TextStyle(
-            color: Colors.white,
+            color: hc.ink,
             fontSize: 20,
             fontWeight: FontWeight.w900,
             letterSpacing: 0.2,
@@ -1243,14 +1365,14 @@ class _HomeHeader extends StatelessWidget {
             children: [
               Text(
                 crewName,
-                style: const TextStyle(color: _muted, fontSize: 11),
+                style: TextStyle(color: hc.muted, fontSize: 11),
               ),
               const SizedBox(width: 6),
               Container(
                 width: 38,
                 height: 38,
                 decoration: BoxDecoration(
-                  color: _panelLight,
+                  color: hc.surfaceElevated,
                   shape: BoxShape.circle,
                   border: Border.all(color: _accent.withValues(alpha: 0.4)),
                 ),
@@ -1269,6 +1391,7 @@ class _HomeHeader extends StatelessWidget {
       ),
     ],
   );
+  }
 }
 
 class _AircraftTile extends StatelessWidget {
@@ -1288,6 +1411,7 @@ class _AircraftTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final hc = _HC.from(context);
     final premium = aircraft.unlockType == AircraftUnlockType.premium;
     final hasLevel = aircraft.layout != null;
     final status = premium
@@ -1313,7 +1437,7 @@ class _AircraftTile extends StatelessWidget {
     return SizedBox(
       width: 300,
       child: Material(
-        color: _panel,
+        color: hc.surface,
         borderRadius: BorderRadius.circular(22),
         clipBehavior: Clip.antiAlias,
         child: InkWell(
@@ -1321,7 +1445,7 @@ class _AircraftTile extends StatelessWidget {
           child: Container(
             decoration: BoxDecoration(
               border: Border.all(
-                color: selected ? _accent : Colors.white.withValues(alpha: 0.06),
+                color: selected ? _accent : hc.border,
                 width: selected ? 2 : 1,
               ),
               borderRadius: BorderRadius.circular(22),
@@ -1388,7 +1512,7 @@ class _AircraftTile extends StatelessWidget {
                             ),
                             child: const Icon(
                               Icons.check_rounded,
-                              color: _navy,
+                              color: _HC.onAccent,
                               size: 15,
                             ),
                           ),
@@ -1406,8 +1530,8 @@ class _AircraftTile extends StatelessWidget {
                           aircraft.displayName,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            color: Colors.white,
+                          style: TextStyle(
+                            color: hc.ink,
                             fontSize: 19,
                             fontWeight: FontWeight.w800,
                           ),
@@ -1421,8 +1545,8 @@ class _AircraftTile extends StatelessWidget {
                                 maxLines: 2,
                                 overflow: TextOverflow.ellipsis,
                                 softWrap: true,
-                                style: const TextStyle(
-                                  color: _muted,
+                                style: TextStyle(
+                                  color: hc.muted,
                                   fontSize: 11,
                                   height: 1.25,
                                 ),
@@ -1443,7 +1567,7 @@ class _AircraftTile extends StatelessWidget {
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
                           style: TextStyle(
-                            color: unlocked ? _accent : _muted,
+                            color: unlocked ? _accent : hc.muted,
                             fontSize: 9,
                             fontWeight: FontWeight.w800,
                             letterSpacing: 0.4,
@@ -1496,12 +1620,15 @@ class AircraftPhoto extends StatelessWidget {
       'assets/aircraft/a320.jpg',
       fit: BoxFit.cover,
       alignment: Alignment.center,
-      errorBuilder: (context, error, stackTrace) => const ColoredBox(
-        color: _panelLight,
-        child: Center(
-          child: Icon(Icons.flight_rounded, color: Colors.white38, size: 38),
-        ),
-      ),
+      errorBuilder: (context, error, stackTrace) {
+        final hc = _HC.from(context);
+        return ColoredBox(
+          color: hc.surfaceElevated,
+          child: const Center(
+            child: Icon(Icons.flight_rounded, color: Colors.white38, size: 38),
+          ),
+        );
+      },
     ),
   );
 }
@@ -1538,7 +1665,7 @@ class _ManufacturerLogoBadge extends StatelessWidget {
                   ManufacturerBrandAssets.monogramFor(manufacturer),
                   maxLines: 1,
                   style: const TextStyle(
-                    color: _navy,
+                    color: _HC.onAccent,
                     fontSize: 10,
                     fontWeight: FontWeight.w900,
                     letterSpacing: 0.3,
@@ -1552,7 +1679,7 @@ class _ManufacturerLogoBadge extends StatelessWidget {
                   child: Text(
                     ManufacturerBrandAssets.monogramFor(manufacturer),
                     style: const TextStyle(
-                      color: _navy,
+                      color: _HC.onAccent,
                       fontSize: 10,
                       fontWeight: FontWeight.w900,
                     ),
@@ -1606,6 +1733,7 @@ class _RankingsTabState extends State<_RankingsTab> {
 
   @override
   Widget build(BuildContext context) {
+    final hc = _HC.from(context);
     final aircraft = AircraftCatalog.byId(_selectedId);
     return CustomScrollView(
       key: const PageStorageKey('rankings-scroll'),
@@ -1630,9 +1758,9 @@ class _RankingsTabState extends State<_RankingsTab> {
                       selected: active,
                       onSelected: (_) => _selectAircraft(item.id),
                       selectedColor: _accent,
-                      backgroundColor: _panel,
+                      backgroundColor: hc.surface,
                       labelStyle: TextStyle(
-                        color: active ? _navy : _muted,
+                        color: active ? _HC.onAccent : hc.muted,
                         fontSize: 11,
                         fontWeight: FontWeight.w700,
                       ),
@@ -1678,13 +1806,13 @@ class _RankingsTabState extends State<_RankingsTab> {
                 ),
               ),
               const SizedBox(height: 16),
-              const Row(
+              Row(
                 children: [
                   Expanded(
                     child: Text(
                       'WORLD RANKINGS',
                       style: TextStyle(
-                        color: _muted,
+                        color: hc.muted,
                         fontSize: 9,
                         fontWeight: FontWeight.w800,
                         letterSpacing: 1,
@@ -1694,7 +1822,7 @@ class _RankingsTabState extends State<_RankingsTab> {
                   Text(
                     'BEST TIME',
                     style: TextStyle(
-                      color: _muted,
+                      color: hc.muted,
                       fontSize: 9,
                       fontWeight: FontWeight.w800,
                       letterSpacing: 1,
@@ -1725,7 +1853,8 @@ class _RankingsTabState extends State<_RankingsTab> {
                           onPressed: () => setState(
                             () => _dataFuture = _fetch(_selectedId),
                           ),
-                          icon: const Icon(Icons.refresh_rounded, color: _accent),
+                          icon: const Icon(Icons.refresh_rounded,
+                              color: _accent),
                           label: const Text(
                             'Retry',
                             style: TextStyle(color: _accent),
@@ -1745,7 +1874,7 @@ class _RankingsTabState extends State<_RankingsTab> {
                       child: Center(
                         child: Text(
                           'No scores yet — be the first!',
-                          style: TextStyle(color: _muted, fontSize: 13),
+                          style: TextStyle(color: hc.muted, fontSize: 13),
                         ),
                       ),
                     );
@@ -1794,15 +1923,17 @@ class _RankRow extends StatelessWidget {
   final bool highlighted;
 
   @override
-  Widget build(BuildContext context) => Container(
+  Widget build(BuildContext context) {
+    final hc = _HC.from(context);
+    return Container(
     margin: const EdgeInsets.only(bottom: 8),
     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 13),
     decoration: BoxDecoration(
-      color: highlighted ? _accentGlow : _panel,
+      color: highlighted ? _accentGlow : hc.surface,
       borderRadius: BorderRadius.circular(14),
       border: highlighted
           ? Border.all(color: _accent.withValues(alpha: 0.5))
-          : Border.all(color: Colors.white.withValues(alpha: 0.04)),
+          : Border.all(color: hc.border),
     ),
     child: Row(
       children: [
@@ -1811,7 +1942,7 @@ class _RankRow extends StatelessWidget {
           child: Text(
             rank == null ? 'YOU' : '#${rank!}',
             style: TextStyle(
-              color: highlighted ? _accent : _muted,
+              color: highlighted ? _accent : hc.muted,
               fontSize: 12,
               fontWeight: FontWeight.w800,
             ),
@@ -1823,7 +1954,7 @@ class _RankRow extends StatelessWidget {
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: TextStyle(
-              color: highlighted ? Colors.white : _muted,
+              color: highlighted ? hc.ink : hc.muted,
               fontSize: 12,
               fontWeight: highlighted ? FontWeight.w800 : FontWeight.w600,
             ),
@@ -1831,16 +1962,17 @@ class _RankRow extends StatelessWidget {
         ),
         Text(
           time,
-          style: const TextStyle(
-            color: Colors.white,
+          style: TextStyle(
+            color: hc.ink,
             fontSize: 13,
             fontWeight: FontWeight.w800,
-            fontFeatures: [],
+            fontFeatures: const [],
           ),
         ),
       ],
     ),
   );
+  }
 }
 
 class _ShopTab extends StatefulWidget {
@@ -1948,9 +2080,11 @@ class _PremiumPackCard extends StatelessWidget {
   final VoidCallback onRestore;
 
   @override
-  Widget build(BuildContext context) => Container(
+  Widget build(BuildContext context) {
+    final hc = _HC.from(context);
+    return Container(
     decoration: BoxDecoration(
-      color: _navy,
+      color: hc.bg,
       borderRadius: BorderRadius.circular(24),
     ),
     clipBehavior: Clip.antiAlias,
@@ -2097,10 +2231,10 @@ class _PremiumPackCard extends StatelessWidget {
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
-                    const Text(
+                    Text(
                       '\$5.99',
                       style: TextStyle(
-                        color: Colors.white,
+                        color: hc.ink,
                         fontSize: 30,
                         fontWeight: FontWeight.w900,
                         letterSpacing: -1,
@@ -2112,7 +2246,7 @@ class _PremiumPackCard extends StatelessWidget {
                       child: Text(
                         'one-time',
                         style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.5),
+                          color: hc.muted,
                           fontSize: 12,
                         ),
                       ),
@@ -2133,14 +2267,14 @@ class _PremiumPackCard extends StatelessWidget {
                               height: 16,
                               child: CircularProgressIndicator(
                                 strokeWidth: 2,
-                                color: _navy,
+                                color: _HC.onAccent,
                               ),
                             )
                           : const Icon(Icons.login_rounded, size: 18),
                       label: Text(signingIn ? 'Signing in…' : 'Sign in with Google'),
                       style: FilledButton.styleFrom(
                         backgroundColor: _accent,
-                        foregroundColor: _navy,
+                        foregroundColor: _HC.onAccent,
                         padding: const EdgeInsets.symmetric(vertical: 16),
                         textStyle: const TextStyle(
                           fontSize: 14,
@@ -2158,7 +2292,7 @@ class _PremiumPackCard extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                     decoration: BoxDecoration(
-                      color: _panelLight,
+                      color: hc.surfaceElevated,
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Row(
@@ -2174,8 +2308,8 @@ class _PremiumPackCard extends StatelessWidget {
                             signedInAccount!.displayName ?? signedInAccount!.email,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                              color: Colors.white,
+                            style: TextStyle(
+                              color: hc.ink,
                               fontSize: 12,
                               fontWeight: FontWeight.w600,
                             ),
@@ -2184,7 +2318,7 @@ class _PremiumPackCard extends StatelessWidget {
                         Text(
                           'Signed in',
                           style: TextStyle(
-                            color: Colors.white.withValues(alpha: 0.45),
+                            color: hc.muted,
                             fontSize: 10,
                           ),
                         ),
@@ -2200,7 +2334,7 @@ class _PremiumPackCard extends StatelessWidget {
                       label: const Text('CLAIM YOUR SEAT'),
                       style: FilledButton.styleFrom(
                         backgroundColor: _accent,
-                        foregroundColor: _navy,
+                        foregroundColor: _HC.onAccent,
                         padding: const EdgeInsets.symmetric(vertical: 16),
                         textStyle: const TextStyle(
                           fontSize: 14,
@@ -2222,26 +2356,26 @@ class _PremiumPackCard extends StatelessWidget {
                     child: Text(
                       'Restore purchase',
                       style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.55),
+                        color: hc.muted,
                         fontSize: 12,
                       ),
                     ),
                   ),
                 ),
               ] else ...[
-                const Center(
+                Center(
                   child: Column(
                     children: [
-                      Icon(
+                      const Icon(
                         Icons.check_circle_rounded,
                         color: Color(0xFF66BB6A),
                         size: 38,
                       ),
-                      SizedBox(height: 8),
+                      const SizedBox(height: 8),
                       Text(
                         'You own all premium aircraft.',
                         style: TextStyle(
-                          color: Colors.white,
+                          color: hc.ink,
                           fontSize: 14,
                           fontWeight: FontWeight.w700,
                         ),
@@ -2256,6 +2390,7 @@ class _PremiumPackCard extends StatelessWidget {
       ],
     ),
   );
+  }
 }
 
 class _Perk extends StatelessWidget {
@@ -2264,7 +2399,9 @@ class _Perk extends StatelessWidget {
   final String label;
 
   @override
-  Widget build(BuildContext context) => Row(
+  Widget build(BuildContext context) {
+    final hc = _HC.from(context);
+    return Row(
     children: [
       Icon(icon, color: _accent, size: 16),
       const SizedBox(width: 10),
@@ -2272,7 +2409,7 @@ class _Perk extends StatelessWidget {
         child: Text(
           label,
           style: TextStyle(
-            color: Colors.white.withValues(alpha: 0.8),
+            color: hc.ink.withValues(alpha: 0.8),
             fontSize: 12,
             fontWeight: FontWeight.w500,
           ),
@@ -2280,6 +2417,7 @@ class _Perk extends StatelessWidget {
       ),
     ],
   );
+  }
 }
 
 class _PageTitle extends StatelessWidget {
@@ -2288,7 +2426,9 @@ class _PageTitle extends StatelessWidget {
   final String title;
 
   @override
-  Widget build(BuildContext context) => Column(
+  Widget build(BuildContext context) {
+    final hc = _HC.from(context);
+    return Column(
     crossAxisAlignment: CrossAxisAlignment.start,
     children: [
       Text(
@@ -2303,8 +2443,8 @@ class _PageTitle extends StatelessWidget {
       const SizedBox(height: 6),
       Text(
         title,
-        style: const TextStyle(
-          color: Colors.white,
+        style: TextStyle(
+          color: hc.ink,
           fontSize: 25,
           fontWeight: FontWeight.w900,
           letterSpacing: -0.5,
@@ -2312,6 +2452,7 @@ class _PageTitle extends StatelessWidget {
       ),
     ],
   );
+  }
 }
 
 class _Pill extends StatelessWidget {
@@ -2363,23 +2504,24 @@ class _ShopFooter extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final hc = _HC.from(context);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
       decoration: BoxDecoration(
-        color: _panel,
+        color: hc.surface,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
+        border: Border.all(color: hc.border),
       ),
       child: Column(
         children: [
           Row(
             children: [
-              const Icon(Icons.shield_outlined, color: _muted, size: 14),
+              Icon(Icons.shield_outlined, color: hc.muted, size: 14),
               const SizedBox(width: 6),
-              const Text(
+              Text(
                 'NordicLabs · Boarding Bluster',
                 style: TextStyle(
-                  color: _muted,
+                  color: hc.muted,
                   fontSize: 11,
                   fontWeight: FontWeight.w600,
                 ),
@@ -2425,8 +2567,9 @@ class _FooterLinkButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final hc = _HC.from(context);
     return Material(
-      color: _panelLight,
+      color: hc.surfaceElevated,
       borderRadius: BorderRadius.circular(14),
       child: InkWell(
         onTap: onTap,
@@ -2440,8 +2583,8 @@ class _FooterLinkButton extends StatelessWidget {
               const SizedBox(width: 7),
               Text(
                 label,
-                style: const TextStyle(
-                  color: Colors.white,
+                style: TextStyle(
+                  color: hc.ink,
                   fontSize: 12,
                   fontWeight: FontWeight.w700,
                 ),
@@ -2479,15 +2622,16 @@ class _PrivacyPolicySheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final hc = _HC.from(context);
     return DraggableScrollableSheet(
       initialChildSize: 0.94,
       minChildSize: 0.5,
       maxChildSize: 0.96,
       builder: (context, scrollController) {
         return Container(
-          decoration: const BoxDecoration(
-            color: _panel,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+          decoration: BoxDecoration(
+            color: hc.surface,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
           ),
           child: Column(
             children: [
@@ -2503,30 +2647,31 @@ class _PrivacyPolicySheet extends StatelessWidget {
                         color: _accent.withValues(alpha: 0.12),
                         shape: BoxShape.circle,
                       ),
-                      child: const Icon(Icons.lock_outline_rounded, color: _accent, size: 18),
+                      child: const Icon(Icons.lock_outline_rounded,
+                          color: _accent, size: 18),
                     ),
                     const SizedBox(width: 12),
-                    const Column(
+                    Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
                           'Privacy Policy',
                           style: TextStyle(
-                            color: Colors.white,
+                            color: hc.ink,
                             fontSize: 18,
                             fontWeight: FontWeight.w900,
                           ),
                         ),
                         Text(
                           'Effective 1 November 2026',
-                          style: TextStyle(color: _muted, fontSize: 11),
+                          style: TextStyle(color: hc.muted, fontSize: 11),
                         ),
                       ],
                     ),
                   ],
                 ),
               ),
-              const Divider(color: Color(0xFF1E2840), height: 1),
+              Divider(color: hc.divider, height: 1),
               Expanded(
                 child: ListView(
                   controller: scrollController,
@@ -2630,20 +2775,24 @@ class _PpSummaryCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: _accent.withValues(alpha: 0.2)),
       ),
-      child: const Column(
+      child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
+          const Text(
             'TL;DR',
-            style: TextStyle(color: _accent, fontSize: 10, fontWeight: FontWeight.w800, letterSpacing: 1),
+            style: TextStyle(
+                color: _accent,
+                fontSize: 10,
+                fontWeight: FontWeight.w800,
+                letterSpacing: 1),
           ),
-          SizedBox(height: 8),
-          _PpBullet('Anonymous play — no account required'),
-          _PpBullet('Google Sign-In only if you buy the Premium Fleet'),
-          _PpBullet('Your email is stored when you sign in with Google'),
-          _PpBullet('Your scores & display name go on the leaderboard'),
-          _PpBullet('No ads. No data sold. Ever.'),
+          const SizedBox(height: 8),
+          const _PpBullet('Anonymous play — no account required'),
+          const _PpBullet('Google Sign-In only if you buy the Premium Fleet'),
+          const _PpBullet('Your email is stored when you sign in with Google'),
+          const _PpBullet('Your scores & display name go on the leaderboard'),
+          const _PpBullet('No ads. No data sold. Ever.'),
         ],
       ),
     );
@@ -2657,13 +2806,14 @@ class _PpSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final hc = _HC.from(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           title,
-          style: const TextStyle(
-            color: Colors.white,
+          style: TextStyle(
+            color: hc.ink,
             fontSize: 15,
             fontWeight: FontWeight.w800,
           ),
@@ -2702,20 +2852,22 @@ class _PpBullet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final hc = _HC.from(context);
     return Padding(
       padding: const EdgeInsets.only(bottom: 6),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Padding(
-            padding: EdgeInsets.only(top: 5),
-            child: CircleAvatar(radius: 2.5, backgroundColor: _muted),
+          Padding(
+            padding: const EdgeInsets.only(top: 5),
+            child: CircleAvatar(radius: 2.5, backgroundColor: hc.muted),
           ),
           const SizedBox(width: 10),
           Expanded(
             child: Text(
               text,
-              style: const TextStyle(color: _muted, fontSize: 13, height: 1.45),
+              style:
+                  TextStyle(color: hc.muted, fontSize: 13, height: 1.45),
             ),
           ),
         ],
@@ -2731,6 +2883,7 @@ class _PpTableRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final hc = _HC.from(context);
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: Row(
@@ -2740,13 +2893,16 @@ class _PpTableRow extends StatelessWidget {
             width: 130,
             child: Text(
               key_,
-              style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600),
+              style: TextStyle(
+                  color: hc.ink,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600),
             ),
           ),
           Expanded(
             child: Text(
               value,
-              style: const TextStyle(color: _muted, fontSize: 12, height: 1.4),
+              style: TextStyle(color: hc.muted, fontSize: 12, height: 1.4),
             ),
           ),
         ],
@@ -2764,13 +2920,8 @@ class _ContactSheet extends StatelessWidget {
   static const _email = 'nordiclabsdev@gmail.com';
 
   Future<void> _launchEmail(BuildContext context) async {
-    final uri = Uri(
-      scheme: 'mailto',
-      path: _email,
-      queryParameters: {
-        'subject': 'Boarding Bluster — Feedback / Support',
-      },
-    );
+    final subject = Uri.encodeComponent('Boarding Bluster — Feedback / Support');
+    final uri = Uri.parse('mailto:$_email?subject=$subject');
     if (!await launchUrl(uri)) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -2781,14 +2932,11 @@ class _ContactSheet extends StatelessWidget {
   }
 
   Future<void> _launchDeleteEmail(BuildContext context) async {
-    final uri = Uri(
-      scheme: 'mailto',
-      path: _email,
-      queryParameters: {
-        'subject': 'Boarding Bluster — Data Deletion Request',
-        'body': 'Hi NordicLabs,\n\nPlease delete all data associated with my account.\n\nPlayer ID: $playerId\nGoogle email (if signed in): \nPlayer display name: \n',
-      },
+    final subject = Uri.encodeComponent('Boarding Bluster — Data Deletion Request');
+    final body = Uri.encodeComponent(
+      'Hi NordicLabs,\n\nPlease delete all data associated with my account.\n\nPlayer ID: $playerId\nGoogle email (if signed in): \nPlayer display name: \n',
     );
+    final uri = Uri.parse('mailto:$_email?subject=$subject&body=$body');
     if (!await launchUrl(uri)) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -2800,15 +2948,17 @@ class _ContactSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final hc = _HC.from(context);
     return DraggableScrollableSheet(
       initialChildSize: 0.55,
       minChildSize: 0.4,
       maxChildSize: 0.75,
       builder: (context, scrollController) {
         return Container(
-          decoration: const BoxDecoration(
-            color: _panel,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+          decoration: BoxDecoration(
+            color: hc.surface,
+            borderRadius:
+                const BorderRadius.vertical(top: Radius.circular(28)),
           ),
           child: ListView(
             controller: scrollController,
@@ -2825,13 +2975,14 @@ class _ContactSheet extends StatelessWidget {
                       color: _accent.withValues(alpha: 0.12),
                       shape: BoxShape.circle,
                     ),
-                    child: const Icon(Icons.mail_outline_rounded, color: _accent, size: 18),
+                    child: const Icon(Icons.mail_outline_rounded,
+                        color: _accent, size: 18),
                   ),
                   const SizedBox(width: 12),
-                  const Text(
+                  Text(
                     'Contact Us',
                     style: TextStyle(
-                      color: Colors.white,
+                      color: hc.ink,
                       fontSize: 18,
                       fontWeight: FontWeight.w900,
                     ),
@@ -2839,9 +2990,9 @@ class _ContactSheet extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: 20),
-              const Text(
+              Text(
                 'Have a question, found a bug, or want to share feedback? We\'d love to hear from you.',
-                style: TextStyle(color: _muted, fontSize: 13, height: 1.5),
+                style: TextStyle(color: hc.muted, fontSize: 13, height: 1.5),
               ),
               const SizedBox(height: 20),
               _ContactActionTile(
@@ -2863,18 +3014,18 @@ class _ContactSheet extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(14),
                 decoration: BoxDecoration(
-                  color: _panelLight,
+                  color: hc.surfaceElevated,
                   borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
+                  border: Border.all(color: hc.border),
                 ),
-                child: const Row(
+                child: Row(
                   children: [
-                    Icon(Icons.business_rounded, color: _muted, size: 16),
-                    SizedBox(width: 10),
+                    Icon(Icons.business_rounded, color: hc.muted, size: 16),
+                    const SizedBox(width: 10),
                     Expanded(
                       child: Text(
                         'NordicLabs · nordiclabsdev@gmail.com',
-                        style: TextStyle(color: _muted, fontSize: 12),
+                        style: TextStyle(color: hc.muted, fontSize: 12),
                       ),
                     ),
                   ],
@@ -2905,8 +3056,9 @@ class _ContactActionTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final hc = _HC.from(context);
     return Material(
-      color: _panelLight,
+      color: hc.surfaceElevated,
       borderRadius: BorderRadius.circular(16),
       child: InkWell(
         onTap: onTap,
@@ -2931,17 +3083,17 @@ class _ContactActionTile extends StatelessWidget {
                   children: [
                     Text(
                       title,
-                      style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w700),
+                      style: TextStyle(color: hc.ink, fontSize: 14, fontWeight: FontWeight.w700),
                     ),
                     const SizedBox(height: 2),
                     Text(
                       subtitle,
-                      style: const TextStyle(color: _muted, fontSize: 12),
+                      style: TextStyle(color: hc.muted, fontSize: 12),
                     ),
                   ],
                 ),
               ),
-              const Icon(Icons.chevron_right_rounded, color: _muted, size: 20),
+              Icon(Icons.chevron_right_rounded, color: hc.muted, size: 20),
             ],
           ),
         ),
@@ -2953,6 +3105,7 @@ class _ContactActionTile extends StatelessWidget {
 class _SheetHandle extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
+    final hc = _HC.from(context);
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 12),
       child: Center(
@@ -2960,7 +3113,7 @@ class _SheetHandle extends StatelessWidget {
           width: 38,
           height: 4,
           decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.15),
+            color: hc.border,
             borderRadius: BorderRadius.circular(2),
           ),
         ),

@@ -141,6 +141,25 @@ class ShopService {
     return false;
   }
 
+  /// Logs a purchase intent (pay button tap) to Supabase. Fire-and-forget.
+  Future<void> logPurchaseIntent({
+    required String googleId,
+    required String email,
+  }) async {
+    try {
+      await _db.from('purchase_intents').insert({
+        'google_id': googleId,
+        'email': email,
+      });
+    } catch (e, st) {
+      await Sentry.captureException(
+        e,
+        stackTrace: st,
+        hint: Hint.withMap({'place': 'logPurchaseIntent'}),
+      );
+    }
+  }
+
   /// Checks Supabase for an existing purchase. Call after reinstall to restore.
   Future<bool> restorePurchase(String googleId) async {
     Sentry.addBreadcrumb(Breadcrumb(
