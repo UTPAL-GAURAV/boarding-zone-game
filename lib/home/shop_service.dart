@@ -67,21 +67,12 @@ class ShopService {
     await GoogleSignIn.instance.initialize(serverClientId: _googleClientId);
   }
 
-  /// Tries silent auth first, then shows picker. Returns null on cancel/error.
+  /// Always shows the account picker so the user explicitly chooses an account.
   Future<GoogleSignInAccount?> signIn() async {
     try {
       await initGoogleSignIn();
-      // Try lightweight (silent) first
-      final silentFuture =
-          GoogleSignIn.instance.attemptLightweightAuthentication();
-      if (silentFuture != null) {
-        final silent = await silentFuture;
-        if (silent != null) {
-          await _cacheGoogleId(silent.id, silent.email);
-          return silent;
-        }
-      }
-      // Full interactive sign-in
+      // Always use interactive sign-in so the user picks their account every time.
+      // Skipping attemptLightweightAuthentication prevents silent re-login after reinstall.
       final account = await GoogleSignIn.instance.authenticate();
       await _cacheGoogleId(account.id, account.email);
       return account;

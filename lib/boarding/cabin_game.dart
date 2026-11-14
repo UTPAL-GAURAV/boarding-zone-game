@@ -125,6 +125,13 @@ class CabinGame extends FlameGame {
     );
     canvas.scale(scale);
     _drawCabin(canvas);
+    // Clip passengers to the cabin body — nothing above entranceDoorY.
+    canvas.clipRect(Rect.fromLTWH(
+      0,
+      layout.entranceDoorY.toDouble(),
+      layout.designWidth,
+      layout.designHeight - layout.entranceDoorY,
+    ));
     for (final passenger in simulation.seatedPassengers) {
       _drawPassenger(canvas, passenger);
     }
@@ -420,7 +427,7 @@ class CabinGame extends FlameGame {
             const Radius.circular(6),
           ),
           Paint()
-            ..color = _isDark ? const Color(0xFF1E3458) : const Color(0xFF8AAED8)
+            ..color = _isDark ? const Color(0xFF7AAEE8) : const Color(0xFF8AAED8)
             ..style = PaintingStyle.stroke
             ..strokeWidth = 2.5,
         );
@@ -431,7 +438,7 @@ class CabinGame extends FlameGame {
             const Radius.circular(4),
           ),
           Paint()
-            ..color = _isDark ? const Color(0xFF1A3A60) : const Color(0xFF5A9ED0),
+            ..color = _isDark ? const Color(0xFF5BA3D8) : const Color(0xFF5A9ED0),
         );
         // Window shine
         canvas.drawRRect(
@@ -440,7 +447,7 @@ class CabinGame extends FlameGame {
                 center: Offset(x - 1.5, y - 3), width: 3, height: 6),
             const Radius.circular(2),
           ),
-          Paint()..color = const Color(0x334A9EFF),
+          Paint()..color = _isDark ? const Color(0x66B8D8FF) : const Color(0x334A9EFF),
         );
       }
     }

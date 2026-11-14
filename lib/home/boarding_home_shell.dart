@@ -265,8 +265,9 @@ class _BoardingHomeShellState extends State<BoardingHomeShell> {
       intoPlayerId: cloudPlayerId,
     ));
 
-    // Switch local UUID to the canonical cloud player ID.
+    // Switch local UUID to the canonical cloud player ID and restore display name.
     await _store.overridePlayerId(cloudPlayerId);
+    await _store.saveDisplayName(cloudDisplayName);
     await _shop.saveLinkedPlayerId(cloudPlayerId);
 
     // Restore cloud best scores locally (take best of cloud vs local).
@@ -286,12 +287,11 @@ class _BoardingHomeShellState extends State<BoardingHomeShell> {
 
     if (mounted) {
       setState(() {
-        // Update the in-memory profile to use the canonical player ID.
-        final current = _profile;
-        if (current != null) {
+        // Update the in-memory profile to use the canonical player ID and cloud name.
+        if (_profile != null) {
           _profile = PlayerProfile(
             internalId: cloudPlayerId,
-            displayName: current.displayName,
+            displayName: cloudDisplayName,
           );
         }
         if (hasPremium) _premiumUnlocked = true;

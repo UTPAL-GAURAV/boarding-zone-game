@@ -303,7 +303,7 @@ class _TutorialOverlayState extends State<TutorialOverlay> {
     return Stack(
       children: [
         Positioned(
-          bottom: passthrough ? 78 : 72,
+          bottom: passthrough ? 78 : 8,
           left: 16,
           right: 16,
           child: cardWithMaya,
