@@ -105,6 +105,9 @@ class BoardingSimulation {
   double elapsedSeconds = 0;
   bool isBoarding = false;
 
+  int? get currentEntryZone => _currentEntryZone;
+  int? _currentEntryZone;
+
   int get passengerCount => seats.length;
   int get enteredCount =>
       _aisles.fold(0, (sum, aisle) => sum + aisle.manifestIndex);
@@ -112,14 +115,7 @@ class BoardingSimulation {
     0,
     (sum, aisle) => sum + aisle.manifest.length - aisle.manifestIndex,
   );
-  int? get currentEntryZone {
-    final zones = [
-      for (final aisle in _aisles)
-        if (aisle.manifestIndex < aisle.manifest.length)
-          aisle.manifest[aisle.manifestIndex].seat.zone,
-    ];
-    return zones.isEmpty ? null : zones.reduce(math.min);
-  }
+
 
   bool get isComplete =>
       isBoarding &&
@@ -185,6 +181,7 @@ class BoardingSimulation {
       aisle.manifest.clear();
       aisle.manifestIndex = 0;
     }
+    _currentEntryZone = null;
   }
 
   void resetToDefaultZones() {
@@ -259,12 +256,15 @@ class BoardingSimulation {
                   : ahead.seat.row.toDouble();
               prevLimit = aheadPos - aisle.layout.minimumSpacingRows;
             }
-            final shuffleLimit = blockRow - aisle.layout.minimumSpacingRows;
+            final shuffleLimit = (passenger.rowPosition < blockRow)
+                ? blockRow - aisle.layout.minimumSpacingRows
+                : double.infinity;
             // Never push backwards — only cap forward progress.
             final cap = math.max(
               passenger.rowPosition,
               math.min(prevLimit, shuffleLimit),
             );
+            final wasAboveGate = passenger.rowPosition < 0;
             passenger.rowPosition = math.min(
               passenger.seat.row.toDouble(),
               math.min(
@@ -273,6 +273,10 @@ class BoardingSimulation {
                 cap,
               ),
             );
+            // Passenger just crossed the gate threshold — update the badge.
+            if (wasAboveGate && passenger.rowPosition >= 0) {
+              _currentEntryZone = passenger.seat.zone;
+            }
             if (passenger.rowPosition >= passenger.seat.row) {
               passenger.phase = PassengerPhase.turning;
             }
