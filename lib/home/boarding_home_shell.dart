@@ -2348,6 +2348,8 @@ class _ShopTabState extends State<_ShopTab> {
               ),
 
               const SizedBox(height: 20),
+              const _VentuoirBanner(),
+              const SizedBox(height: 20),
               _ShopFooter(playerId: widget.playerId),
               const SizedBox(height: 8),
             ],
@@ -2793,6 +2795,125 @@ String _formatTarget(int seconds) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Venturoir ad banner
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _VentuoirBanner extends StatefulWidget {
+  const _VentuoirBanner();
+
+  @override
+  State<_VentuoirBanner> createState() => _VentuoirBannerState();
+}
+
+class _VentuoirBannerState extends State<_VentuoirBanner>
+    with SingleTickerProviderStateMixin {
+  static const _url = 'https://www.venturoir.com/';
+  late final AnimationController _ctrl;
+  late final Animation<double> _float;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 2600),
+    )..repeat(reverse: true);
+    _float = Tween<double>(begin: 0, end: -7).animate(
+      CurvedAnimation(parent: _ctrl, curve: Curves.easeInOut),
+    );
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final hc = _HC.from(context);
+    return AnimatedBuilder(
+      animation: _float,
+      builder: (context, child) => Transform.translate(
+        offset: Offset(0, _float.value),
+        child: child,
+      ),
+      child: Material(
+        color: hc.surface,
+        borderRadius: BorderRadius.circular(20),
+        clipBehavior: Clip.antiAlias,
+        elevation: 0,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(20),
+          onTap: () => launchUrl(
+            Uri.parse(_url),
+            mode: LaunchMode.externalApplication,
+          ),
+          child: Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: hc.border),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.10),
+                  blurRadius: 18,
+                  offset: const Offset(0, 6),
+                ),
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.04),
+                  blurRadius: 4,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 14, 16, 4),
+                  child: Text(
+                    'Are you a Traveller?',
+                    style: GoogleFonts.playfairDisplay(
+                      color: hc.ink,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                      fontStyle: FontStyle.italic,
+                    ),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+                  child: Text(
+                    'Capture the soulful stories of travel.',
+                    style: GoogleFonts.barlow(
+                      color: hc.muted,
+                      fontSize: 12,
+                    ),
+                  ),
+                ),
+                ClipRRect(
+                  borderRadius: const BorderRadius.vertical(
+                    bottom: Radius.circular(20),
+                  ),
+                  child: AspectRatio(
+                    aspectRatio: 1723 / 913,
+                    child: Image.asset(
+                      'assets/ads/venturoir.png',
+                      fit: BoxFit.contain,
+                      width: double.infinity,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Shop footer — Privacy Policy + Contact Us
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -2877,7 +2998,7 @@ class _FooterLinkButton extends StatelessWidget {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(icon, color: _accent, size: 15),
+              Icon(icon, color: hc.muted, size: 15),
               const SizedBox(width: 7),
               Text(
                 label,

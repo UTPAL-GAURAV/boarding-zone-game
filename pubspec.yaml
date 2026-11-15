@@ -80,6 +80,7 @@ flutter:
     - assets/plane_nose_dark.png
     - assets/plane_tail_light.png
     - assets/plane_tail_dark.png
+    - assets/ads/
 
   # To add assets to your application, add an assets section, like this:
   # assets:
