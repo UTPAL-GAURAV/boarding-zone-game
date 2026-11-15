@@ -93,6 +93,7 @@ class _BoardingGamePageState extends State<BoardingGamePage>
   int _tutZoneACnt = 0;
   int _tutZoneBCnt = 0;
   int? _tutBoardingTimeMs;
+  double _cabinNoseSpacerH = 0;
   final _stackKey = GlobalKey();
   final _timerCardKey = GlobalKey();
   final _boardedPillKey = GlobalKey();
@@ -208,6 +209,25 @@ class _BoardingGamePageState extends State<BoardingGamePage>
       return;
     }
     setState(() => _tutorialStep = next);
+    // When entering anatomySeats or paintZoneA, scroll cabin to show seat rows.
+    final nextStep = TutorialStep.values[next];
+    if (nextStep == TutorialStep.anatomySeats ||
+        nextStep == TutorialStep.paintZoneA) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (_cabinScrollController.hasClients) {
+          final max = _cabinScrollController.position.maxScrollExtent;
+          // Use noseSpacerH if already captured, else fall back to 55% of max.
+          final target = _cabinNoseSpacerH > 0
+              ? (_cabinNoseSpacerH + 60).clamp(0.0, max)
+              : (max * 0.55).clamp(0.0, max);
+          _cabinScrollController.animateTo(
+            target,
+            duration: const Duration(milliseconds: 500),
+            curve: Curves.easeOut,
+          );
+        }
+      });
+    }
   }
 
   void _tutorialReplay() {
@@ -217,6 +237,19 @@ class _BoardingGamePageState extends State<BoardingGamePage>
       _tutZoneACnt = 0;
       _tutZoneBCnt = 0;
       _tutBoardingTimeMs = null;
+    });
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_cabinScrollController.hasClients) {
+        final max = _cabinScrollController.position.maxScrollExtent;
+        final target = _cabinNoseSpacerH > 0
+            ? (_cabinNoseSpacerH + 60).clamp(0.0, max)
+            : (max * 0.55).clamp(0.0, max);
+        _cabinScrollController.animateTo(
+          target,
+          duration: const Duration(milliseconds: 500),
+          curve: Curves.easeOut,
+        );
+      }
     });
   }
 
@@ -316,6 +349,11 @@ class _BoardingGamePageState extends State<BoardingGamePage>
         ? TutorialStep.values[_tutorialStep]
         : null;
 
+    // Scale the top panel and bottom bar down proportionally on small screens.
+    final screenW = MediaQuery.of(context).size.width;
+    // Design baseline is 411dp; clamp scale to [0.82, 1.0].
+    final uiScale = (screenW / 411.0).clamp(0.82, 1.0);
+
     return Scaffold(
       backgroundColor: c.bg,
       body: SafeArea(
@@ -324,11 +362,21 @@ class _BoardingGamePageState extends State<BoardingGamePage>
           children: [
             Column(
               children: [
-                _buildHeader(c),
-                _buildTimerHero(c),
-                _buildZoneSelector(c),
+                _ScaledSection(
+                  scale: uiScale,
+                  child: Column(
+                    children: [
+                      _buildHeader(c),
+                      _buildTimerHero(c),
+                      _buildZoneSelector(c),
+                    ],
+                  ),
+                ),
                 Expanded(child: _buildCabin(c, complete)),
-                _buildBottomBar(c, complete),
+                _ScaledSection(
+                  scale: uiScale,
+                  child: _buildBottomBar(c, complete),
+                ),
               ],
             ),
             if (tutStep != null)
@@ -345,6 +393,8 @@ class _BoardingGamePageState extends State<BoardingGamePage>
                   onReplay: _tutorialReplay,
                 ),
               ),
+            if (complete && !widget.tutorialMode)
+              Positioned.fill(child: _buildCompletionOverlay(c)),
           ],
         ),
       ),
@@ -650,6 +700,8 @@ class _BoardingGamePageState extends State<BoardingGamePage>
               final tailSpacerH = tailBelowDesign * scale;
               final needsHScroll = contentW > constraints.maxWidth + 1;
               final needsVScroll = contentH + noseSpacerH + tailSpacerH > constraints.maxHeight + 1;
+              // Capture nose spacer height for tutorial scroll targeting (no setState — read-only).
+              if (_cabinNoseSpacerH != noseSpacerH) _cabinNoseSpacerH = noseSpacerH;
               return Stack(
                 fit: StackFit.expand,
                 children: [
@@ -737,7 +789,6 @@ class _BoardingGamePageState extends State<BoardingGamePage>
                       ),
                     ),
                   ),
-                  if (complete && !widget.tutorialMode) _buildCompletionOverlay(c),
                   if (_timedOut) _buildTimeoutOverlay(c),
                 ],
               );
@@ -785,6 +836,8 @@ class _BoardingGamePageState extends State<BoardingGamePage>
           if (!_simulation.isBoarding && !complete && !_timedOut) ...[
             Text(
               'Tap or drag seats to paint · Zone ${_zoneLabel(_selectedZone)} active',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
               style: GoogleFonts.rajdhani(
                 color: c.muted,
                 fontSize: 12,
@@ -839,10 +892,7 @@ class _BoardingGamePageState extends State<BoardingGamePage>
 
   Widget _buildCompletionOverlay(_C c) {
     return Container(
-      decoration: BoxDecoration(
-        color: (c._dark ? Colors.black : c.bg).withValues(alpha: c._dark ? 0.72 : 0.80),
-        borderRadius: BorderRadius.circular(22),
-      ),
+      color: (c._dark ? Colors.black : c.bg).withValues(alpha: c._dark ? 0.72 : 0.80),
       alignment: Alignment.center,
       child: SingleChildScrollView(
         child: Container(
@@ -902,7 +952,7 @@ class _BoardingGamePageState extends State<BoardingGamePage>
         alignment: Alignment.center,
         child: Container(
           margin: const EdgeInsets.symmetric(horizontal: 24),
-          padding: const EdgeInsets.all(26),
+          padding: const EdgeInsets.all(22),
           decoration: BoxDecoration(
             color: c.surface,
             borderRadius: BorderRadius.circular(22),
@@ -915,69 +965,71 @@ class _BoardingGamePageState extends State<BoardingGamePage>
               ),
             ],
           ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              _ResultIcon(
-                  icon: Icons.flight_land_rounded,
-                  color: _C.danger,
-                  bgColor: _C.danger.withValues(alpha: 0.12)),
-              const SizedBox(height: 14),
-              Text(
-                'BOARDING IMPOSSIBLE',
-                style: GoogleFonts.rajdhani(
-                  color: _C.danger,
-                  fontSize: 13,
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: 2,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'You made boarding impossible!',
-                textAlign: TextAlign.center,
-                style: GoogleFonts.rajdhani(
-                  color: c.ink,
-                  fontSize: 22,
-                  fontWeight: FontWeight.w700,
-                  height: 1.2,
-                ),
-              ),
-              const SizedBox(height: 10),
-              Text(
-                '$remaining passenger${remaining == 1 ? '' : 's'} gave up and took the train.',
-                textAlign: TextAlign.center,
-                style: TextStyle(color: c.muted, fontSize: 14, height: 1.4),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                'The captain has filed a strongly-worded complaint.',
-                textAlign: TextAlign.center,
-                style: TextStyle(color: c.muted, fontSize: 12),
-              ),
-              const SizedBox(height: 22),
-              Row(
-                children: [
-                  Expanded(
-                    child: _OutlineBtn(
-                      label: 'TRY AGAIN',
-                      icon: Icons.replay_rounded,
-                      c: c,
-                      onTap: _replay,
-                    ),
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _ResultIcon(
+                    icon: Icons.flight_land_rounded,
+                    color: _C.danger,
+                    bgColor: _C.danger.withValues(alpha: 0.12)),
+                const SizedBox(height: 12),
+                Text(
+                  'BOARDING IMPOSSIBLE',
+                  style: GoogleFonts.rajdhani(
+                    color: _C.danger,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 2,
                   ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    flex: 2,
-                    child: _PrimaryBtn(
-                      label: 'NEXT FLIGHT',
-                      icon: Icons.skip_next_rounded,
-                      onTap: () => widget.onNext?.call(),
-                    ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'You made boarding impossible!',
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.rajdhani(
+                    color: c.ink,
+                    fontSize: 20,
+                    fontWeight: FontWeight.w700,
+                    height: 1.2,
                   ),
-                ],
-              ),
-            ],
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  '$remaining passenger${remaining == 1 ? '' : 's'} gave up and took the train.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: c.muted, fontSize: 13, height: 1.4),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'The captain has filed a strongly-worded complaint.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: c.muted, fontSize: 12),
+                ),
+                const SizedBox(height: 18),
+                Row(
+                  children: [
+                    Expanded(
+                      child: _OutlineBtn(
+                        label: 'TRY AGAIN',
+                        icon: Icons.replay_rounded,
+                        c: c,
+                        onTap: _replay,
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      flex: 2,
+                      child: _PrimaryBtn(
+                        label: 'NEXT FLIGHT',
+                        icon: Icons.skip_next_rounded,
+                        onTap: () => widget.onNext?.call(),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -1014,7 +1066,8 @@ class _CompletionContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
+    return SingleChildScrollView(
+      child: Column(
       mainAxisSize: MainAxisSize.min,
       children: [
         // Status chip
@@ -1107,7 +1160,7 @@ class _CompletionContent extends StatelessWidget {
               ? 'Everyone seated, but the captain is NOT impressed.'
               : 'Every passenger is seated.',
           textAlign: TextAlign.center,
-          style: TextStyle(color: c.muted, fontSize: 13, height: 1.4),
+          style: TextStyle(color: c.muted, fontSize: 12, height: 1.4),
         ),
         const SizedBox(height: 14),
         // Time display
@@ -1121,38 +1174,11 @@ class _CompletionContent extends StatelessWidget {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Column(
-                children: [
-                  Text(
-                    'YOUR TIME',
-                    style: GoogleFonts.rajdhani(
-                      color: c.muted,
-                      fontSize: 9,
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: 1.4,
-                    ),
-                  ),
-                  Text(
-                    timer,
-                    style: GoogleFonts.spaceMono(
-                      color: isOverTarget ? _C.danger : c.ink,
-                      fontSize: 24,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ],
-              ),
-              if (currentBest != null && !isOverTarget) ...[
-                Container(
-                  width: 1,
-                  height: 36,
-                  margin: const EdgeInsets.symmetric(horizontal: 18),
-                  color: c.border,
-                ),
-                Column(
+              Flexible(
+                child: Column(
                   children: [
                     Text(
-                      'BEST',
+                      'YOUR TIME',
                       style: GoogleFonts.rajdhani(
                         color: c.muted,
                         fontSize: 9,
@@ -1160,15 +1186,52 @@ class _CompletionContent extends StatelessWidget {
                         letterSpacing: 1.4,
                       ),
                     ),
-                    Text(
-                      formatMs(currentBest!),
-                      style: GoogleFonts.spaceMono(
-                        color: _C.accent,
-                        fontSize: 18,
-                        fontWeight: FontWeight.w700,
+                    FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Text(
+                        timer,
+                        style: GoogleFonts.spaceMono(
+                          color: isOverTarget ? _C.danger : c.ink,
+                          fontSize: 24,
+                          fontWeight: FontWeight.w700,
+                        ),
                       ),
                     ),
                   ],
+                ),
+              ),
+              if (currentBest != null && !isOverTarget) ...[
+                Container(
+                  width: 1,
+                  height: 36,
+                  margin: const EdgeInsets.symmetric(horizontal: 14),
+                  color: c.border,
+                ),
+                Flexible(
+                  child: Column(
+                    children: [
+                      Text(
+                        'BEST',
+                        style: GoogleFonts.rajdhani(
+                          color: c.muted,
+                          fontSize: 9,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 1.4,
+                        ),
+                      ),
+                      FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Text(
+                          formatMs(currentBest!),
+                          style: GoogleFonts.spaceMono(
+                            color: _C.accent,
+                            fontSize: 18,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ],
             ],
@@ -1215,6 +1278,7 @@ class _CompletionContent extends StatelessWidget {
             ],
           ),
       ],
+      ),
     );
   }
 }
@@ -1431,6 +1495,7 @@ class _InactiveButton extends StatelessWidget {
           icon: Icon(icon, size: 20),
           label: Text(
             label,
+            overflow: TextOverflow.ellipsis,
             style: GoogleFonts.rajdhani(
               fontSize: 14,
               fontWeight: FontWeight.w700,
@@ -1637,4 +1702,32 @@ class _ZoneBadge extends StatelessWidget {
           ],
         ),
       );
+}
+
+/// Scales [child] uniformly by [scale], reclaiming the reduced layout height
+/// so the surrounding Column sees the shrunken size, not the original.
+class _ScaledSection extends StatelessWidget {
+  const _ScaledSection({required this.scale, required this.child});
+  final double scale;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    if (scale >= 1.0) return child;
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return SizedBox(
+          width: constraints.maxWidth,
+          child: FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.topCenter,
+            child: SizedBox(
+              width: constraints.maxWidth / scale,
+              child: child,
+            ),
+          ),
+        );
+      },
+    );
+  }
 }

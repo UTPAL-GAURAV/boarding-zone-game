@@ -32,6 +32,8 @@ Future<void> main() async {
     appRunner: () async {
       WidgetsFlutterBinding.ensureInitialized();
 
+      await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
+
       FlutterError.onError = (details) {
         FlutterError.presentError(details);
         unawaited(Sentry.captureException(
@@ -129,17 +131,27 @@ class _BoardingZoneAppState extends State<BoardingZoneApp> {
         ),
       ),
       home: const BoardingHomeShell(),
-      builder: (context, child) => AnnotatedRegion<SystemUiOverlayStyle>(
-        value: SystemUiOverlayStyle(
-          statusBarColor: Colors.transparent,
-          statusBarIconBrightness: dark ? Brightness.light : Brightness.dark,
-          systemNavigationBarColor:
-              dark ? const Color(0xFF0D1428) : const Color(0xFFEDF3FF),
-          systemNavigationBarIconBrightness:
-              dark ? Brightness.light : Brightness.dark,
-        ),
-        child: child!,
-      ),
+      builder: (context, child) {
+        // Clamp text scale to max 1.2 so large system font sizes don't overflow layouts.
+        final mq = MediaQuery.of(context);
+        final clamped = mq.copyWith(
+          textScaler: TextScaler.linear(mq.textScaler.scale(1.0).clamp(0.8, 1.2)),
+        );
+        return MediaQuery(
+          data: clamped,
+          child: AnnotatedRegion<SystemUiOverlayStyle>(
+            value: SystemUiOverlayStyle(
+              statusBarColor: Colors.transparent,
+              statusBarIconBrightness: dark ? Brightness.light : Brightness.dark,
+              systemNavigationBarColor:
+                  dark ? const Color(0xFF0D1428) : const Color(0xFFEDF3FF),
+              systemNavigationBarIconBrightness:
+                  dark ? Brightness.light : Brightness.dark,
+            ),
+            child: child!,
+          ),
+        );
+      },
     );
   }
 }

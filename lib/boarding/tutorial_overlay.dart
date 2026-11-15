@@ -284,21 +284,36 @@ class _TutorialOverlayState extends State<TutorialOverlay> {
       extra: progress,
     );
 
-    final cardWithMaya = showMaya
+    final screenH = MediaQuery.of(context).size.height;
+    final screenW = MediaQuery.of(context).size.width;
+    // Design width of the card — fits comfortably at 411dp+.
+    const cardDesignW = 360.0;
+    final availableW = screenW - 32; // 16px margin each side
+
+    Widget cardWithMaya = showMaya
         ? Stack(
             clipBehavior: Clip.none,
             children: [
               card,
               Positioned(
-                top: -88,
+                top: -80,
                 left: 8,
                 child: IgnorePointer(
-                  child: Image.asset('assets/maya.png', height: 108, fit: BoxFit.contain),
+                  child: Image.asset('assets/maya.png', height: 96, fit: BoxFit.contain),
                 ),
               ),
             ],
           )
         : card;
+
+    // Scale the whole Maya+card unit down uniformly on small screens.
+    if (availableW < cardDesignW) {
+      cardWithMaya = FittedBox(
+        fit: BoxFit.scaleDown,
+        alignment: Alignment.bottomCenter,
+        child: SizedBox(width: cardDesignW, child: cardWithMaya),
+      );
+    }
 
     return Stack(
       children: [
@@ -306,7 +321,12 @@ class _TutorialOverlayState extends State<TutorialOverlay> {
           bottom: passthrough ? 78 : 8,
           left: 16,
           right: 16,
-          child: cardWithMaya,
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              maxHeight: screenH * 0.55,
+            ),
+            child: SingleChildScrollView(child: cardWithMaya),
+          ),
         ),
         if (showPointer)
           const Positioned(
@@ -334,103 +354,111 @@ class _TutorialOverlayState extends State<TutorialOverlay> {
       child: Container(
         color: _scrim,
         child: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Spacer(),
-                Image.asset('assets/maya.png', height: 140, fit: BoxFit.contain),
-                const SizedBox(height: 12),
-                // Time highlight
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
-                  decoration: BoxDecoration(
-                    color: isDark
-                        ? const Color(0xFF1E2840)
-                        : const Color(0xFFE8F0FF),
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(
-                      color: _accent.withValues(alpha: 0.5),
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+            child: ConstrainedBox(
+              constraints: BoxConstraints(
+                minHeight: MediaQuery.of(context).size.height -
+                    MediaQuery.of(context).padding.top -
+                    MediaQuery.of(context).padding.bottom -
+                    40,
+              ),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Image.asset('assets/maya.png', height: 110, fit: BoxFit.contain),
+                  const SizedBox(height: 10),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                    decoration: BoxDecoration(
+                      color: isDark
+                          ? const Color(0xFF1E2840)
+                          : const Color(0xFFE8F0FF),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: _accent.withValues(alpha: 0.5),
+                      ),
+                    ),
+                    child: Column(
+                      children: [
+                        Text(
+                          'YOUR BOARDING TIME',
+                          style: TextStyle(
+                            color: _accent.withValues(alpha: 0.8),
+                            fontSize: 9,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: 1.2,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: Text(
+                            timeStr,
+                            style: TextStyle(
+                              color: titleColor,
+                              fontSize: 36,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: 1,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                  child: Column(
+                  const SizedBox(height: 14),
+                  Text(
+                    "That's your first time!\n\nUse REPLAY to try a smarter zone strategy and improve it.",
+                    style: TextStyle(color: bodyColor, fontSize: 13, height: 1.5),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 20),
+                  Row(
                     children: [
-                      Text(
-                        'YOUR BOARDING TIME',
-                        style: TextStyle(
-                          color: _accent.withValues(alpha: 0.8),
-                          fontSize: 9,
-                          fontWeight: FontWeight.w800,
-                          letterSpacing: 1.2,
+                      Expanded(
+                        child: OutlinedButton(
+                          onPressed: widget.onReplay,
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: titleColor,
+                            side: BorderSide(
+                              color: isDark
+                                  ? Colors.white.withValues(alpha: 0.3)
+                                  : const Color(0xFF0A1628).withValues(alpha: 0.25),
+                            ),
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(14),
+                            ),
+                          ),
+                          child: const Text(
+                            'REPLAY',
+                            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                          ),
                         ),
                       ),
-                      const SizedBox(height: 4),
-                      Text(
-                        timeStr,
-                        style: TextStyle(
-                          color: titleColor,
-                          fontSize: 36,
-                          fontWeight: FontWeight.w700,
-                          letterSpacing: 1,
+                      const SizedBox(width: 12),
+                      Expanded(
+                        flex: 2,
+                        child: FilledButton(
+                          onPressed: widget.onDismiss,
+                          style: FilledButton.styleFrom(
+                            backgroundColor: _accent,
+                            foregroundColor: const Color(0xFF0A0E1A),
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(14),
+                            ),
+                          ),
+                          child: const Text(
+                            "I GET IT →",
+                            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                          ),
                         ),
                       ),
                     ],
                   ),
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  "That's your first time!\n\nUse REPLAY to try a smarter zone strategy and improve it.",
-                  style: TextStyle(color: bodyColor, fontSize: 14, height: 1.5),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 28),
-                Row(
-                  children: [
-                    Expanded(
-                      child: OutlinedButton(
-                        onPressed: widget.onReplay,
-                        style: OutlinedButton.styleFrom(
-                          foregroundColor: titleColor,
-                          side: BorderSide(
-                            color: isDark
-                                ? Colors.white.withValues(alpha: 0.3)
-                                : const Color(0xFF0A1628).withValues(alpha: 0.25),
-                          ),
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(14),
-                          ),
-                        ),
-                        child: const Text(
-                          'REPLAY',
-                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      flex: 2,
-                      child: FilledButton(
-                        onPressed: widget.onDismiss,
-                        style: FilledButton.styleFrom(
-                          backgroundColor: _accent,
-                          foregroundColor: const Color(0xFF0A0E1A),
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(14),
-                          ),
-                        ),
-                        child: const Text(
-                          "I GET IT →",
-                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                const Spacer(),
-              ],
+                ],
+              ),
             ),
           ),
         ),
@@ -451,52 +479,60 @@ class _TutorialOverlayState extends State<TutorialOverlay> {
       child: Container(
         color: _scrim,
         child: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 24),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Spacer(),
-                Image.asset('assets/maya.png', height: 150, fit: BoxFit.contain),
-                const SizedBox(height: 12),
-                const Icon(Icons.check_circle_rounded, color: _accent, size: 52),
-                const SizedBox(height: 12),
-                Text(
-                  "You're ready!",
-                  style: TextStyle(
-                    color: titleColor,
-                    fontSize: 26,
-                    fontWeight: FontWeight.bold,
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 20),
+            child: ConstrainedBox(
+              constraints: BoxConstraints(
+                minHeight: MediaQuery.of(context).size.height -
+                    MediaQuery.of(context).padding.top -
+                    MediaQuery.of(context).padding.bottom -
+                    40,
+              ),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Image.asset('assets/maya.png', height: 120, fit: BoxFit.contain),
+                  const SizedBox(height: 10),
+                  const Icon(Icons.check_circle_rounded, color: _accent, size: 48),
+                  const SizedBox(height: 10),
+                  Text(
+                    "You're ready!",
+                    style: TextStyle(
+                      color: titleColor,
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                    ),
+                    textAlign: TextAlign.center,
                   ),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 10),
-                Text(
-                  'The real fleet is unlocked. Each aircraft has a target time — beat it to unlock the next one. Come back and beat your best times!',
-                  style: TextStyle(color: bodyColor, fontSize: 14, height: 1.5),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 28),
-                SizedBox(
-                  width: double.infinity,
-                  child: FilledButton(
-                    onPressed: widget.onDismiss,
-                    style: FilledButton.styleFrom(
-                      backgroundColor: _accent,
-                      foregroundColor: const Color(0xFF0A0E1A),
-                      padding: const EdgeInsets.symmetric(vertical: 18),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
+                  const SizedBox(height: 10),
+                  Text(
+                    'The real fleet is unlocked. Each aircraft has a target time — beat it to unlock the next one. Come back and beat your best times!',
+                    style: TextStyle(color: bodyColor, fontSize: 13, height: 1.5),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 24),
+                  SizedBox(
+                    width: double.infinity,
+                    child: FilledButton(
+                      onPressed: widget.onDismiss,
+                      style: FilledButton.styleFrom(
+                        backgroundColor: _accent,
+                        foregroundColor: const Color(0xFF0A0E1A),
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                      ),
+                      child: const Text(
+                        'GOT IT — TAKE ME TO THE FLEET',
+                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                        overflow: TextOverflow.ellipsis,
+                        maxLines: 1,
                       ),
                     ),
-                    child: const Text(
-                      'GOT IT — TAKE ME TO THE FLEET',
-                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-                    ),
                   ),
-                ),
-                const Spacer(),
-              ],
+                ],
+              ),
             ),
           ),
         ),

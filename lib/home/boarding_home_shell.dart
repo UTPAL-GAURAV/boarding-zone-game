@@ -71,7 +71,6 @@ class _BoardingHomeShellState extends State<BoardingHomeShell> {
   bool _premiumUnlocked = false;
   bool _tutorialCompleted = false;
   bool _showHomeTutorial = false;
-  bool _homeTutWelcomeDone = false;
   bool _soundEnabled = true;
   int _fleetScrollVersion = 0;
   String _selectedId = 'cessna-grand-caravan-ex';
@@ -555,8 +554,6 @@ class _BoardingHomeShellState extends State<BoardingHomeShell> {
 
   Future<void> _launchTutorial() async {
     if (!mounted) return;
-    // Dismiss home tutorial overlay before entering the game page.
-    if (_showHomeTutorial) setState(() => _showHomeTutorial = false);
     await Navigator.of(context).push(
       MaterialPageRoute<void>(
         builder: (context) {
@@ -580,12 +577,14 @@ class _BoardingHomeShellState extends State<BoardingHomeShell> {
         },
       ),
     );
-    // After returning from tutorial, check if completed and unlock cessna.
+    // After returning from tutorial, dismiss the overlay and check if completed.
     if (!mounted) return;
+    if (_showHomeTutorial) setState(() => _showHomeTutorial = false);
     final completed = await _store.isTutorialCompleted();
     if (completed && !_tutorialCompleted) {
       setState(() {
         _tutorialCompleted = true;
+        _showHomeTutorial = false;
         _fleetScrollVersion++;
       });
       await _reloadFleetProgress();
@@ -739,10 +738,8 @@ class _BoardingHomeShellState extends State<BoardingHomeShell> {
               if (_showHomeTutorial)
                 Positioned.fill(
                   child: _HomeTutorialOverlay(
-                    welcomeDone: _homeTutWelcomeDone,
-                    onLetSGo: () => setState(() => _homeTutWelcomeDone = true),
                     onDismiss: () => setState(() => _showHomeTutorial = false),
-                    onTapTutorial: _launchTutorial,
+                    onLetsGo: _launchTutorial,
                   ),
                 ),
             ],
@@ -782,16 +779,12 @@ class _BoardingHomeShellState extends State<BoardingHomeShell> {
 
 class _HomeTutorialOverlay extends StatelessWidget {
   const _HomeTutorialOverlay({
-    required this.welcomeDone,
-    required this.onLetSGo,
     required this.onDismiss,
-    required this.onTapTutorial,
+    required this.onLetsGo,
   });
 
-  final bool welcomeDone;
-  final VoidCallback onLetSGo;
   final VoidCallback onDismiss;
-  final VoidCallback onTapTutorial;
+  final VoidCallback onLetsGo;
 
   static const _accent = Color(0xFFFFB930);
 
@@ -809,7 +802,7 @@ class _HomeTutorialOverlay extends StatelessWidget {
       child: Container(
         color: scrim,
         child: SafeArea(
-          child: welcomeDone ? _buildTapCue(isDark, bgColor, titleColor, bodyColor) : _buildWelcome(isDark, bgColor, titleColor, bodyColor),
+          child: _buildWelcome(isDark, bgColor, titleColor, bodyColor),
         ),
       ),
     );
@@ -873,7 +866,7 @@ class _HomeTutorialOverlay extends StatelessWidget {
                         Align(
                           alignment: Alignment.centerRight,
                           child: FilledButton(
-                            onPressed: onLetSGo,
+                            onPressed: onLetsGo,
                             style: FilledButton.styleFrom(
                               backgroundColor: _accent,
                               foregroundColor: const Color(0xFF0A0E1A),
@@ -901,78 +894,6 @@ class _HomeTutorialOverlay extends StatelessWidget {
     );
   }
 
-  Widget _buildTapCue(bool isDark, Color bg, Color titleColor, Color bodyColor) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
-      child: Column(
-        children: [
-          const Spacer(),
-          Image.asset('assets/maya.png', height: 130, fit: BoxFit.contain),
-          const SizedBox(height: 16),
-          Material(
-            color: Colors.transparent,
-            child: Container(
-              decoration: BoxDecoration(
-                color: bg,
-                borderRadius: BorderRadius.circular(18),
-                border: Border.all(color: _accent.withValues(alpha: 0.45)),
-              ),
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 14),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'MAYA  ·  Crew Trainer',
-                    style: TextStyle(
-                      color: _accent.withValues(alpha: 0.75),
-                      fontSize: 9,
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: 1.0,
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    'Tap our training shuttle to begin.',
-                    style: TextStyle(
-                      color: titleColor,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Swipe up to find the "Training Flight" card, then tap it.',
-                    style: TextStyle(color: bodyColor, fontSize: 13, height: 1.4),
-                  ),
-                  const SizedBox(height: 14),
-                  Align(
-                    alignment: Alignment.centerRight,
-                    child: FilledButton(
-                      onPressed: onTapTutorial,
-                      style: FilledButton.styleFrom(
-                        backgroundColor: _accent,
-                        foregroundColor: const Color(0xFF0A0E1A),
-                        padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 11),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        textStyle: const TextStyle(
-                          fontWeight: FontWeight.w800,
-                          fontSize: 13,
-                        ),
-                      ),
-                      child: const Text("TAKE ME THERE →"),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          const Spacer(flex: 2),
-        ],
-      ),
-    );
-  }
 }
 
 class _ProfileDialog extends StatefulWidget {
@@ -1426,8 +1347,11 @@ class _HomeTabState extends State<_HomeTab> {
               style: GoogleFonts.barlow(color: hc.muted, fontSize: 13),
             ),
             const SizedBox(height: 18),
-            SizedBox(
-              height: 324,
+            Builder(builder: (context) {
+              final sw = MediaQuery.of(context).size.width;
+              final tileScale = (sw / 411.0).clamp(0.82, 1.0);
+              return SizedBox(
+              height: 324 * tileScale,
               child: ListView.separated(
                 controller: _fleetController,
                 scrollDirection: Axis.horizontal,
@@ -1435,7 +1359,7 @@ class _HomeTabState extends State<_HomeTab> {
                 separatorBuilder: (_, _) => const SizedBox(width: 12),
                 itemBuilder: (context, index) {
                   if (index == 0) {
-                    return _TutorialTile(onTap: widget.onHowToPlay);
+                    return _TutorialTile(onTap: widget.onHowToPlay, scale: tileScale);
                   }
                   final aircraft = AircraftCatalog.all[index - 1];
                   final unlocked = widget.isUnlocked(aircraft);
@@ -1444,6 +1368,7 @@ class _HomeTabState extends State<_HomeTab> {
                     selected: aircraft.id == widget.selected.id,
                     unlocked: unlocked,
                     bestMilliseconds: widget.bestTimes[aircraft.id],
+                    scale: tileScale,
                     onTap: () {
                       if (aircraft.unlockType == AircraftUnlockType.premium &&
                           !unlocked) {
@@ -1458,7 +1383,7 @@ class _HomeTabState extends State<_HomeTab> {
                   );
                 },
               ),
-            ),
+            );}),
             const SizedBox(height: 18),
             Container(
               padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
@@ -1620,16 +1545,17 @@ class _HomeHeader extends StatelessWidget {
 }
 
 class _TutorialTile extends StatelessWidget {
-  const _TutorialTile({required this.onTap});
+  const _TutorialTile({required this.onTap, this.scale = 1.0});
 
   final VoidCallback onTap;
+  final double scale;
 
   @override
   Widget build(BuildContext context) {
     final hc = _HC.from(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return SizedBox(
-      width: 300,
+      width: 300 * scale,
       child: Material(
         color: hc.surface,
         borderRadius: BorderRadius.circular(22),
@@ -1653,7 +1579,7 @@ class _TutorialTile extends StatelessWidget {
               children: [
                 // Banner area with Maya
                 SizedBox(
-                  height: 184,
+                  height: 184 * scale,
                   width: double.infinity,
                   child: Stack(
                     fit: StackFit.expand,
@@ -1741,7 +1667,7 @@ class _TutorialTile extends StatelessWidget {
                             height: 1.25,
                           ),
                         ),
-                        const Spacer(),
+                        const SizedBox(height: 4),
                         Text(
                           "MAYA'S CREW TRAINING  ·  ~2 MIN",
                           style: GoogleFonts.rajdhani(
@@ -1771,6 +1697,7 @@ class _AircraftTile extends StatelessWidget {
     required this.unlocked,
     required this.bestMilliseconds,
     required this.onTap,
+    this.scale = 1.0,
   });
 
   final Aircraft aircraft;
@@ -1778,6 +1705,7 @@ class _AircraftTile extends StatelessWidget {
   final bool unlocked;
   final int? bestMilliseconds;
   final VoidCallback onTap;
+  final double scale;
 
   @override
   Widget build(BuildContext context) {
@@ -1805,7 +1733,7 @@ class _AircraftTile extends StatelessWidget {
         : 'LEVEL ${aircraft.level}  ·  ${aircraft.typicalSeats} SEATS  ·  TARGET ${_formatTarget(aircraft.targetSeconds)}';
 
     return SizedBox(
-      width: 300,
+      width: 300 * scale,
       child: Material(
         color: hc.surface,
         borderRadius: BorderRadius.circular(22),
@@ -1833,7 +1761,7 @@ class _AircraftTile extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 SizedBox(
-                  height: 184,
+                  height: 184 * scale,
                   width: double.infinity,
                   child: Stack(
                     fit: StackFit.expand,
