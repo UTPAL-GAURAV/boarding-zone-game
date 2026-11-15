@@ -626,7 +626,7 @@ class _BoardingHomeShellState extends State<BoardingHomeShell> {
         final prev = all[prevIndex];
         message = 'Complete ${prev.displayName} under ${_formatTarget(prev.targetSeconds)}';
       } else {
-        message = 'Complete the previous mission.';
+        message = 'Complete the previous flight.';
       }
     } else {
       message = aircraft.unlockRequirement ?? aircraft.priceLabel ?? 'Locked aircraft';
@@ -666,7 +666,7 @@ class _BoardingHomeShellState extends State<BoardingHomeShell> {
           title: Text(aircraft.displayName,
               style: GoogleFonts.rajdhani(color: hc.ink)),
           content: Text(
-            'This aircraft is unlocked. Its boarding level is coming soon.',
+            'This aircraft is in the fleet — its cabin is in development.',
             style: GoogleFonts.rajdhani(color: hc.muted),
           ),
           actions: [
@@ -840,7 +840,7 @@ class _HomeTutorialOverlay extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'MAYA  ·  Crew Trainer',
+                          'MAYA  ·  Chief Boarding Officer',
                           style: TextStyle(
                             color: _accent.withValues(alpha: 0.75),
                             fontSize: 9,
@@ -859,7 +859,7 @@ class _HomeTutorialOverlay extends StatelessWidget {
                         ),
                         const SizedBox(height: 10),
                         Text(
-                          "I'm Maya, your crew trainer. Boarding passengers sounds simple — but doing it FAST is an art. I'll teach you in 2 minutes.",
+                          "I'm Maya, your Chief Boarding Officer. Boarding passengers sounds simple — but doing it FAST is an art. I'll teach you in 2 minutes.",
                           style: TextStyle(color: bodyColor, fontSize: 13, height: 1.45),
                         ),
                         const SizedBox(height: 14),
@@ -1343,7 +1343,7 @@ class _HomeTabState extends State<_HomeTab> {
             const _PageTitle(kicker: 'SELECT YOUR AIRCRAFT', title: 'Fleet'),
             const SizedBox(height: 8),
             Text(
-              'Swipe the hangar and tap an aircraft to enter its cabin.',
+              'Swipe to browse the fleet and tap an aircraft to board.',
               style: GoogleFonts.barlow(color: hc.muted, fontSize: 13),
             ),
             const SizedBox(height: 18),
@@ -1406,7 +1406,7 @@ class _HomeTabState extends State<_HomeTab> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'SELECTED AIRCRAFT',
+                          'ON THE STAND',
                           style: GoogleFonts.rajdhani(
                             color: hc.muted,
                             fontSize: 8,
@@ -1434,7 +1434,7 @@ class _HomeTabState extends State<_HomeTab> {
                         ? () => widget.onPlay(widget.selected)
                         : null,
                     icon: const Icon(Icons.play_arrow_rounded, size: 20),
-                    label: Text('START ONBOARDING'),
+                    label: Text('START BOARDING'),
                     style: FilledButton.styleFrom(
                       backgroundColor: _accent,
                       foregroundColor: _HC.onAccent,
@@ -1657,7 +1657,7 @@ class _TutorialTile extends StatelessWidget {
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          'New here? Learn to zone seats, board passengers, and beat the clock.',
+                          'Your first flight. Learn the system, then own it.',
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
                           softWrap: true,
@@ -2334,7 +2334,7 @@ class _ShopTabState extends State<_ShopTab> {
           padding: const EdgeInsets.fromLTRB(20, 22, 20, 28),
           sliver: SliverList.list(
             children: [
-              const _PageTitle(kicker: 'HANGAR STORE', title: 'Shop'),
+              const _PageTitle(kicker: 'FLEET STORE', title: 'Shop'),
               const SizedBox(height: 20),
 
               _PremiumPackCard(
@@ -2631,7 +2631,7 @@ class _PremiumPackCard extends StatelessWidget {
                     child: FilledButton.icon(
                       onPressed: onPurchase,
                       icon: const Icon(Icons.flight_takeoff_rounded, size: 18),
-                      label: Text('CLAIM YOUR SEAT'),
+                      label: Text('UNLOCK THE FLEET'),
                       style: FilledButton.styleFrom(
                         backgroundColor: _accent,
                         foregroundColor: _HC.onAccent,

@@ -584,7 +584,7 @@ class _BoardingGamePageState extends State<BoardingGamePage>
                 child: _StatPill(
                   icon: Icons.airline_seat_recline_normal_rounded,
                   iconColor: _C.accent,
-                  label: 'BOARDED',
+                  label: 'SEATED',
                   value:
                       '${_simulation.boardedCount} / ${_simulation.passengerCount}',
                   progress: _boardingProgress,
@@ -824,7 +824,7 @@ class _BoardingGamePageState extends State<BoardingGamePage>
       label = 'BOARDING IN PROGRESS…';
       icon = Icons.flight_rounded;
     } else {
-      label = 'BOARD NOW';
+      label = 'START BOARDING';
       icon = Icons.flight_takeoff_rounded;
     }
 
@@ -975,7 +975,7 @@ class _BoardingGamePageState extends State<BoardingGamePage>
                     bgColor: _C.danger.withValues(alpha: 0.12)),
                 const SizedBox(height: 12),
                 Text(
-                  'BOARDING IMPOSSIBLE',
+                  'BOARDING FAILED',
                   style: GoogleFonts.rajdhani(
                     color: _C.danger,
                     fontSize: 13,
@@ -996,7 +996,7 @@ class _BoardingGamePageState extends State<BoardingGamePage>
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  '$remaining passenger${remaining == 1 ? '' : 's'} gave up and took the train.',
+                  '$remaining passenger${remaining == 1 ? '' : 's'} missed their flight.',
                   textAlign: TextAlign.center,
                   style: TextStyle(color: c.muted, fontSize: 13, height: 1.4),
                 ),
@@ -1157,7 +1157,7 @@ class _CompletionContent extends StatelessWidget {
         const SizedBox(height: 4),
         Text(
           isOverTarget
-              ? 'Everyone seated, but the captain is NOT impressed.'
+              ? 'Everyone seated — but the captain isn\'t happy.'
               : 'Every passenger is seated.',
           textAlign: TextAlign.center,
           style: TextStyle(color: c.muted, fontSize: 12, height: 1.4),
@@ -1240,7 +1240,7 @@ class _CompletionContent extends StatelessWidget {
         if (isOverTarget) ...[
           const SizedBox(height: 6),
           Text(
-            'Rezone your seats and try again.',
+            'Adjust your zones and go again.',
             style: TextStyle(color: c.muted, fontSize: 12),
           ),
         ],

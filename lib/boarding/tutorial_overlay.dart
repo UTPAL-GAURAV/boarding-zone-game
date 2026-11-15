@@ -53,7 +53,7 @@ class _TutorialOverlayState extends State<TutorialOverlay> {
           title: 'How this game works',
           body:
               '1. You paint seats into boarding groups (zones)\n'
-              '2. Tap BOARD NOW — passengers board in your zone order automatically\n'
+              '2. Tap START BOARDING — passengers board in your zone order automatically\n'
               '3. Your goal: the fastest possible total boarding time\n\n'
               'You are the crew manager — not the passenger.',
           cta: "Show me around →",
@@ -67,7 +67,7 @@ class _TutorialOverlayState extends State<TutorialOverlay> {
       case TutorialStep.anatomyBoarded:
         return _buildAnatomyCard(
           icon: Icons.airline_seat_recline_normal_rounded,
-          label: 'BOARDED',
+          label: 'SEATED',
           body: 'Tracks how many passengers have found their seat.\n'
               'When this reaches 12 / 12, boarding is complete!',
           arrowEdge: _ArrowEdge.top,
@@ -77,7 +77,7 @@ class _TutorialOverlayState extends State<TutorialOverlay> {
         return _buildAnatomyCard(
           icon: Icons.timer_outlined,
           label: 'TIME',
-          body: 'Starts the moment you tap BOARD NOW. '
+          body: 'Starts the moment you tap START BOARDING. '
               'Try to beat the target time shown before each flight.',
           arrowEdge: _ArrowEdge.top,
         );
@@ -87,7 +87,7 @@ class _TutorialOverlayState extends State<TutorialOverlay> {
           icon: Icons.emoji_events_outlined,
           label: 'BEST',
           body: 'Your personal record for this aircraft. '
-              'Improve it by planning smarter zones.',
+              'Improve it with a better zone plan.',
           arrowEdge: _ArrowEdge.top,
         );
 
@@ -151,7 +151,7 @@ class _TutorialOverlayState extends State<TutorialOverlay> {
         return _buildFloating(
           title: "Your plan is set!",
           body:
-              'Tap BOARD NOW below and watch the passengers board in your zone order. '
+              'Tap START BOARDING below and watch the passengers board in your zone order. '
               'The timer starts the moment you tap!',
           passthrough: true,
           showPointer: true,
@@ -408,7 +408,7 @@ class _TutorialOverlayState extends State<TutorialOverlay> {
                   ),
                   const SizedBox(height: 14),
                   Text(
-                    "That's your first time!\n\nUse REPLAY to try a smarter zone strategy and improve it.",
+                    "That's your first time!\n\nUse REPLAY to adjust your zones and go faster.",
                     style: TextStyle(color: bodyColor, fontSize: 13, height: 1.5),
                     textAlign: TextAlign.center,
                   ),
@@ -802,7 +802,7 @@ class _CoachCard extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(
-              'MAYA  ·  Crew Trainer',
+              'MAYA  ·  Chief Boarding Officer',
               style: TextStyle(
                 color: _accent.withValues(alpha: 0.75),
                 fontSize: 9,
