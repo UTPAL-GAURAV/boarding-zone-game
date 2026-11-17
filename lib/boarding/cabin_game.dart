@@ -43,7 +43,7 @@ class CabinGame extends FlameGame {
 
   @override
   Color backgroundColor() =>
-      _isDark ? const Color(0xFF0D1428) : const Color(0xFFEDF3FF);
+      _isDark ? const Color(0xFF0D0F14) : const Color(0xFFEDF3FF);
 
   Future<ui.Image> _loadImage(String asset) async {
     final data = await rootBundle.load(asset);
@@ -180,7 +180,7 @@ class CabinGame extends FlameGame {
 
     // Fuselage fill — starts at entranceDoorY so the nose image shows through.
     final shell = Paint()
-      ..color = _isDark ? const Color(0xFF111C36) : const Color(0xFFFFFFFF);
+      ..color = _isDark ? const Color(0xFF141820) : const Color(0xFFFFFFFF);
     canvas.drawRect(
       Rect.fromLTWH(
         layout.cabinShell.left,
@@ -243,7 +243,7 @@ class CabinGame extends FlameGame {
     // semi-transparent artifact pixels outside the nose outline are invisible.
     canvas.drawRect(
       Rect.fromLTWH(destLeft, destTop, destW, destH),
-      Paint()..color = _isDark ? const Color(0xFF0D1428) : const Color(0xFFEDF3FF),
+      Paint()..color = _isDark ? const Color(0xFF0D0F14) : const Color(0xFFEDF3FF),
     );
 
     canvas.drawImageRect(
@@ -279,7 +279,7 @@ class CabinGame extends FlameGame {
     canvas.drawRect(
       Rect.fromLTWH(destLeft, destTop, destW, destH),
       Paint()
-        ..color = _isDark ? const Color(0xFF0D1428) : const Color(0xFFEDF3FF),
+        ..color = _isDark ? const Color(0xFF0D0F14) : const Color(0xFFEDF3FF),
     );
 
     canvas.drawImageRect(

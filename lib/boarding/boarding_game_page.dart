@@ -18,22 +18,24 @@ class _C {
   _C._(this._dark);
   final bool _dark;
 
-  Color get bg => _dark ? const Color(0xFF060A1C) : const Color(0xFFEDF3FF);
-  Color get surface => _dark ? const Color(0xFF152240) : const Color(0xFFFFFFFF);
+  Color get bg => _dark ? const Color(0xFF0D0F14) : const Color(0xFFEDF3FF);
+  Color get surface => _dark ? const Color(0xFF141820) : const Color(0xFFFFFFFF);
   Color get surfaceElevated =>
-      _dark ? const Color(0xFF1A2B4E) : const Color(0xFFF0F5FF);
+      _dark ? const Color(0xFF1C2030) : const Color(0xFFF0F5FF);
   Color get border =>
-      _dark ? const Color(0xFF2A4070) : const Color(0xFFCDD7F0);
+      _dark ? const Color(0xFF2A3555) : const Color(0xFFCDD7F0);
   Color get ink => _dark ? const Color(0xFFE8F0FF) : const Color(0xFF0A1628);
   Color get muted => _dark ? const Color(0xFF6A85AA) : const Color(0xFF7A8BAA);
   Color get dimPanel =>
-      _dark ? const Color(0xFF0C1428) : const Color(0xFFD8E4F8);
+      _dark ? const Color(0xFF0C1020) : const Color(0xFFD8E4F8);
 
-  // Accents stay the same in both modes.
-  static const Color accent = Color(0xFFFFB930);
-  static const Color accentBlue = Color(0xFF4A9EFF);
-  static const Color success = Color(0xFF22C55E);
-  static const Color danger = Color(0xFFFF4C4C);
+  // Blue is now the primary interactive accent.
+  // Amber is kept as the caution/achievement/warning color.
+  static const Color accent = Color(0xFF2F8FFF);
+  static const Color amber = Color(0xFFFFB930);
+  static const Color accentBlue = Color(0xFF2F8FFF);
+  static const Color success = Color(0xFF1DB87A);
+  static const Color danger = Color(0xFFE8413A);
 }
 
 // ─── Main page widget ───────────────────────────────────────────────────────
@@ -455,21 +457,21 @@ class _BoardingGamePageState extends State<BoardingGamePage>
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
               decoration: BoxDecoration(
-                color: _C.accent.withValues(alpha: 0.12),
+                color: _C.amber.withValues(alpha: 0.12),
                 borderRadius: BorderRadius.circular(8),
                 border: Border.all(
-                    color: _C.accent.withValues(alpha: 0.35), width: 1),
+                    color: _C.amber.withValues(alpha: 0.35), width: 1),
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Icon(Icons.flag_rounded,
-                      size: 11, color: _C.accent.withValues(alpha: 0.9)),
+                      size: 11, color: _C.amber.withValues(alpha: 0.9)),
                   const SizedBox(width: 4),
                   Text(
                     _formatMs(widget.targetSeconds! * 1000),
                     style: GoogleFonts.spaceMono(
-                      color: _C.accent,
+                      color: _C.amber,
                       fontSize: 11,
                       fontWeight: FontWeight.w700,
                     ),
@@ -617,10 +619,10 @@ class _BoardingGamePageState extends State<BoardingGamePage>
                 key: _bestPillKey,
                 child: _StatPill(
                   icon: Icons.emoji_events_outlined,
-                  iconColor: _C.accent,
+                  iconColor: _C.amber,
                   label: 'BEST',
                   value: best != null ? _formatMs(best) : '—',
-                  valueColor: best != null ? _C.accent : null,
+                  valueColor: best != null ? _C.amber : null,
                   c: c,
                 ),
               ),
@@ -929,7 +931,7 @@ class _BoardingGamePageState extends State<BoardingGamePage>
               color: _isOverTarget
                   ? _C.danger.withValues(alpha: 0.4)
                   : _isNewRecord
-                      ? _C.accent.withValues(alpha: 0.5)
+                      ? _C.amber.withValues(alpha: 0.5)
                       : _C.success.withValues(alpha: 0.3),
               width: 1.5,
             ),
@@ -938,7 +940,7 @@ class _BoardingGamePageState extends State<BoardingGamePage>
                 color: (_isOverTarget
                         ? _C.danger
                         : _isNewRecord
-                            ? _C.accent
+                            ? _C.amber
                             : _C.success)
                     .withValues(alpha: 0.14),
                 blurRadius: 28,
@@ -1141,14 +1143,14 @@ class _CompletionContentState extends State<_CompletionContent> {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
           decoration: BoxDecoration(
-            color: (widget.isOverTarget ? _C.danger : widget.isNewRecord ? _C.accent : _C.success)
+            color: (widget.isOverTarget ? _C.danger : widget.isNewRecord ? _C.amber : _C.success)
                 .withValues(alpha: 0.15),
             borderRadius: BorderRadius.circular(20),
             border: Border.all(
               color: (widget.isOverTarget
                       ? _C.danger
                       : widget.isNewRecord
-                          ? _C.accent
+                          ? _C.amber
                           : _C.success)
                   .withValues(alpha: 0.5),
             ),
@@ -1166,7 +1168,7 @@ class _CompletionContentState extends State<_CompletionContent> {
                 color: widget.isOverTarget
                     ? _C.danger
                     : widget.isNewRecord
-                        ? _C.accent
+                        ? _C.amber
                         : _C.success,
               ),
               const SizedBox(width: 5),
@@ -1182,7 +1184,7 @@ class _CompletionContentState extends State<_CompletionContent> {
                   color: widget.isOverTarget
                       ? _C.danger
                       : widget.isNewRecord
-                          ? _C.accent
+                          ? _C.amber
                           : _C.success,
                   fontSize: 11,
                   fontWeight: FontWeight.w800,
@@ -1202,12 +1204,12 @@ class _CompletionContentState extends State<_CompletionContent> {
           color: widget.isOverTarget
               ? _C.danger
               : widget.isNewRecord
-                  ? _C.accent
+                  ? _C.amber
                   : _C.success,
           bgColor: (widget.isOverTarget
                   ? _C.danger
                   : widget.isNewRecord
-                      ? _C.accent
+                      ? _C.amber
                       : _C.success)
               .withValues(alpha: 0.12),
         ),
@@ -1294,7 +1296,7 @@ class _CompletionContentState extends State<_CompletionContent> {
                         child: Text(
                           widget.formatMs(widget.currentBest!),
                           style: GoogleFonts.spaceMono(
-                            color: _C.accent,
+                            color: _C.amber,
                             fontSize: 18,
                             fontWeight: FontWeight.w700,
                           ),
@@ -1591,20 +1593,13 @@ class _ActiveButton extends StatelessWidget {
   Widget build(BuildContext context) => DecoratedBox(
         decoration: BoxDecoration(
           gradient: const LinearGradient(
-            colors: [Color(0xFFFFD060), Color(0xFFFFAA00)],
+            colors: [Color(0xFF72BFFF), Color(0xFF1060E0)],
           ),
           borderRadius: BorderRadius.circular(16),
-          boxShadow: const [
-            BoxShadow(
-              color: Color(0x55FFB930),
-              blurRadius: 16,
-              offset: Offset(0, 5),
-            ),
-          ],
         ),
         child: ElevatedButton.icon(
           onPressed: onTap,
-          icon: Icon(icon, size: 20),
+          icon: Icon(icon, size: 22),
           label: Text(
             label,
             style: GoogleFonts.rajdhani(
@@ -1615,7 +1610,6 @@ class _ActiveButton extends StatelessWidget {
           ),
           style: ElevatedButton.styleFrom(
             backgroundColor: Colors.transparent,
-            foregroundColor: const Color(0xFF1A0A00),
             shadowColor: Colors.transparent,
             shape:
                 RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -1713,7 +1707,7 @@ class _PrimaryBtn extends StatelessWidget {
   Widget build(BuildContext context) => DecoratedBox(
         decoration: BoxDecoration(
           gradient: const LinearGradient(
-            colors: [Color(0xFFFFD060), Color(0xFFFFAA00)],
+            colors: [Color(0xFF72BFFF), Color(0xFF1060E0)],
           ),
           borderRadius: BorderRadius.circular(14),
         ),
@@ -1730,7 +1724,7 @@ class _PrimaryBtn extends StatelessWidget {
           ),
           style: ElevatedButton.styleFrom(
             backgroundColor: Colors.transparent,
-            foregroundColor: const Color(0xFF1A0A00),
+            foregroundColor: Colors.white,
             shadowColor: Colors.transparent,
             padding: const EdgeInsets.symmetric(vertical: 14),
             shape: RoundedRectangleBorder(

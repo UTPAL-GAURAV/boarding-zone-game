@@ -21,8 +21,9 @@ import 'notification_service.dart';
 import 'rankings_service.dart';
 import 'shop_service.dart';
 
-const _accent = Color(0xFFFFB930);
-const _accentGlow = Color(0x33FFB930);
+const _accent = Color(0xFF2F8FFF);
+const _amber = Color(0xFFFFB930);
+const _accentGlow = Color(0x332F8FFF);
 
 /// Adaptive color helper — reads brightness from MaterialApp's current theme.
 class _HC {
@@ -33,10 +34,10 @@ class _HC {
 
   final bool _dark;
 
-  Color get bg => _dark ? const Color(0xFF0A0E1A) : const Color(0xFFEDF3FF);
-  Color get surface => _dark ? const Color(0xFF151C2E) : const Color(0xFFFFFFFF);
+  Color get bg => _dark ? const Color(0xFF0D0F14) : const Color(0xFFEDF3FF);
+  Color get surface => _dark ? const Color(0xFF141820) : const Color(0xFFFFFFFF);
   Color get surfaceElevated =>
-      _dark ? const Color(0xFF1E2840) : const Color(0xFFF0F5FF);
+      _dark ? const Color(0xFF1C2030) : const Color(0xFFF0F5FF);
   Color get muted =>
       _dark ? const Color(0xFF6B7A99) : const Color(0xFF5A6A8A);
   Color get ink => _dark ? Colors.white : const Color(0xFF0A1628);
@@ -44,10 +45,10 @@ class _HC {
       ? Colors.white.withValues(alpha: 0.08)
       : const Color(0xFF0A1628).withValues(alpha: 0.10);
   Color get divider =>
-      _dark ? const Color(0xFF1E2840) : const Color(0xFFCDD7F0);
+      _dark ? const Color(0xFF1C2030) : const Color(0xFFCDD7F0);
 
   /// Text/icon color that always reads well on the amber _accent button.
-  static const Color onAccent = Color(0xFF0A0E1A);
+  static const Color onAccent = Colors.white;
 }
 
 class BoardingHomeShell extends StatefulWidget {
@@ -456,7 +457,7 @@ class _BoardingHomeShellState extends State<BoardingHomeShell> {
                   statusBarIconBrightness:
                       dark ? Brightness.light : Brightness.dark,
                   systemNavigationBarColor: dark
-                      ? const Color(0xFF0A0E1A)
+                      ? const Color(0xFF0D0F14)
                       : const Color(0xFFEDF3FF),
                   systemNavigationBarIconBrightness:
                       dark ? Brightness.light : Brightness.dark,
@@ -494,7 +495,7 @@ class _BoardingHomeShellState extends State<BoardingHomeShell> {
               statusBarIconBrightness:
                   dark ? Brightness.light : Brightness.dark,
               systemNavigationBarColor:
-                  dark ? const Color(0xFF0A0E1A) : const Color(0xFFEDF3FF),
+                  dark ? const Color(0xFF0D0F14) : const Color(0xFFEDF3FF),
               systemNavigationBarIconBrightness:
                   dark ? Brightness.light : Brightness.dark,
             ),
@@ -579,7 +580,7 @@ class _BoardingHomeShellState extends State<BoardingHomeShell> {
               statusBarIconBrightness:
                   dark ? Brightness.light : Brightness.dark,
               systemNavigationBarColor:
-                  dark ? const Color(0xFF0A0E1A) : const Color(0xFFEDF3FF),
+                  dark ? const Color(0xFF0D0F14) : const Color(0xFFEDF3FF),
               systemNavigationBarIconBrightness:
                   dark ? Brightness.light : Brightness.dark,
             ),
@@ -651,7 +652,7 @@ class _BoardingHomeShellState extends State<BoardingHomeShell> {
         final hc = _HC.from(context);
         return AlertDialog(
           backgroundColor: hc.surface,
-          icon: const Icon(Icons.lock_rounded, color: _accent),
+          icon: const Icon(Icons.lock_rounded, color: _amber),
           title: Text(aircraft.displayName,
               style: GoogleFonts.rajdhani(color: hc.ink)),
           content: Text(
@@ -730,6 +731,14 @@ class _BoardingHomeShellState extends State<BoardingHomeShell> {
           backgroundColor: hc.surface,
           indicatorColor: _accentGlow,
           selectedIndex: _destination,
+          labelTextStyle: WidgetStateProperty.resolveWith((states) {
+            final selected = states.contains(WidgetState.selected);
+            return GoogleFonts.rajdhani(
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
+              color: selected ? _accent : hc.muted,
+            );
+          }),
           onDestinationSelected: (value) =>
               setState(() => _destination = value),
           destinations: [
@@ -1364,11 +1373,11 @@ class _TutorialTile extends StatelessWidget {
           onTap: onTap,
           child: Container(
             decoration: BoxDecoration(
-              border: Border.all(color: _accent.withValues(alpha: 0.55), width: 2),
+              border: Border.all(color: _amber.withValues(alpha: 0.55), width: 2),
               borderRadius: BorderRadius.circular(22),
               boxShadow: [
                 BoxShadow(
-                  color: _accent.withValues(alpha: 0.10),
+                  color: _amber.withValues(alpha: 0.10),
                   blurRadius: 20,
                   spreadRadius: 1,
                 ),
@@ -1410,7 +1419,7 @@ class _TutorialTile extends StatelessWidget {
                         child: _Pill(
                           label: 'HOW TO PLAY',
                           icon: Icons.school_rounded,
-                          color: _accent,
+                          color: _amber,
                         ),
                       ),
                       // FREE badge
@@ -1421,15 +1430,15 @@ class _TutorialTile extends StatelessWidget {
                           padding: const EdgeInsets.symmetric(
                               horizontal: 8, vertical: 5),
                           decoration: BoxDecoration(
-                            color: const Color(0xFF22C55E).withValues(alpha: 0.15),
+                            color: const Color(0xFF1DB87A).withValues(alpha: 0.15),
                             borderRadius: BorderRadius.circular(20),
                             border: Border.all(
-                                color: const Color(0xFF22C55E), width: 1),
+                                color: const Color(0xFF1DB87A), width: 1),
                           ),
                           child: const Text(
                             'FREE',
                             style: TextStyle(
-                              color: Color(0xFF22C55E),
+                              color: Color(0xFF1DB87A),
                               fontSize: 9,
                               fontWeight: FontWeight.w800,
                               letterSpacing: 0.6,
@@ -1471,7 +1480,7 @@ class _TutorialTile extends StatelessWidget {
                         Text(
                           "MAYA'S CREW TRAINING  ·  ~2 MIN",
                           style: GoogleFonts.rajdhani(
-                            color: _accent,
+                            color: _amber,
                             fontSize: 9,
                             fontWeight: FontWeight.w800,
                             letterSpacing: 0.4,
@@ -1521,7 +1530,7 @@ class _AircraftTile extends StatelessWidget {
         : bestMilliseconds != null
         ? 'COMPLETED'
         : 'AVAILABLE';
-    final statusColor = premium ? const Color(0xFFF0B963) : _accent;
+    final statusColor = premium ? const Color(0xFFF0B963) : _amber;
     final detail = !hasLevel && !unlocked
         ? aircraft.unlockRequirement ?? aircraft.priceLabel ?? 'Locked aircraft'
         : bestMilliseconds != null
@@ -1661,7 +1670,7 @@ class _AircraftTile extends StatelessWidget {
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
                           style: GoogleFonts.rajdhani(
-                            color: unlocked ? _accent : hc.muted,
+                            color: unlocked ? _amber : hc.muted,
                             fontSize: 9,
                             fontWeight: FontWeight.w800,
                             letterSpacing: 0.4,
@@ -2028,10 +2037,10 @@ class _RankRow extends StatelessWidget {
     margin: const EdgeInsets.only(bottom: 8),
     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 13),
     decoration: BoxDecoration(
-      color: highlighted ? _accentGlow : hc.surface,
+      color: highlighted ? _amber.withValues(alpha: 0.12) : hc.surface,
       borderRadius: BorderRadius.circular(14),
       border: highlighted
-          ? Border.all(color: _accent.withValues(alpha: 0.5))
+          ? Border.all(color: _amber.withValues(alpha: 0.5))
           : Border.all(color: hc.border),
     ),
     child: Row(
@@ -2041,7 +2050,7 @@ class _RankRow extends StatelessWidget {
           child: Text(
             rank == null ? 'YOU' : '#${rank!}',
             style: GoogleFonts.rajdhani(
-              color: highlighted ? _accent : hc.muted,
+              color: highlighted ? _amber : hc.muted,
               fontSize: 12,
               fontWeight: FontWeight.w800,
             ),

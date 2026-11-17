@@ -42,9 +42,10 @@ class TutorialOverlay extends StatefulWidget {
 
 class _TutorialOverlayState extends State<TutorialOverlay> {
   static const _accent = Color(0xFFFFB930);
+  static const _cta = Color(0xFF2F8FFF);
 
   bool get _isDark => Theme.of(context).brightness == Brightness.dark;
-  Color get _scrim => _isDark ? const Color(0xFF060A1C) : const Color(0xFFF0F5FF);
+  Color get _scrim => _isDark ? const Color(0xFF0D0F14) : const Color(0xFFF0F5FF);
 
   @override
   Widget build(BuildContext context) {
@@ -197,8 +198,8 @@ class _TutorialOverlayState extends State<TutorialOverlay> {
                         child: FilledButton(
                           onPressed: widget.onDismiss,
                           style: FilledButton.styleFrom(
-                            backgroundColor: _accent,
-                            foregroundColor: const Color(0xFF0A0E1A),
+                            backgroundColor: _cta,
+                            foregroundColor: Colors.white,
                             padding: const EdgeInsets.symmetric(vertical: 16),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(16),
@@ -484,8 +485,8 @@ class _TutorialOverlayState extends State<TutorialOverlay> {
                         child: FilledButton(
                           onPressed: widget.onDismiss,
                           style: FilledButton.styleFrom(
-                            backgroundColor: _accent,
-                            foregroundColor: const Color(0xFF0A0E1A),
+                            backgroundColor: _cta,
+                            foregroundColor: Colors.white,
                             padding: const EdgeInsets.symmetric(vertical: 16),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(16),
@@ -612,6 +613,7 @@ class _AnatomyTooltip extends StatelessWidget {
   final VoidCallback onNext;
 
   static const _accent = Color(0xFFFFB930);
+  static const _cta = Color(0xFF2F8FFF);
 
   @override
   Widget build(BuildContext context) {
@@ -683,8 +685,8 @@ class _AnatomyTooltip extends StatelessWidget {
                   child: FilledButton(
                     onPressed: onNext,
                     style: FilledButton.styleFrom(
-                      backgroundColor: _accent,
-                      foregroundColor: const Color(0xFF0A0E1A),
+                      backgroundColor: _cta,
+                      foregroundColor: Colors.white,
                       padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 10),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(10),
@@ -786,15 +788,16 @@ class _CoachCard extends StatelessWidget {
   final Widget? extra;
 
   static const _accent = Color(0xFFFFB930);
+  static const _cta = Color(0xFF2F8FFF);
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final bgColor = isDark ? const Color(0xFF12192E) : Colors.white;
     final titleColor = isDark ? Colors.white : const Color(0xFF0A1628);
     final bodyColor = isDark ? const Color(0xFFB0B8CC) : const Color(0xFF5A6A8A);
     final disabledBg = isDark ? const Color(0xFF2A3550) : const Color(0xFFE4EAF4);
     final disabledFg = isDark ? const Color(0xFF6B7A99) : const Color(0xFFAAB4C8);
+    final bgColor = isDark ? const Color(0xFF141820) : Colors.white;
 
     return Material(
       color: Colors.transparent,
@@ -850,9 +853,9 @@ class _CoachCard extends StatelessWidget {
                 alignment: Alignment.centerRight,
                 child: FilledButton(
                   style: FilledButton.styleFrom(
-                    backgroundColor: ctaEnabled ? _accent : disabledBg,
+                    backgroundColor: ctaEnabled ? _cta : disabledBg,
                     foregroundColor:
-                        ctaEnabled ? const Color(0xFF0A0E1A) : disabledFg,
+                        ctaEnabled ? Colors.white : disabledFg,
                     padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 11),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(10),

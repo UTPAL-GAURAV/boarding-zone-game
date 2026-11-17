@@ -116,20 +116,20 @@ class _BoardingZoneAppState extends State<BoardingZoneApp> {
       theme: ThemeData(
         useMaterial3: true,
         brightness: Brightness.light,
-        textTheme: GoogleFonts.rajdhaniTextTheme(ThemeData.light().textTheme),
+        textTheme: _weightedTextTheme(GoogleFonts.rajdhaniTextTheme(ThemeData.light().textTheme)),
         scaffoldBackgroundColor: const Color(0xFFEDF3FF),
         colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFFFFB930),
+          seedColor: const Color(0xFF2F8FFF),
           brightness: Brightness.light,
         ),
       ),
       darkTheme: ThemeData(
         useMaterial3: true,
         brightness: Brightness.dark,
-        textTheme: GoogleFonts.rajdhaniTextTheme(ThemeData.dark().textTheme),
-        scaffoldBackgroundColor: const Color(0xFF060A1C),
+        textTheme: _weightedTextTheme(GoogleFonts.rajdhaniTextTheme(ThemeData.dark().textTheme)),
+        scaffoldBackgroundColor: const Color(0xFF0D0F14),
         colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFFFFB930),
+          seedColor: const Color(0xFF2F8FFF),
           brightness: Brightness.dark,
         ),
       ),
@@ -147,7 +147,7 @@ class _BoardingZoneAppState extends State<BoardingZoneApp> {
               statusBarColor: Colors.transparent,
               statusBarIconBrightness: dark ? Brightness.light : Brightness.dark,
               systemNavigationBarColor:
-                  dark ? const Color(0xFF0D1428) : const Color(0xFFEDF3FF),
+                  dark ? const Color(0xFF0D0F14) : const Color(0xFFEDF3FF),
               systemNavigationBarIconBrightness:
                   dark ? Brightness.light : Brightness.dark,
             ),
@@ -159,3 +159,32 @@ class _BoardingZoneAppState extends State<BoardingZoneApp> {
   }
 }
 
+// Bumps every text style in the theme to at least w600 so body copy
+// (which Rajdhani renders thin at w400) is comfortably readable.
+TextTheme _weightedTextTheme(TextTheme base) {
+  TextStyle _bump(TextStyle? s) {
+    if (s == null) return const TextStyle(fontWeight: FontWeight.w600);
+    final w = s.fontWeight?.index ?? FontWeight.w400.index;
+    return s.copyWith(
+      fontWeight: w < FontWeight.w600.index ? FontWeight.w600 : s.fontWeight,
+    );
+  }
+
+  return base.copyWith(
+    displayLarge: _bump(base.displayLarge),
+    displayMedium: _bump(base.displayMedium),
+    displaySmall: _bump(base.displaySmall),
+    headlineLarge: _bump(base.headlineLarge),
+    headlineMedium: _bump(base.headlineMedium),
+    headlineSmall: _bump(base.headlineSmall),
+    titleLarge: _bump(base.titleLarge),
+    titleMedium: _bump(base.titleMedium),
+    titleSmall: _bump(base.titleSmall),
+    bodyLarge: _bump(base.bodyLarge),
+    bodyMedium: _bump(base.bodyMedium),
+    bodySmall: _bump(base.bodySmall),
+    labelLarge: _bump(base.labelLarge),
+    labelMedium: _bump(base.labelMedium),
+    labelSmall: _bump(base.labelSmall),
+  );
+}
