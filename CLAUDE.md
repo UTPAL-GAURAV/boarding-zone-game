@@ -197,8 +197,7 @@ ALTER TABLE rank_snapshots
 | 38–41 (2-3-2) | level_wide_232 | A330/787/777-200ER |
 | 38–41 (3-3-3) | level_wide_333 | A350/777-300ER/747 |
 | 42 | level_a380 | Airbus A380-800 |
-
-**Levels 10–30 have no game layout yet** — they show "Coming Soon" in-app.  
+ 
 Levels 31–42 have layouts but are premium-locked.
 
 ### Seat layout configs (real-world economy layouts)
@@ -388,25 +387,6 @@ All credentials live in the **"Swipe IQ" Google Cloud project** (project number 
 ## Known issues / limitations
 
 - **Corporate VPN (SAP)** blocks HTTPS to `supabase.co` on the Android emulator. Rankings and score submission only work on a real device or without the VPN. This is not a code bug.
-
----
-
-## Pending / TODO
-
-### High priority
-
-1. **Razorpay go-live** — after Play Store publication and Razorpay account verification:
-   - Replace the SnackBar "coming soon" stub in `_ShopTabState._handlePurchase()` with the actual Razorpay `open()` call
-   - Replace the test key in `lib/config/secrets.dart` with the live key
-   - Tighten Supabase RLS on `purchases` table to verify payment server-side (currently permissive)
-
-### Medium priority
-
-2. **Game layouts for levels 10–30** — 21 aircraft currently show "Coming Soon". Each needs an `AircraftLayout` in `lib/boarding/levels/` and a `gameLayoutId` in `aircraft_fleet.json` + `AircraftLevelRegistry`.
-
-### Low priority
-
-3. **Promo banner / developer links** — Shop tab has no external links yet. Wire up `url_launcher` when developer site is ready.
 
 ---
 

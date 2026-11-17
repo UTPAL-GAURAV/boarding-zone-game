@@ -159,7 +159,7 @@ void main() {
     expect(scrollable.position.maxScrollExtent, greaterThan(0));
   });
 
-  testWidgets('a qualifying local ATR 42 time unlocks the ATR 72 layout', (
+  testWidgets('tapping an unlocked aircraft with no layout does nothing', (
     tester,
   ) async {
     SharedPreferences.setMockInitialValues({
@@ -182,9 +182,8 @@ void main() {
     await tester.tap(find.text('ATR 72-600').first);
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 300));
-    // ATR 72-600 is unlocked (qualifying times met) but has no layout yet —
-    // it shows the coming-soon dialog, not the progression-lock dialog.
-    expect(find.text('Complete CRJ-700 under 09:15'), findsNothing);
-    expect(find.textContaining('coming soon'), findsOneWidget);
+    // ATR 72-600 is unlocked but has no layout — tap should be a silent no-op:
+    // no dialog and no new route pushed.
+    expect(find.byType(AlertDialog), findsNothing);
   });
 }

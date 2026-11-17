@@ -444,11 +444,7 @@ class _BoardingHomeShellState extends State<BoardingHomeShell> {
     final layout = aircraft.layout;
     if (!_isUnlocked(aircraft)) {
       if (aircraft.unlockType == AircraftUnlockType.premium) {
-        if (layout == null) {
-          // No layout yet for this premium aircraft — nothing to preview.
-          _showComingSoon(aircraft);
-          return;
-        }
+        if (layout == null) return;
         // Show seat layout in preview mode; boarding is disabled.
         if (!mounted) return;
         await Navigator.of(context).push(
@@ -482,10 +478,7 @@ class _BoardingHomeShellState extends State<BoardingHomeShell> {
       }
       return;
     }
-    if (layout == null) {
-      _showComingSoon(aircraft);
-      return;
-    }
+    if (layout == null) return;
     final initialZones = await _store.loadSeatZones(
       aircraft.id,
       seatCount: layout.passengerCount,
@@ -663,31 +656,6 @@ class _BoardingHomeShellState extends State<BoardingHomeShell> {
               style: GoogleFonts.rajdhani(color: hc.ink)),
           content: Text(
             message,
-            style: GoogleFonts.rajdhani(color: hc.muted),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Got it'),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  void _showComingSoon(Aircraft aircraft) {
-    showDialog<void>(
-      context: context,
-      builder: (context) {
-        final hc = _HC.from(context);
-        return AlertDialog(
-          backgroundColor: hc.surface,
-          icon: const Icon(Icons.construction_rounded, color: _accent),
-          title: Text(aircraft.displayName,
-              style: GoogleFonts.rajdhani(color: hc.ink)),
-          content: Text(
-            'This aircraft is in the fleet — its cabin is in development.',
             style: GoogleFonts.rajdhani(color: hc.muted),
           ),
           actions: [
@@ -1550,16 +1518,12 @@ class _AircraftTile extends StatelessWidget {
               : 'PREMIUM'
         : !unlocked
         ? 'LOCKED'
-        : !hasLevel
-        ? 'COMING SOON'
         : bestMilliseconds != null
         ? 'COMPLETED'
         : 'AVAILABLE';
     final statusColor = premium ? const Color(0xFFF0B963) : _accent;
     final detail = !hasLevel && !unlocked
         ? aircraft.unlockRequirement ?? aircraft.priceLabel ?? 'Locked aircraft'
-        : !hasLevel
-        ? 'LEVEL ${aircraft.level}  ·  ${aircraft.typicalSeats} SEATS  ·  IN DEVELOPMENT'
         : bestMilliseconds != null
         ? 'PERSONAL BEST  ${_formatTime(bestMilliseconds!)}'
         : 'LEVEL ${aircraft.level}  ·  ${aircraft.typicalSeats} SEATS  ·  TARGET ${_formatTarget(aircraft.targetSeconds)}';
