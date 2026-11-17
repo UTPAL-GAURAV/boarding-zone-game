@@ -124,6 +124,11 @@ The Edge Function runs on a schedule. For every player with an FCM token it comp
 | `SUPABASE_URL` | Auto-injected by Supabase runtime |
 | `SUPABASE_SERVICE_ROLE_KEY` | Auto-injected by Supabase runtime |
 
+**Deploy command:**
+```bash
+npx supabase functions deploy rank-notify --remote=zfzbbvtdgwkhrbtlvjmm
+```
+
 ### Rank snapshot table — `rank_snapshots`
 
 ```sql

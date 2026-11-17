@@ -51,3 +51,6 @@ app.*.map.json
 lib/config/secrets.dart
 android/keystore.properties
 android/app/*.jks
+
+# Supabase CLI temp files
+supabase/.temp/

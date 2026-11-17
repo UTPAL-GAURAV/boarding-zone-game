@@ -17,6 +17,7 @@ import 'aircraft.dart';
 import 'aircraft_catalog.dart';
 import 'local_profile_store.dart';
 import 'manufacturer_brand_assets.dart';
+import 'notification_service.dart';
 import 'rankings_service.dart';
 import 'shop_service.dart';
 
@@ -62,6 +63,7 @@ class _BoardingHomeShellState extends State<BoardingHomeShell> {
   late final LocalProfileStore _store;
   late final RankingsService _rankings;
   late final ShopService _shop;
+  late final NotificationService _notifications;
   late final Razorpay _razorpay;
   late final Future<PlayerProfile> _profileFuture;
   PlayerProfile? _profile;
@@ -72,6 +74,7 @@ class _BoardingHomeShellState extends State<BoardingHomeShell> {
   bool _tutorialCompleted = false;
   bool _showHomeTutorial = false;
   bool _soundEnabled = true;
+  bool _notifPromptShown = false;
   int _fleetScrollVersion = 0;
   String _selectedId = 'cessna-grand-caravan-ex';
   int _destination = 0;
@@ -82,6 +85,7 @@ class _BoardingHomeShellState extends State<BoardingHomeShell> {
     _store = widget.store ?? LocalProfileStore();
     _rankings = RankingsService();
     _shop = ShopService();
+    _notifications = NotificationService();
     _razorpay = Razorpay();
     _razorpay.on(Razorpay.EVENT_PAYMENT_SUCCESS, _onPaymentSuccess);
     _razorpay.on(Razorpay.EVENT_PAYMENT_ERROR, _onPaymentError);
@@ -156,6 +160,11 @@ class _BoardingHomeShellState extends State<BoardingHomeShell> {
       playerId: profile.internalId,
       displayName: profile.displayName,
     ));
+
+    // Sync FCM token if notification permission is already granted
+    unawaited(_notifications.requestPermissionIfNeeded().then((granted) {
+      if (granted) _notifications.syncToken(profile.internalId);
+    }));
 
     return profile;
   }
@@ -543,6 +552,16 @@ class _BoardingHomeShellState extends State<BoardingHomeShell> {
           milliseconds: milliseconds,
         ),
       );
+      // First good run after a new best — ask for notification permission.
+      // The moment is contextual: player just did well and is on the completion card.
+      final targetMs = (aircraft.targetSeconds ?? 0) * 1000;
+      final beatTarget = targetMs > 0 && milliseconds <= targetMs;
+      if (beatTarget && !_notifPromptShown) {
+        _notifPromptShown = true;
+        unawaited(_notifications.requestPermissionIfNeeded().then((granted) {
+          if (granted) _notifications.syncToken(profile.internalId);
+        }));
+      }
     }
   }
 
