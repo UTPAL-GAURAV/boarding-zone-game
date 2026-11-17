@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -309,6 +311,41 @@ class RankingsService {
           'into': intoPlayerId,
         }),
       );
+    }
+  }
+
+  /// Returns the player's global rank for [aircraftId] based on [bestMilliseconds].
+  /// Rank = number of players with a strictly better time + 1.
+  /// Returns null on any error or timeout.
+  Future<int?> fetchGlobalRank({
+    required String aircraftId,
+    required int bestMilliseconds,
+  }) async {
+    Sentry.addBreadcrumb(Breadcrumb(
+      message: 'fetchGlobalRank: $aircraftId ${bestMilliseconds}ms',
+      category: 'rankings',
+      level: SentryLevel.info,
+    ));
+    try {
+      final result = await _db
+          .from('leaderboard')
+          .select('player_id')
+          .eq('aircraft_id', aircraftId)
+          .lt('best_milliseconds', bestMilliseconds)
+          .count(CountOption.exact)
+          .timeout(const Duration(seconds: 5));
+      return result.count + 1;
+    } catch (e, st) {
+      await Sentry.captureException(
+        e,
+        stackTrace: st,
+        hint: Hint.withMap({
+          'place': 'fetchGlobalRank',
+          'aircraft_id': aircraftId,
+          'milliseconds': bestMilliseconds,
+        }),
+      );
+      return null;
     }
   }
 

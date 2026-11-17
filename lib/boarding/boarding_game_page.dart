@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../audio/app_audio.dart';
+import '../home/rankings_service.dart';
 import 'boarding_simulation.dart';
 import 'cabin_game.dart';
 import 'aircraft_layout.dart';
@@ -52,6 +53,8 @@ class BoardingGamePage extends StatefulWidget {
     this.previousBestMilliseconds,
     this.tutorialMode = false,
     this.targetSeconds,
+    this.aircraftId,
+    this.rankingsService,
   });
 
   final String aircraftName;
@@ -66,6 +69,8 @@ class BoardingGamePage extends StatefulWidget {
   final int? previousBestMilliseconds;
   final bool tutorialMode;
   final int? targetSeconds;
+  final String? aircraftId;
+  final RankingsService? rankingsService;
 
   @override
   State<BoardingGamePage> createState() => _BoardingGamePageState();
@@ -89,6 +94,7 @@ class _BoardingGamePageState extends State<BoardingGamePage>
   double _lastPointerGlobalX = 0;
   int? _currentBestMilliseconds;
   int? _previousBestMilliseconds;
+  Future<int?>? _globalRankFuture;
   int _tutorialStep = 0;
   int _tutZoneACnt = 0;
   int _tutZoneBCnt = 0;
@@ -171,6 +177,15 @@ class _BoardingGamePageState extends State<BoardingGamePage>
       _isNewRecord = prev == null || ms < prev;
       if (_isNewRecord) _currentBestMilliseconds = ms;
       if (!widget.tutorialMode) _completionSave = widget.onCompleted?.call(ms);
+      final bestForRank = _isNewRecord ? ms : (_currentBestMilliseconds ?? ms);
+      final svc = widget.rankingsService;
+      final id = widget.aircraftId;
+      if (svc != null && id != null) {
+        _globalRankFuture = svc.fetchGlobalRank(
+          aircraftId: id,
+          bestMilliseconds: bestForRank,
+        );
+      }
     }
     if (_simulation.isBoarding &&
         !_simulation.isComplete &&
@@ -195,6 +210,7 @@ class _BoardingGamePageState extends State<BoardingGamePage>
     _timedOut = false;
     _game.paused = false;
     _completionSave = null;
+    _globalRankFuture = null;
     if (mounted) setState(() => _selectedZone = 0);
   }
 
@@ -932,6 +948,7 @@ class _BoardingGamePageState extends State<BoardingGamePage>
             formatMs: _formatMs,
             onReplay: _replay,
             onNext: () => unawaited(_nextFlight()),
+            globalRankFuture: _globalRankFuture,
             c: c,
           ),
         ),
@@ -1039,7 +1056,7 @@ class _BoardingGamePageState extends State<BoardingGamePage>
 
 // ─── Completion content (extracted for cleanliness) ──────────────────────────
 
-class _CompletionContent extends StatelessWidget {
+class _CompletionContent extends StatefulWidget {
   const _CompletionContent({
     required this.isOverTarget,
     required this.isNewRecord,
@@ -1051,6 +1068,7 @@ class _CompletionContent extends StatelessWidget {
     required this.onReplay,
     required this.onNext,
     required this.c,
+    this.globalRankFuture,
   });
 
   final bool isOverTarget;
@@ -1063,9 +1081,54 @@ class _CompletionContent extends StatelessWidget {
   final VoidCallback onReplay;
   final VoidCallback onNext;
   final _C c;
+  final Future<int?>? globalRankFuture;
+
+  @override
+  State<_CompletionContent> createState() => _CompletionContentState();
+}
+
+class _CompletionContentState extends State<_CompletionContent> {
+  int? _rank;
+  bool _rankLoaded = false;
+  bool _rankFailed = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _listenRank(widget.globalRankFuture);
+  }
+
+  @override
+  void didUpdateWidget(_CompletionContent old) {
+    super.didUpdateWidget(old);
+    if (widget.globalRankFuture != old.globalRankFuture) {
+      _rank = null;
+      _rankLoaded = false;
+      _rankFailed = false;
+      _listenRank(widget.globalRankFuture);
+    }
+  }
+
+  void _listenRank(Future<int?>? future) {
+    if (future == null) {
+      setState(() => _rankLoaded = true);
+      return;
+    }
+    future.then((rank) {
+      if (!mounted) return;
+      if (rank == null) {
+        setState(() { _rankLoaded = true; _rankFailed = true; });
+      } else {
+        setState(() { _rank = rank; _rankLoaded = true; });
+      }
+    }).catchError((_) {
+      if (mounted) setState(() { _rankLoaded = true; _rankFailed = true; });
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
+    final c = widget.c;
     return SingleChildScrollView(
       child: Column(
       mainAxisSize: MainAxisSize.min,
@@ -1074,13 +1137,13 @@ class _CompletionContent extends StatelessWidget {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
           decoration: BoxDecoration(
-            color: (isOverTarget ? _C.danger : isNewRecord ? _C.accent : _C.success)
+            color: (widget.isOverTarget ? _C.danger : widget.isNewRecord ? _C.accent : _C.success)
                 .withValues(alpha: 0.15),
             borderRadius: BorderRadius.circular(20),
             border: Border.all(
-              color: (isOverTarget
+              color: (widget.isOverTarget
                       ? _C.danger
-                      : isNewRecord
+                      : widget.isNewRecord
                           ? _C.accent
                           : _C.success)
                   .withValues(alpha: 0.5),
@@ -1090,31 +1153,31 @@ class _CompletionContent extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               Icon(
-                isOverTarget
+                widget.isOverTarget
                     ? Icons.warning_amber_rounded
-                    : isNewRecord
+                    : widget.isNewRecord
                         ? Icons.emoji_events_rounded
                         : Icons.check_circle_rounded,
                 size: 13,
-                color: isOverTarget
+                color: widget.isOverTarget
                     ? _C.danger
-                    : isNewRecord
+                    : widget.isNewRecord
                         ? _C.accent
                         : _C.success,
               ),
               const SizedBox(width: 5),
               Text(
-                isOverTarget
+                widget.isOverTarget
                     ? 'OVER TARGET'
-                    : previousBest == null
+                    : widget.previousBest == null
                         ? 'FIRST RUN'
-                        : isNewRecord
+                        : widget.isNewRecord
                             ? 'NEW RECORD'
                             : 'COMPLETED',
                 style: GoogleFonts.rajdhani(
-                  color: isOverTarget
+                  color: widget.isOverTarget
                       ? _C.danger
-                      : isNewRecord
+                      : widget.isNewRecord
                           ? _C.accent
                           : _C.success,
                   fontSize: 11,
@@ -1127,26 +1190,26 @@ class _CompletionContent extends StatelessWidget {
         ),
         const SizedBox(height: 16),
         _ResultIcon(
-          icon: isOverTarget
+          icon: widget.isOverTarget
               ? Icons.sentiment_very_dissatisfied_rounded
-              : isNewRecord
+              : widget.isNewRecord
                   ? Icons.emoji_events_rounded
                   : Icons.check_rounded,
-          color: isOverTarget
+          color: widget.isOverTarget
               ? _C.danger
-              : isNewRecord
+              : widget.isNewRecord
                   ? _C.accent
                   : _C.success,
-          bgColor: (isOverTarget
+          bgColor: (widget.isOverTarget
                   ? _C.danger
-                  : isNewRecord
+                  : widget.isNewRecord
                       ? _C.accent
                       : _C.success)
               .withValues(alpha: 0.12),
         ),
         const SizedBox(height: 14),
         Text(
-          isOverTarget ? 'Over time!' : 'All aboard!',
+          widget.isOverTarget ? 'Over time!' : 'All aboard!',
           style: GoogleFonts.rajdhani(
             color: c.ink,
             fontSize: 28,
@@ -1156,7 +1219,7 @@ class _CompletionContent extends StatelessWidget {
         ),
         const SizedBox(height: 4),
         Text(
-          isOverTarget
+          widget.isOverTarget
               ? 'Everyone seated — but the captain isn\'t happy.'
               : 'Every passenger is seated.',
           textAlign: TextAlign.center,
@@ -1189,9 +1252,9 @@ class _CompletionContent extends StatelessWidget {
                     FittedBox(
                       fit: BoxFit.scaleDown,
                       child: Text(
-                        timer,
+                        widget.timer,
                         style: GoogleFonts.spaceMono(
-                          color: isOverTarget ? _C.danger : c.ink,
+                          color: widget.isOverTarget ? _C.danger : c.ink,
                           fontSize: 24,
                           fontWeight: FontWeight.w700,
                         ),
@@ -1200,7 +1263,7 @@ class _CompletionContent extends StatelessWidget {
                   ],
                 ),
               ),
-              if (currentBest != null && !isOverTarget) ...[
+              if (widget.currentBest != null && !widget.isOverTarget) ...[
                 Container(
                   width: 1,
                   height: 36,
@@ -1222,7 +1285,7 @@ class _CompletionContent extends StatelessWidget {
                       FittedBox(
                         fit: BoxFit.scaleDown,
                         child: Text(
-                          formatMs(currentBest!),
+                          widget.formatMs(widget.currentBest!),
                           style: GoogleFonts.spaceMono(
                             color: _C.accent,
                             fontSize: 18,
@@ -1237,7 +1300,91 @@ class _CompletionContent extends StatelessWidget {
             ],
           ),
         ),
-        if (isOverTarget) ...[
+        // Global rank pill — only when rankingsService is wired and fetch didn't fail
+        if (widget.globalRankFuture != null && !_rankFailed) ...[
+          const SizedBox(height: 10),
+          AnimatedSwitcher(
+            duration: const Duration(milliseconds: 350),
+            switchInCurve: Curves.easeOutCubic,
+            transitionBuilder: (child, anim) => FadeTransition(
+              opacity: anim,
+              child: SlideTransition(
+                position: Tween(
+                  begin: const Offset(0, 0.25),
+                  end: Offset.zero,
+                ).animate(anim),
+                child: child,
+              ),
+            ),
+            child: _rankLoaded
+                ? Container(
+                    key: const ValueKey('rank-loaded'),
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                    decoration: BoxDecoration(
+                      color: _C.accentBlue.withValues(alpha: 0.08),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: _C.accentBlue.withValues(alpha: 0.35)),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.public_rounded, size: 14, color: _C.accentBlue),
+                        const SizedBox(width: 7),
+                        Text(
+                          'GLOBAL RANK',
+                          style: GoogleFonts.rajdhani(
+                            color: c.muted,
+                            fontSize: 9,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: 1.4,
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Text(
+                          '#$_rank',
+                          style: GoogleFonts.spaceMono(
+                            color: _C.accentBlue,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ],
+                    ),
+                  )
+                : Container(
+                    key: const ValueKey('rank-loading'),
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                    decoration: BoxDecoration(
+                      color: c.surfaceElevated,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: c.border),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        SizedBox(
+                          width: 11,
+                          height: 11,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 1.5,
+                            color: _C.accentBlue,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Fetching global rank…',
+                          style: GoogleFonts.rajdhani(
+                            color: c.muted,
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+          ),
+        ],
+        if (widget.isOverTarget) ...[
           const SizedBox(height: 6),
           Text(
             'Adjust your zones and go again.',
@@ -1245,14 +1392,14 @@ class _CompletionContent extends StatelessWidget {
           ),
         ],
         const SizedBox(height: 18),
-        if (isOverTarget)
+        if (widget.isOverTarget)
           SizedBox(
             width: double.infinity,
             child: _OutlineBtn(
               label: 'TRY AGAIN',
               icon: Icons.replay_rounded,
               c: c,
-              onTap: onReplay,
+              onTap: widget.onReplay,
             ),
           )
         else
@@ -1263,7 +1410,7 @@ class _CompletionContent extends StatelessWidget {
                   label: 'REPLAY',
                   icon: Icons.replay_rounded,
                   c: c,
-                  onTap: onReplay,
+                  onTap: widget.onReplay,
                 ),
               ),
               const SizedBox(width: 10),
@@ -1272,7 +1419,7 @@ class _CompletionContent extends StatelessWidget {
                 child: _PrimaryBtn(
                   label: 'NEXT FLIGHT',
                   icon: Icons.arrow_forward_rounded,
-                  onTap: onNext,
+                  onTap: widget.onNext,
                 ),
               ),
             ],
