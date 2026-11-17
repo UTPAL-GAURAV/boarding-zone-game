@@ -620,7 +620,7 @@ class _BoardingGamePageState extends State<BoardingGamePage>
                 child: _StatPill(
                   icon: Icons.emoji_events_outlined,
                   iconColor: _C.amber,
-                  label: 'BEST',
+                  label: 'YOUR BEST',
                   value: best != null ? _formatMs(best) : '—',
                   valueColor: best != null ? _C.amber : null,
                   c: c,
@@ -1283,7 +1283,7 @@ class _CompletionContentState extends State<_CompletionContent> {
                   child: Column(
                     children: [
                       Text(
-                        'BEST',
+                        'YOUR BEST',
                         style: GoogleFonts.rajdhani(
                           color: c.muted,
                           fontSize: 9,
@@ -1593,7 +1593,7 @@ class _ActiveButton extends StatelessWidget {
   Widget build(BuildContext context) => DecoratedBox(
         decoration: BoxDecoration(
           gradient: const LinearGradient(
-            colors: [Color(0xFF72BFFF), Color(0xFF1060E0)],
+            colors: [Color(0xFF72BFFF), Color(0xFF3080EE)],
           ),
           borderRadius: BorderRadius.circular(16),
         ),
@@ -1707,7 +1707,7 @@ class _PrimaryBtn extends StatelessWidget {
   Widget build(BuildContext context) => DecoratedBox(
         decoration: BoxDecoration(
           gradient: const LinearGradient(
-            colors: [Color(0xFF72BFFF), Color(0xFF1060E0)],
+            colors: [Color(0xFF72BFFF), Color(0xFF3080EE)],
           ),
           borderRadius: BorderRadius.circular(14),
         ),

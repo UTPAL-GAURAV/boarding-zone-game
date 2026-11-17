@@ -78,6 +78,7 @@ class _BoardingHomeShellState extends State<BoardingHomeShell> {
   int _fleetScrollVersion = 0;
   String _selectedId = 'cessna-grand-caravan-ex';
   int _destination = 0;
+  int _rankingsRefreshKey = 0;
 
   @override
   void initState() {
@@ -652,7 +653,7 @@ class _BoardingHomeShellState extends State<BoardingHomeShell> {
         final hc = _HC.from(context);
         return AlertDialog(
           backgroundColor: hc.surface,
-          icon: const Icon(Icons.lock_rounded, color: _amber),
+          icon: const Icon(Icons.lock_rounded, color: _accent),
           title: Text(aircraft.displayName,
               style: GoogleFonts.rajdhani(color: hc.ink)),
           content: Text(
@@ -714,6 +715,9 @@ class _BoardingHomeShellState extends State<BoardingHomeShell> {
                 crewName: crewMember.displayName,
                 playerId: crewMember.internalId,
                 rankings: _rankings,
+                initialSelectedId: _selectedId,
+                bestTimes: _bestTimes,
+                refreshKey: _rankingsRefreshKey,
               ),
               _ShopTab(
                 premiumUnlocked: _premiumUnlocked,
@@ -739,8 +743,10 @@ class _BoardingHomeShellState extends State<BoardingHomeShell> {
               color: selected ? _accent : hc.muted,
             );
           }),
-          onDestinationSelected: (value) =>
-              setState(() => _destination = value),
+          onDestinationSelected: (value) {
+            if (value == 1) _rankingsRefreshKey++;
+            setState(() => _destination = value);
+          },
           destinations: [
             NavigationDestination(
               icon: Icon(Icons.flight_outlined, color: hc.muted),
@@ -1670,7 +1676,7 @@ class _AircraftTile extends StatelessWidget {
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
                           style: GoogleFonts.rajdhani(
-                            color: unlocked ? _amber : hc.muted,
+                            color: unlocked ? _accent : hc.muted,
                             fontSize: 9,
                             fontWeight: FontWeight.w800,
                             letterSpacing: 0.4,
@@ -1799,23 +1805,74 @@ class _RankingsTab extends StatefulWidget {
     required this.crewName,
     required this.playerId,
     required this.rankings,
+    required this.initialSelectedId,
+    required this.bestTimes,
+    required this.refreshKey,
   });
   final String crewName;
   final String playerId;
   final RankingsService rankings;
+  final String initialSelectedId;
+  final Map<String, int?> bestTimes;
+  final int refreshKey;
 
   @override
   State<_RankingsTab> createState() => _RankingsTabState();
 }
 
 class _RankingsTabState extends State<_RankingsTab> {
-  String _selectedId = 'cessna-grand-caravan-ex';
-  late Future<(List<LeaderboardEntry>, LeaderboardEntry?)> _dataFuture;
+  late String _selectedId;
+  Future<(List<LeaderboardEntry>, LeaderboardEntry?)>? _dataFuture;
+  final ScrollController _chipScrollController = ScrollController();
 
   @override
   void initState() {
     super.initState();
-    _dataFuture = _fetch(_selectedId);
+    _selectedId = widget.initialSelectedId;
+    if (_isUnlocked(_selectedId)) _dataFuture = _fetch(_selectedId);
+    WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToSelected());
+  }
+
+  @override
+  void didUpdateWidget(covariant _RankingsTab oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.refreshKey != widget.refreshKey) {
+      setState(() {
+        _selectedId = widget.initialSelectedId;
+        if (_isUnlocked(_selectedId)) _dataFuture = _fetch(_selectedId);
+      });
+      _scrollToSelected();
+    }
+  }
+
+  @override
+  void dispose() {
+    _chipScrollController.dispose();
+    super.dispose();
+  }
+
+  bool _isUnlocked(String id) {
+    final aircraft = AircraftCatalog.byId(id);
+    return aircraft.unlockType == AircraftUnlockType.premium ||
+        widget.bestTimes[id] != null;
+  }
+
+  void _scrollToSelected() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!_chipScrollController.hasClients) return;
+      final playable =
+          AircraftCatalog.all.where((a) => a.layout != null).toList();
+      final idx = playable.indexWhere((a) => a.id == _selectedId);
+      if (idx < 0) return;
+      const chipWidth = 84.0;
+      const sep = 8.0;
+      _chipScrollController.animateTo(
+        (idx * (chipWidth + sep))
+            .clamp(0.0, _chipScrollController.position.maxScrollExtent),
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeOut,
+      );
+    });
   }
 
   Future<(List<LeaderboardEntry>, LeaderboardEntry?)> _fetch(String id) =>
@@ -1828,9 +1885,12 @@ class _RankingsTabState extends State<_RankingsTab> {
           ));
 
   void _selectAircraft(String id) {
+    final aircraft = AircraftCatalog.byId(id);
+    final isPremium = aircraft.unlockType == AircraftUnlockType.premium;
+    final hasPlayed = widget.bestTimes[id] != null;
     setState(() {
       _selectedId = id;
-      _dataFuture = _fetch(id);
+      if (isPremium || hasPlayed) _dataFuture = _fetch(id);
     });
   }
 
@@ -1854,12 +1914,47 @@ class _RankingsTabState extends State<_RankingsTab> {
                 return SizedBox(
                   height: 40,
                   child: ListView.separated(
+                    controller: _chipScrollController,
                     scrollDirection: Axis.horizontal,
                     itemCount: playable.length,
                     separatorBuilder: (_, _) => const SizedBox(width: 8),
                     itemBuilder: (context, index) {
                       final item = playable[index];
                       final active = item.id == _selectedId;
+                      final isPremium =
+                          item.unlockType == AircraftUnlockType.premium;
+                      final hasPlayed =
+                          widget.bestTimes[item.id] != null;
+                      final isLocked = !isPremium && !hasPlayed;
+                      if (isLocked) {
+                        return GestureDetector(
+                          onTap: () => ScaffoldMessenger.of(context)
+                              .showSnackBar(SnackBar(
+                            content: Text(
+                              'Play ${item.model} to unlock its rankings',
+                              style: GoogleFonts.rajdhani(
+                                  fontWeight: FontWeight.w600),
+                            ),
+                            duration: const Duration(seconds: 2),
+                            behavior: SnackBarBehavior.floating,
+                          )),
+                          child: Chip(
+                            avatar: Icon(Icons.lock_rounded,
+                                size: 10,
+                                color: _accent.withValues(alpha: 0.6)),
+                            label: Text(item.model),
+                            backgroundColor:
+                                _accent.withValues(alpha: 0.08),
+                            labelStyle: GoogleFonts.rajdhani(
+                              color: hc.muted,
+                              fontSize: 11,
+                              fontWeight: FontWeight.w700,
+                            ),
+                            side: BorderSide(
+                                color: _accent.withValues(alpha: 0.25)),
+                          ),
+                        );
+                      }
                       return ChoiceChip(
                         label: Text(item.model),
                         selected: active,
@@ -1939,6 +2034,37 @@ class _RankingsTabState extends State<_RankingsTab> {
                 ],
               ),
               const SizedBox(height: 8),
+              if (!_isUnlocked(_selectedId))
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 20, vertical: 32),
+                  decoration: BoxDecoration(
+                    color: _accent.withValues(alpha: 0.07),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                        color: _accent.withValues(alpha: 0.2)),
+                  ),
+                  child: Column(
+                    children: [
+                      Icon(Icons.lock_rounded,
+                          size: 28,
+                          color: _accent.withValues(alpha: 0.5)),
+                      const SizedBox(height: 12),
+                      Text(
+                        'Play this aircraft to unlock\nglobal rankings',
+                        textAlign: TextAlign.center,
+                        style: GoogleFonts.barlow(
+                          color: _accent,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          height: 1.4,
+                        ),
+                      ),
+                    ],
+                  ),
+                )
+              else
               FutureBuilder<(List<LeaderboardEntry>, LeaderboardEntry?)>(
                 future: _dataFuture,
                 builder: (context, snapshot) {
