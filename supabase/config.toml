@@ -1,0 +1,2 @@
+[functions.rank-notify]
+verify_jwt = false

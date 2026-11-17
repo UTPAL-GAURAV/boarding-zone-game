@@ -23,6 +23,7 @@ Built with the Flame engine. Each aircraft is a timed puzzle — zone seats, boa
 | Error reporting | sentry_flutter ^8.0.0 (DSN placeholder — needs replacing) |
 | Auth | google_sign_in ^6.2.1 (triggered only at purchase) |
 | Payments | razorpay_flutter ^1.3.6 (test mode — not yet live) |
+| Push notifications | Firebase Cloud Messaging (FCM HTTP v1) via Supabase Edge Function |
 | URL launch | url_launcher ^6.3.0 |
 
 ---
@@ -57,6 +58,7 @@ lib/
     local_profile_store.dart       — offline profile, best times, fleet progress
     manufacturer_brand_assets.dart — manufacturer logo asset paths
     rankings_service.dart          — Supabase leaderboard read/write
+    notification_service.dart      — FCM token registration + permission request
     shop_service.dart              — Google Sign-In + Supabase purchase record/restore
 assets/
   data/aircraft_fleet.json         — 42 aircraft definitions (source of truth)
@@ -69,6 +71,10 @@ android/
     src/main/
       AndroidManifest.xml          — INTERNET permission, Google OAuth client ID meta-data
       kotlin/com/nordiclabs/boardingbluster/MainActivity.kt
+supabase/
+  functions/
+    rank-notify/
+      index.ts                     — Edge Function: rank-drop push notifications via FCM
 ```
 
 ---
@@ -81,9 +87,10 @@ android/
 ### Tables
 
 ```sql
-profiles      (id uuid PK, display_name text, google_id text UNIQUE, email text)
+profiles      (id uuid PK, display_name text, google_id text UNIQUE, email text, fcm_token text)
 scores        (id uuid PK, player_id uuid FK→profiles.id, aircraft_id text, milliseconds int, recorded_at timestamptz)
 purchases     (google_id text PK, payment_id text, purchased_at timestamptz, email text)
+rank_snapshots(player_id uuid FK→profiles.id, aircraft_id text, last_rank int, last_notified_threshold int, updated_at timestamptz — PK: player_id+aircraft_id)
 ```
 
 ### Views
@@ -93,6 +100,75 @@ leaderboard   — best score per player per aircraft, joined with display_name
 ```
 
 RLS is enabled on all tables. `purchases` currently has a permissive policy (allow all) — tighten before production by verifying payment server-side.
+
+---
+
+## Push notifications — rank-drop alerts
+
+### Architecture
+
+```
+Supabase cron (pg_cron)  →  rank-notify Edge Function  →  FCM HTTP v1  →  Android device
+```
+
+The Edge Function runs on a schedule. For every player with an FCM token it computes their current rank on each aircraft they have a score for, compares it against the last snapshot, and fires an FCM notification if they crossed a downward threshold.
+
+### Edge Function — `supabase/functions/rank-notify/index.ts`
+
+**Required environment variables (set in Supabase dashboard → Edge Functions → Secrets):**
+
+| Variable | Value |
+|---|---|
+| `FIREBASE_SERVICE_ACCOUNT` | Full JSON of the Firebase service account with `firebase.messaging` scope |
+| `FIREBASE_PROJECT_ID` | Firebase project ID (e.g. `boarding-bluster`) |
+| `SUPABASE_URL` | Auto-injected by Supabase runtime |
+| `SUPABASE_SERVICE_ROLE_KEY` | Auto-injected by Supabase runtime |
+
+### Rank snapshot table — `rank_snapshots`
+
+```sql
+CREATE TABLE rank_snapshots (
+  player_id              uuid REFERENCES profiles(id),
+  aircraft_id            text,
+  last_rank              int  NOT NULL,
+  last_notified_threshold int,          -- threshold value (10/50/100/150…) last notified, NULL = never
+  updated_at             timestamptz NOT NULL DEFAULT now(),
+  PRIMARY KEY (player_id, aircraft_id)
+);
+```
+
+`last_notified_threshold` stores the **threshold boundary** (not the player's rank). It is cleared to `null` whenever the player climbs back inside that threshold, so the same boundary can fire again on a future drop.
+
+### FCM token storage
+
+`fcm_token` column on `profiles` table:
+```sql
+ALTER TABLE profiles ADD COLUMN fcm_token text;
+```
+
+Synced from the client via `NotificationService.syncToken(playerId)` in `lib/home/notification_service.dart`. Called on app launch if permission is already granted, and after the player beats a target time (contextual permission prompt moment).
+
+### Notification thresholds and copy
+
+Thresholds: **top 10**, then **every 50 up to top 500** (top 50, 100, 150, … 500). Ordered outermost-first so a large single-run drop notifies at the widest bracket; inner thresholds fire on subsequent cron runs.
+
+| Bracket | Title | Body |
+|---|---|---|
+| Top 10 | `Your Top 10 seat just got stolen ✈️` | `You're #N on {Aircraft}. Someone's in your spot. Take it back.` |
+| Top 50 | `The leaderboard moved without you ✈️` | `You're #N on {Aircraft}. Come back and remind them who runs this cabin.` |
+| Top 100–500 (every 50) | `Sliding down fast — you're #N ✈️` | `You've dropped out of the top {threshold} on {Aircraft}. Don't let the gap grow.` |
+
+Aircraft name is derived by converting the aircraft ID slug (e.g. `cessna-grand-caravan-ex` → `Cessna Grand Caravan EX`). Known uppercase tokens: `EX`, `ERJ`, `CRJ`, `ATC`, `XLR`, `NEO`.
+
+Rank 500+ receives no notification (likely churned).
+
+### DB migration required
+
+If upgrading from an earlier schema that used `last_notified_rank` instead of `last_notified_threshold`:
+```sql
+ALTER TABLE rank_snapshots
+  RENAME COLUMN last_notified_rank TO last_notified_threshold;
+```
 
 ---
 
@@ -163,10 +239,15 @@ Levels 31–42 have layouts but are premium-locked.
 - `submitScore` — inserts to `scores` (retry ×3, 800ms delay)
 - `fetchLeaderboard(aircraftId)` — top 50 by best time
 - `fetchPlayerBest(aircraftId, playerId)` — current player's rank
+- `fetchGlobalRank(aircraftId, bestMilliseconds)` — returns the player's rank for a given time (used on the completion popup)
 - `fetchProfileByGoogleId(googleId)` — looks up `profiles` by `google_id`; returns `(playerId, displayName)` or null. Used to detect returning players after reinstall.
 - `fetchBestScoresByPlayerId(playerId)` — returns `Map<aircraftId, bestMilliseconds>` from the leaderboard view for a given player.
 - `mergeScoresIntoPlayer(fromPlayerId, intoPlayerId)` — for each aircraft where `fromPlayerId` has a better best time than `intoPlayerId` (or `intoPlayerId` has none), inserts a score row under `intoPlayerId`. Used during account consolidation.
 - All errors reported to Sentry via `captureException`, app never crashes
+
+### NotificationService (`lib/home/notification_service.dart`)
+- `requestPermissionIfNeeded()` — requests Android notification permission; returns `true` if granted. Called on app launch (silent) and after the player beats a target time (contextual prompt).
+- `syncToken(playerId)` — reads the FCM token from Firebase and upserts it into `profiles.fcm_token` in Supabase. Called whenever permission is confirmed.
 
 ### ShopService (`lib/home/shop_service.dart`)
 - `signIn()` — Google Sign-In (silent first, then picker); caches `google_id` and `email` in SharedPreferences
