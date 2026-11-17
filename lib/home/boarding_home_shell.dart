@@ -72,7 +72,6 @@ class _BoardingHomeShellState extends State<BoardingHomeShell> {
   Set<String> _premiumOwnedAircraftIds = {};
   bool _premiumUnlocked = false;
   bool _tutorialCompleted = false;
-  bool _showHomeTutorial = false;
   bool _soundEnabled = true;
   bool _notifPromptShown = false;
   int _fleetScrollVersion = 0;
@@ -132,7 +131,6 @@ class _BoardingHomeShellState extends State<BoardingHomeShell> {
         _bestTimes = bestTimes;
         _premiumUnlocked = premiumUnlocked;
         _tutorialCompleted = tutorialCompleted;
-        _showHomeTutorial = !tutorialCompleted;
         _soundEnabled = soundEnabled;
         _unlockedAircraftIds = {
           for (final entry in progress.entries)
@@ -150,6 +148,10 @@ class _BoardingHomeShellState extends State<BoardingHomeShell> {
         'system' => ThemeMode.system,
         _ => ThemeMode.dark,
       };
+      // First launch: go straight into the tutorial.
+      if (!tutorialCompleted) {
+        WidgetsBinding.instance.addPostFrameCallback((_) => _launchTutorial());
+      }
     }
     unawaited(AppAudio.instance.init(enabled: soundEnabled).then((_) {
       AppAudio.instance.startBgMusic();
@@ -554,7 +556,7 @@ class _BoardingHomeShellState extends State<BoardingHomeShell> {
       );
       // First good run after a new best — ask for notification permission.
       // The moment is contextual: player just did well and is on the completion card.
-      final targetMs = (aircraft.targetSeconds ?? 0) * 1000;
+      final targetMs = aircraft.targetSeconds * 1000;
       final beatTarget = targetMs > 0 && milliseconds <= targetMs;
       if (beatTarget && !_notifPromptShown) {
         _notifPromptShown = true;
@@ -598,14 +600,12 @@ class _BoardingHomeShellState extends State<BoardingHomeShell> {
         },
       ),
     );
-    // After returning from tutorial, dismiss the overlay and check if completed.
+    // After returning from tutorial, check if completed.
     if (!mounted) return;
-    if (_showHomeTutorial) setState(() => _showHomeTutorial = false);
     final completed = await _store.isTutorialCompleted();
     if (completed && !_tutorialCompleted) {
       setState(() {
         _tutorialCompleted = true;
-        _showHomeTutorial = false;
         _fleetScrollVersion++;
       });
       await _reloadFleetProgress();
@@ -755,14 +755,6 @@ class _BoardingHomeShellState extends State<BoardingHomeShell> {
               ),
             ],
               ),
-              // Home tutorial overlay — shown on first launch
-              if (_showHomeTutorial)
-                Positioned.fill(
-                  child: _HomeTutorialOverlay(
-                    onDismiss: () => setState(() => _showHomeTutorial = false),
-                    onLetsGo: _launchTutorial,
-                  ),
-                ),
             ],
           ),
         ),
@@ -796,126 +788,6 @@ class _BoardingHomeShellState extends State<BoardingHomeShell> {
   );
 }
 
-// ─── Home tutorial overlay ────────────────────────────────────────────────────
-
-class _HomeTutorialOverlay extends StatelessWidget {
-  const _HomeTutorialOverlay({
-    required this.onDismiss,
-    required this.onLetsGo,
-  });
-
-  final VoidCallback onDismiss;
-  final VoidCallback onLetsGo;
-
-  static const _accent = Color(0xFFFFB930);
-
-  @override
-  Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final scrim = isDark ? const Color(0xFF060A1C) : const Color(0xFFF0F5FF);
-    final bgColor = isDark ? const Color(0xFF12192E) : Colors.white;
-    final titleColor = isDark ? Colors.white : const Color(0xFF0A1628);
-    final bodyColor = isDark ? const Color(0xFFB0B8CC) : const Color(0xFF5A6A8A);
-
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onTap: () {},
-      child: Container(
-        color: scrim,
-        child: SafeArea(
-          child: _buildWelcome(isDark, bgColor, titleColor, bodyColor),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildWelcome(bool isDark, Color bg, Color titleColor, Color bodyColor) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        return SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
-          child: ConstrainedBox(
-            constraints: BoxConstraints(minHeight: constraints.maxHeight - 40),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Image.asset('assets/maya.png', height: 160, fit: BoxFit.contain),
-                const SizedBox(height: 16),
-                Material(
-                  color: Colors.transparent,
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: bg,
-                      borderRadius: BorderRadius.circular(18),
-                      border: Border.all(color: _accent.withValues(alpha: 0.45)),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: isDark ? 0.5 : 0.10),
-                          blurRadius: 20,
-                          offset: const Offset(0, 6),
-                        ),
-                      ],
-                    ),
-                    padding: const EdgeInsets.fromLTRB(16, 16, 16, 14),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'MAYA  ·  Chief Boarding Officer',
-                          style: TextStyle(
-                            color: _accent.withValues(alpha: 0.75),
-                            fontSize: 9,
-                            fontWeight: FontWeight.w800,
-                            letterSpacing: 1.0,
-                          ),
-                        ),
-                        const SizedBox(height: 6),
-                        Text(
-                          'Welcome!',
-                          style: TextStyle(
-                            color: titleColor,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 16,
-                          ),
-                        ),
-                        const SizedBox(height: 10),
-                        Text(
-                          "I'm Maya, your Chief Boarding Officer. Boarding passengers sounds simple — but doing it FAST is an art. I'll teach you in 2 minutes.",
-                          style: TextStyle(color: bodyColor, fontSize: 13, height: 1.45),
-                        ),
-                        const SizedBox(height: 14),
-                        Align(
-                          alignment: Alignment.centerRight,
-                          child: FilledButton(
-                            onPressed: onLetsGo,
-                            style: FilledButton.styleFrom(
-                              backgroundColor: _accent,
-                              foregroundColor: const Color(0xFF0A0E1A),
-                              padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 11),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(10),
-                              ),
-                              textStyle: const TextStyle(
-                                fontWeight: FontWeight.w800,
-                                fontSize: 13,
-                              ),
-                            ),
-                            child: const Text("LET'S GO →"),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
-
-}
 
 class _ProfileDialog extends StatefulWidget {
   const _ProfileDialog({
@@ -934,13 +806,15 @@ class _ProfileDialogState extends State<_ProfileDialog> {
   late final TextEditingController _controller;
   late bool _soundEnabled;
   late bool _darkMode;
+  late final ThemeMode _initialThemeMode;
 
   @override
   void initState() {
     super.initState();
     _controller = TextEditingController(text: widget.initialName);
     _soundEnabled = widget.initialSoundEnabled;
-    _darkMode = appThemeMode.value != ThemeMode.light;
+    _initialThemeMode = appThemeMode.value;
+    _darkMode = _initialThemeMode != ThemeMode.light;
   }
 
   @override
@@ -1013,7 +887,7 @@ class _ProfileDialogState extends State<_ProfileDialog> {
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        'Your callsign & settings',
+                        'Settings',
                         style: GoogleFonts.rajdhani(
                           color: hc.ink,
                           fontSize: 15,
@@ -1209,6 +1083,7 @@ class _ProfileDialogState extends State<_ProfileDialog> {
                   child: OutlinedButton(
                     onPressed: () {
                       AppAudio.instance.setEnabled(widget.initialSoundEnabled);
+                      appThemeMode.value = _initialThemeMode;
                       Navigator.pop(context);
                     },
                     style: OutlinedButton.styleFrom(
@@ -1294,8 +1169,12 @@ class _HomeTab extends StatefulWidget {
 }
 
 class _HomeTabState extends State<_HomeTab> {
-  static const _cardExtent = 312.0;
+  static const _cardBaseWidth = 300.0;
+  static const _cardSeparator = 12.0;
   late final ScrollController _fleetController;
+  double _tileScale = 1.0;
+
+  double get _cardExtent => _cardBaseWidth * _tileScale + _cardSeparator;
 
   // +1 because index 0 is the tutorial card; real aircraft start at 1.
   int get _selectedIndex =>
@@ -1307,19 +1186,25 @@ class _HomeTabState extends State<_HomeTab> {
   @override
   void initState() {
     super.initState();
-    _fleetController = ScrollController(
-      initialScrollOffset: _selectedIndex * _cardExtent,
-    );
+    _fleetController = ScrollController();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _scrollToSelected(animate: false);
     });
   }
 
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final sw = MediaQuery.of(context).size.width;
+    _tileScale = (sw / 411.0).clamp(0.90, 1.0);
+  }
+
   void _scrollToSelected({required bool animate}) {
     if (!_fleetController.hasClients) return;
     final position = _fleetController.position;
+    final cardWidth = _cardBaseWidth * _tileScale;
     final target =
-        (_selectedIndex * _cardExtent - (position.viewportDimension - 300) / 2)
+        (_selectedIndex * _cardExtent - (position.viewportDimension - cardWidth) / 2)
             .clamp(0.0, position.maxScrollExtent);
     if (animate) {
       _fleetController.animateTo(
@@ -1369,8 +1254,7 @@ class _HomeTabState extends State<_HomeTab> {
             ),
             const SizedBox(height: 18),
             Builder(builder: (context) {
-              final sw = MediaQuery.of(context).size.width;
-              final tileScale = (sw / 411.0).clamp(0.82, 1.0);
+              final tileScale = _tileScale;
               return SizedBox(
               height: 324 * tileScale,
               child: ListView.separated(
@@ -1405,79 +1289,6 @@ class _HomeTabState extends State<_HomeTab> {
                 },
               ),
             );}),
-            const SizedBox(height: 18),
-            Container(
-              padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
-              decoration: BoxDecoration(
-                color: hc.surface,
-                borderRadius: BorderRadius.circular(18),
-                border: Border.all(color: _accent.withValues(alpha: 0.2)),
-                boxShadow: [
-                  BoxShadow(
-                    color: _accent.withValues(alpha: 0.06),
-                    blurRadius: 16,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-              ),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'ON THE STAND',
-                          style: GoogleFonts.rajdhani(
-                            color: hc.muted,
-                            fontSize: 8,
-                            fontWeight: FontWeight.w800,
-                            letterSpacing: 0.8,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          widget.selected.displayName,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: GoogleFonts.rajdhani(
-                            color: hc.ink,
-                            fontSize: 14,
-                            fontWeight: FontWeight.w800,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  FilledButton.icon(
-                    onPressed: widget.isUnlocked(widget.selected)
-                        ? () => widget.onPlay(widget.selected)
-                        : null,
-                    icon: const Icon(Icons.play_arrow_rounded, size: 20),
-                    label: Text('START BOARDING'),
-                    style: FilledButton.styleFrom(
-                      backgroundColor: _accent,
-                      foregroundColor: _HC.onAccent,
-                      disabledBackgroundColor: hc.surfaceElevated,
-                      disabledForegroundColor: hc.muted,
-                      textStyle: GoogleFonts.rajdhani(
-                        fontSize: 10,
-                        fontWeight: FontWeight.w900,
-                        letterSpacing: 0.55,
-                      ),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 14,
-                        vertical: 14,
-                      ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(13),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
           ],
         ),
       ),
@@ -2063,31 +1874,36 @@ class _RankingsTabState extends State<_RankingsTab> {
             children: [
               const _PageTitle(kicker: 'COMPETE', title: 'World Rankings'),
               const SizedBox(height: 18),
-              SizedBox(
-                height: 40,
-                child: ListView.separated(
-                  scrollDirection: Axis.horizontal,
-                  itemCount: AircraftCatalog.all.length,
-                  separatorBuilder: (_, _) => const SizedBox(width: 8),
-                  itemBuilder: (context, index) {
-                    final item = AircraftCatalog.all[index];
-                    final active = item.id == _selectedId;
-                    return ChoiceChip(
-                      label: Text(item.model),
-                      selected: active,
-                      onSelected: (_) => _selectAircraft(item.id),
-                      selectedColor: _accent,
-                      backgroundColor: hc.surface,
-                      labelStyle: GoogleFonts.rajdhani(
-                        color: active ? _HC.onAccent : hc.muted,
-                        fontSize: 11,
-                        fontWeight: FontWeight.w700,
-                      ),
-                      side: BorderSide.none,
-                    );
-                  },
-                ),
-              ),
+              Builder(builder: (context) {
+                final playable = AircraftCatalog.all
+                    .where((a) => a.layout != null)
+                    .toList();
+                return SizedBox(
+                  height: 40,
+                  child: ListView.separated(
+                    scrollDirection: Axis.horizontal,
+                    itemCount: playable.length,
+                    separatorBuilder: (_, _) => const SizedBox(width: 8),
+                    itemBuilder: (context, index) {
+                      final item = playable[index];
+                      final active = item.id == _selectedId;
+                      return ChoiceChip(
+                        label: Text(item.model),
+                        selected: active,
+                        onSelected: (_) => _selectAircraft(item.id),
+                        selectedColor: _accent,
+                        backgroundColor: hc.surface,
+                        labelStyle: GoogleFonts.rajdhani(
+                          color: active ? _HC.onAccent : hc.muted,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                        ),
+                        side: BorderSide.none,
+                      );
+                    },
+                  ),
+                );
+              }),
               const SizedBox(height: 17),
               ClipRRect(
                 borderRadius: BorderRadius.circular(19),
@@ -3132,6 +2948,10 @@ class _PrivacyPolicySheet extends StatelessWidget {
                         _PpBullet('Your Google email address — stored to identify your account and support data deletion requests'),
                         _PpBullet('We do not access your name, profile photo, or any other Google data'),
                         SizedBox(height: 10),
+                        _PpSubheading('Only if you grant notification permission'),
+                        _PpBullet('A Firebase Cloud Messaging (FCM) token identifying your device — used only to deliver push notifications such as leaderboard rank alerts'),
+                        _PpBullet('You can revoke permission at any time in your device notification settings; your token will no longer be used'),
+                        SizedBox(height: 10),
                         _PpSubheading('Crash & error data'),
                         _PpBullet('Device type, OS version, app version, and stack traces sent to Sentry'),
                         _PpBullet('No personally identifiable information in crash reports'),
@@ -3146,6 +2966,7 @@ class _PrivacyPolicySheet extends StatelessWidget {
                         _PpTableRow(key_: 'Best times', value: 'Power the global leaderboard'),
                         _PpTableRow(key_: 'Google account ID', value: 'Record and restore your Premium Fleet purchase'),
                         _PpTableRow(key_: 'Google email', value: 'Account identification and data deletion requests'),
+                        _PpTableRow(key_: 'FCM token', value: 'Send push notifications (leaderboard rank alerts) to your device'),
                         _PpTableRow(key_: 'Crash data', value: 'Fix bugs and improve app stability'),
                       ],
                     ),
@@ -3156,6 +2977,7 @@ class _PrivacyPolicySheet extends StatelessWidget {
                         _PpBullet('Supabase — leaderboard and purchase storage (EU: eu-west-1)'),
                         _PpBullet('Sentry — crash reporting (EU-hosted)'),
                         _PpBullet('Google Sign-In — optional authentication for purchases'),
+                        _PpBullet('Firebase Cloud Messaging (FCM) — push notification delivery (only if permission granted)'),
                       ],
                     ),
                     SizedBox(height: 24),

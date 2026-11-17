@@ -106,7 +106,6 @@ class _BoardingGamePageState extends State<BoardingGamePage>
   final _bestPillKey = GlobalKey();
   final _zoneRowKey = GlobalKey();
   final _zoneBChipKey = GlobalKey();
-  final _cabinKey = GlobalKey();
   Map<TutorialStep, Rect> _anatomyRects = {};
 
   static const _zones = CabinGame.zoneColors;
@@ -158,14 +157,22 @@ class _BoardingGamePageState extends State<BoardingGamePage>
           ? TutorialStep.values[_tutorialStep]
           : null;
       if (step == TutorialStep.boardNow && _simulation.isBoarding) {
-        // Boarding started — dismiss overlay so simulation runs unobstructed.
-        setState(() => _tutorialStep = TutorialStep.values.length);
+        // Boarding started — switch to the watching toast.
+        setState(() => _tutorialStep = TutorialStep.watching.index);
       }
+      if (step == TutorialStep.watching && _simulation.isComplete) {
+        final ms = (_simulation.elapsedSeconds * 1000).round();
+        setState(() {
+          _tutBoardingTimeMs = ms;
+          _tutorialStep = TutorialStep.graduation.index;
+        });
+      }
+      // Legacy fallback: if we somehow skipped watching, still catch completion.
       if (step == null && _simulation.isComplete) {
         final ms = (_simulation.elapsedSeconds * 1000).round();
         setState(() {
           _tutBoardingTimeMs = ms;
-          _tutorialStep = TutorialStep.debrief.index;
+          _tutorialStep = TutorialStep.graduation.index;
         });
       }
     }
@@ -225,10 +232,9 @@ class _BoardingGamePageState extends State<BoardingGamePage>
       return;
     }
     setState(() => _tutorialStep = next);
-    // When entering anatomySeats or paintZoneA, scroll cabin to show seat rows.
+    // When entering paintZoneA, scroll cabin to show seat rows.
     final nextStep = TutorialStep.values[next];
-    if (nextStep == TutorialStep.anatomySeats ||
-        nextStep == TutorialStep.paintZoneA) {
+    if (nextStep == TutorialStep.paintZoneA) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (_cabinScrollController.hasClients) {
           final max = _cabinScrollController.position.maxScrollExtent;
@@ -269,9 +275,9 @@ class _BoardingGamePageState extends State<BoardingGamePage>
     });
   }
 
-  void _finishTutorial() {
-    widget.onCompleted?.call(0);
-    Navigator.of(context).pop();
+  Future<void> _finishTutorial() async {
+    await widget.onCompleted?.call(0);
+    if (mounted) Navigator.of(context).pop();
   }
 
   List<int> _zoneSnapshot() => [for (final s in _simulation.seats) s.zone];
@@ -314,8 +320,6 @@ class _BoardingGamePageState extends State<BoardingGamePage>
     if (best != null) rects[TutorialStep.anatomyBest] = best;
     final zones = getRect(_zoneRowKey);
     if (zones != null) rects[TutorialStep.anatomyZones] = zones;
-    final cabin = getRect(_cabinKey);
-    if (cabin != null) rects[TutorialStep.anatomySeats] = cabin;
     final zoneB = getRect(_zoneBChipKey);
     if (zoneB != null) rects[TutorialStep.paintZoneB] = zoneB;
     if (mounted) setState(() => _anatomyRects = rects);
@@ -368,7 +372,7 @@ class _BoardingGamePageState extends State<BoardingGamePage>
     // Scale the top panel and bottom bar down proportionally on small screens.
     final screenW = MediaQuery.of(context).size.width;
     // Design baseline is 411dp; clamp scale to [0.82, 1.0].
-    final uiScale = (screenW / 411.0).clamp(0.82, 1.0);
+    final uiScale = (screenW / 411.0).clamp(0.90, 1.0);
 
     return Scaffold(
       backgroundColor: c.bg,
@@ -401,12 +405,13 @@ class _BoardingGamePageState extends State<BoardingGamePage>
                   step: tutStep,
                   zoneACnt: _tutZoneACnt,
                   zoneBCnt: _tutZoneBCnt,
-                  boardingTimeMs: _tutBoardingTimeMs,
+                  selectedZone: _selectedZone,
                   highlightRect: _anatomyRects[tutStep],
                   onDismiss: tutStep == TutorialStep.graduation
                       ? _finishTutorial
                       : _advanceTutorial,
                   onReplay: _tutorialReplay,
+                  boardingTimeMs: _tutBoardingTimeMs,
                 ),
               ),
             if (complete && !widget.tutorialMode)
@@ -679,7 +684,6 @@ class _BoardingGamePageState extends State<BoardingGamePage>
 
   Widget _buildCabin(_C c, bool complete) {
     return Padding(
-      key: _cabinKey,
       padding: const EdgeInsets.fromLTRB(14, 10, 14, 0),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(22),
@@ -907,13 +911,17 @@ class _BoardingGamePageState extends State<BoardingGamePage>
   // ─── Completion overlay ──────────────────────────────────────────────────
 
   Widget _buildCompletionOverlay(_C c) {
+    final screenH = MediaQuery.of(context).size.height;
     return Container(
       color: (c._dark ? Colors.black : c.bg).withValues(alpha: c._dark ? 0.72 : 0.80),
-      alignment: Alignment.center,
+      alignment: Alignment.topCenter,
       child: SingleChildScrollView(
+        padding: EdgeInsets.symmetric(
+          horizontal: 20,
+          vertical: (screenH * 0.05).clamp(12.0, 28.0),
+        ),
         child: Container(
-          margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
-          padding: const EdgeInsets.fromLTRB(22, 26, 22, 20),
+          padding: const EdgeInsets.fromLTRB(22, 22, 22, 20),
           decoration: BoxDecoration(
             color: c.surface,
             borderRadius: BorderRadius.circular(24),
@@ -1024,26 +1032,23 @@ class _BoardingGamePageState extends State<BoardingGamePage>
                   style: TextStyle(color: c.muted, fontSize: 12),
                 ),
                 const SizedBox(height: 18),
-                Row(
-                  children: [
-                    Expanded(
-                      child: _OutlineBtn(
-                        label: 'TRY AGAIN',
-                        icon: Icons.replay_rounded,
-                        c: c,
-                        onTap: _replay,
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      flex: 2,
-                      child: _PrimaryBtn(
-                        label: 'NEXT FLIGHT',
-                        icon: Icons.skip_next_rounded,
-                        onTap: () => widget.onNext?.call(),
-                      ),
-                    ),
-                  ],
+                SizedBox(
+                  width: double.infinity,
+                  child: _ActiveButton(
+                    label: 'TRY AGAIN',
+                    icon: Icons.replay_rounded,
+                    onTap: _replay,
+                  ),
+                ),
+                const SizedBox(height: 10),
+                SizedBox(
+                  width: double.infinity,
+                  child: _OutlineBtn(
+                    label: 'BACK TO FLEET',
+                    icon: Icons.arrow_back_rounded,
+                    c: c,
+                    onTap: () => unawaited(_backToFleet()),
+                  ),
                 ),
               ],
             ),
@@ -1129,8 +1134,7 @@ class _CompletionContentState extends State<_CompletionContent> {
   @override
   Widget build(BuildContext context) {
     final c = widget.c;
-    return SingleChildScrollView(
-      child: Column(
+    return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
         // Status chip
@@ -1208,13 +1212,16 @@ class _CompletionContentState extends State<_CompletionContent> {
               .withValues(alpha: 0.12),
         ),
         const SizedBox(height: 14),
-        Text(
-          widget.isOverTarget ? 'Over time!' : 'All aboard!',
-          style: GoogleFonts.rajdhani(
-            color: c.ink,
-            fontSize: 28,
-            fontWeight: FontWeight.w800,
-            height: 1.1,
+        FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Text(
+            widget.isOverTarget ? 'Over time!' : 'All aboard!',
+            style: GoogleFonts.rajdhani(
+              color: c.ink,
+              fontSize: 28,
+              fontWeight: FontWeight.w800,
+              height: 1.1,
+            ),
           ),
         ),
         const SizedBox(height: 4),
@@ -1425,7 +1432,6 @@ class _CompletionContentState extends State<_CompletionContent> {
             ],
           ),
       ],
-      ),
     );
   }
 }

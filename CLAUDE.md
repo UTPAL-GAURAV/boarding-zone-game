@@ -410,6 +410,47 @@ All credentials live in the **"Swipe IQ" Google Cloud project** (project number 
 
 ---
 
+## UI implementation standards
+
+Every UI change — however small — must be screen-size safe by default. Do not wait to be asked.
+
+### Small-screen baseline
+
+Target: **360 × 640 dp** (old Samsung Galaxy S-series). Every layout must render without overflow, clipping, or invisible content at this size.
+
+**Required techniques — apply these automatically on any UI work:**
+
+- **Scrollable content areas**: any column that could exceed the viewport must be wrapped in `SingleChildScrollView`. Never nest two scroll views on the same axis.
+- **Overflow-safe text**: wrap headings and labels that could overflow in `FittedBox(fit: BoxFit.scaleDown)`.
+- **Responsive padding/spacing**: derive vertical padding from screen height — `(screenH * fraction).clamp(minDp, maxDp)` — rather than hardcoding.
+- **Adaptive image/asset heights**: use `constraints.maxHeight` or screen height to cap image heights on short screens (e.g. `constraints.maxHeight < 520 ? 110.0 : 155.0`).
+- **Absolute-positioned overlays**: always give a `top:` bound in addition to `bottom:` so the widget cannot escape the safe area on short screens.
+- **No `ConstrainedBox(minHeight: ...)`** calculated from `MediaQuery.padding` — this underestimates on gesture-nav devices (use `viewPadding` if you need insets, or remove the constraint entirely and let the content scroll).
+- **`alignment: topCenter`** on scroll-container parents (not `center`) — centering gives the scroll unbounded height and breaks scrolling.
+- **Stacked/absolute Maya or decorative images**: use `Padding(top: overhang)` on the card so the full visual height (including the image that pokes above) is within the layout bounds and `FittedBox` scales it correctly. Do not rely on `Clip.none` alone.
+
+### Typography
+
+All text must use Google Fonts — never raw `TextStyle(fontFamily: ...)`:
+
+| Role | Font | Weight |
+|---|---|---|
+| Labels, headings, buttons | `GoogleFonts.rajdhani` | w700–w800 |
+| Body / speech bubble copy | `GoogleFonts.barlow` | w500–w600 |
+| Times, numbers, mono data | `GoogleFonts.spaceMono` | w400–w700 |
+
+### Color tokens
+
+- Amber accent: `_accent = Color(0xFFFFB930)`
+- Blue accent: `_C.accentBlue = Color(0xFF4A9EFF)`
+- All surfaces/borders use the adaptive `_C` color tokens (dark/light aware) — never hardcode hex colors for backgrounds.
+
+### `uiScale` in game page
+
+`lib/boarding/boarding_game_page.dart` has `uiScale = (screenW / 411.0).clamp(0.82, 1.0)`. Apply it to font sizes and spacing inside the game overlay so everything scales down proportionally on narrow devices.
+
+---
+
 ## Developer notes
 
 - **Version bumps require changes in exactly 2 places:**

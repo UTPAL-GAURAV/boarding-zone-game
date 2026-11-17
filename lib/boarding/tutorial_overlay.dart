@@ -1,17 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 enum TutorialStep {
-  bigIdea,        // Step 2 — full-screen: how the game works
-  anatomyBoarded, // Step 3a — dim cabin, point at BOARDED counter
-  anatomyTime,    // Step 3b — dim cabin, point at TIME
-  anatomyBest,    // Step 3c — dim cabin, point at BEST
-  anatomyZones,   // Step 3d — dim cabin, point at zone chips
-  anatomySeats,   // Step 3e — dim cabin, point at seat grid
-  paintZoneA,     // Step 4 — cabin interactive, gate ≥4 Zone A seats
-  paintZoneB,     // Step 5 — cabin interactive, gate ≥3 Zone B seats
-  boardNow,       // Step 6 — passthrough, BOARD NOW pulses
-  debrief,        // Step 7 — post-boarding debrief
-  graduation,     // Step 8 — graduation screen
+  mayaIntro,      // Step 1 — Maya introduces herself
+  anatomyBoarded, // Step 2a — dim cabin, point at BOARDED counter
+  anatomyTime,    // Step 2b — dim cabin, point at TIME
+  anatomyBest,    // Step 2c — dim cabin, point at BEST
+  anatomyZones,   // Step 2d — dim cabin, point at zone chips
+  paintZoneA,     // Step 3 — cabin interactive, gate ≥4 Zone A seats
+  paintZoneB,     // Step 4 — cabin interactive, gate ≥3 Zone B seats
+  boardNow,       // Step 5 — passthrough, BOARD NOW pulses
+  watching,       // Step 6 — non-interactive toast while boarding runs
+  graduation,     // Step 7 — graduation screen
 }
 
 class TutorialOverlay extends StatefulWidget {
@@ -20,19 +20,21 @@ class TutorialOverlay extends StatefulWidget {
     required this.step,
     required this.zoneACnt,
     required this.zoneBCnt,
-    this.boardingTimeMs,
+    required this.selectedZone,
     this.highlightRect,
     required this.onDismiss,
     required this.onReplay,
+    this.boardingTimeMs,
   });
 
   final TutorialStep step;
   final int zoneACnt;
   final int zoneBCnt;
-  final int? boardingTimeMs;
+  final int selectedZone;
   final Rect? highlightRect;
   final VoidCallback onDismiss;
   final VoidCallback onReplay;
+  final int? boardingTimeMs;
 
   @override
   State<TutorialOverlay> createState() => _TutorialOverlayState();
@@ -48,17 +50,8 @@ class _TutorialOverlayState extends State<TutorialOverlay> {
   Widget build(BuildContext context) {
     switch (widget.step) {
       // ── Full-cover steps ───────────────────────────────────────────────
-      case TutorialStep.bigIdea:
-        return _buildFullCover(
-          title: 'How this game works',
-          body:
-              '1. You paint seats into boarding groups (zones)\n'
-              '2. Tap START BOARDING — passengers board in your zone order automatically\n'
-              '3. Your goal: the fastest possible total boarding time\n\n'
-              'You are the crew manager — not the passenger.',
-          cta: "Show me around →",
-          onCta: widget.onDismiss,
-        );
+      case TutorialStep.mayaIntro:
+        return _buildMayaIntro();
 
       case TutorialStep.graduation:
         return _buildGraduationCover();
@@ -100,23 +93,14 @@ class _TutorialOverlayState extends State<TutorialOverlay> {
           arrowEdge: _ArrowEdge.top,
         );
 
-      case TutorialStep.anatomySeats:
-        return _buildAnatomyCard(
-          icon: Icons.event_seat_rounded,
-          label: 'SEAT GRID',
-          body: 'This is your aircraft cabin. '
-              'Tap or drag across seats to paint them into the selected zone.',
-          arrowEdge: _ArrowEdge.bottom,
-          anchorTop: true,
-        );
 
       // ── Floating cabin steps ───────────────────────────────────────────
       case TutorialStep.paintZoneA:
         final ready = widget.zoneACnt >= 4;
         return _buildFloating(
           title: 'Paint Zone A',
-          body:
-              'Zone A boards first. Tap the BACK rows to assign those seats to Zone A.\n\n'
+          body: 'Each seat in the cabin can be painted into a boarding zone. '
+              'Zone A boards first — tap or drag the back rows to start.\n\n'
               'Paint at least 4 seats to continue.',
           cta: 'NEXT →',
           ctaEnabled: ready,
@@ -138,7 +122,7 @@ class _TutorialOverlayState extends State<TutorialOverlay> {
               onCta: widget.onDismiss,
               progress: _buildZoneProgress(widget.zoneBCnt, 3),
             ),
-            if (chipRect != null)
+            if (chipRect != null && widget.selectedZone != 1 && widget.zoneBCnt < 3)
               Positioned(
                 left: chipRect.center.dx - 56,
                 top: chipRect.top - 66,
@@ -157,20 +141,19 @@ class _TutorialOverlayState extends State<TutorialOverlay> {
           showPointer: true,
         );
 
-      case TutorialStep.debrief:
-        return _buildDebrief();
+      case TutorialStep.watching:
+        return _buildWatching();
+
     }
   }
 
-  // ─── Full-cover (bigIdea, zoneNaming) ────────────────────────────────────
+  // ─── Maya intro ──────────────────────────────────────────────────────────
 
-  Widget _buildFullCover({
-    required String title,
-    required String body,
-    required String cta,
-    required VoidCallback onCta,
-    Widget? extra,
-  }) {
+  Widget _buildMayaIntro() {
+    final isDark = _isDark;
+    final titleColor = isDark ? Colors.white : const Color(0xFF0A1628);
+    final bodyColor = isDark ? const Color(0xFFB0B8CC) : const Color(0xFF5A6A8A);
+
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
       onTap: () {},
@@ -178,27 +161,62 @@ class _TutorialOverlayState extends State<TutorialOverlay> {
         color: _scrim,
         child: SafeArea(
           child: LayoutBuilder(
-            builder: (context, constraints) => SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
-              child: ConstrainedBox(
-                constraints: BoxConstraints(minHeight: constraints.maxHeight - 40),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Image.asset('assets/maya.png', height: 155, fit: BoxFit.contain),
-                    const SizedBox(height: 16),
-                    _CoachCard(
-                      title: title,
-                      body: body,
-                      cta: cta,
-                      ctaEnabled: true,
-                      onTap: onCta,
-                      extra: extra,
-                    ),
-                  ],
+            builder: (context, constraints) {
+              final mayaH = constraints.maxHeight < 520 ? 130.0 : 180.0;
+              return SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 20),
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(minHeight: constraints.maxHeight - 40),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Image.asset('assets/maya.png', height: mayaH, fit: BoxFit.contain),
+                      const SizedBox(height: 20),
+                      Text(
+                        "I'm Maya.",
+                        style: GoogleFonts.rajdhani(
+                          color: titleColor,
+                          fontSize: 32,
+                          fontWeight: FontWeight.w800,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 10),
+                      Text(
+                        'I run boarding operations around here.\nLet me show you how this works.',
+                        style: GoogleFonts.barlow(
+                          color: bodyColor,
+                          fontSize: 15,
+                          height: 1.5,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 32),
+                      SizedBox(
+                        width: double.infinity,
+                        child: FilledButton(
+                          onPressed: widget.onDismiss,
+                          style: FilledButton.styleFrom(
+                            backgroundColor: _accent,
+                            foregroundColor: const Color(0xFF0A0E1A),
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                            textStyle: GoogleFonts.rajdhani(
+                              fontWeight: FontWeight.w800,
+                              fontSize: 14,
+                              letterSpacing: 0.5,
+                            ),
+                          ),
+                          child: const Text("LET'S GO →"),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-            ),
+              );
+            },
           ),
         ),
       ),
@@ -223,8 +241,11 @@ class _TutorialOverlayState extends State<TutorialOverlay> {
       onNext: widget.onDismiss,
     );
 
+    // Maya floats above the card at -88dp. On short screens the card sits at
+    // bottom: 24 so Maya's top edge is roughly (screenH - cardH - 88). We add
+    // top padding equal to Maya's height so it is never clipped by the SafeArea.
     final cardWithMaya = anchorTop
-        ? card // no space above the card when anchored to the top
+        ? card
         : Stack(
             clipBehavior: Clip.none,
             children: [
@@ -233,7 +254,7 @@ class _TutorialOverlayState extends State<TutorialOverlay> {
                 top: -88,
                 left: 8,
                 child: IgnorePointer(
-                  child: Image.asset('assets/maya.png', height: 108, fit: BoxFit.contain),
+                  child: Image.asset('assets/maya.png', height: 84, fit: BoxFit.contain),
                 ),
               ),
             ],
@@ -255,7 +276,10 @@ class _TutorialOverlayState extends State<TutorialOverlay> {
             if (anchorTop)
               Positioned(top: 24, left: 16, right: 16, child: cardWithMaya)
             else
-              Positioned(bottom: 24, left: 16, right: 16, child: cardWithMaya),
+              // Extra top inset ensures the -88dp Maya never renders above the
+              // safe area on devices with tall status bars.
+              Positioned(bottom: 24, top: 96, left: 16, right: 16,
+                child: Align(alignment: Alignment.bottomCenter, child: cardWithMaya)),
           ],
         ),
       ),
@@ -286,27 +310,33 @@ class _TutorialOverlayState extends State<TutorialOverlay> {
 
     final screenH = MediaQuery.of(context).size.height;
     final screenW = MediaQuery.of(context).size.width;
-    // Design width of the card — fits comfortably at 411dp+.
     const cardDesignW = 360.0;
-    final availableW = screenW - 32; // 16px margin each side
+    final availableW = screenW - 32;
+
+    // Reserve vertical space for the Maya image that floats -80dp above the
+    // card, so FittedBox scales the whole unit (Maya + card) uniformly instead
+    // of clipping Maya at the top.
+    const mayaOverhang = 86.0;
 
     Widget cardWithMaya = showMaya
-        ? Stack(
-            clipBehavior: Clip.none,
-            children: [
-              card,
-              Positioned(
-                top: -80,
-                left: 8,
-                child: IgnorePointer(
-                  child: Image.asset('assets/maya.png', height: 96, fit: BoxFit.contain),
+        ? Padding(
+            padding: const EdgeInsets.only(top: mayaOverhang),
+            child: Stack(
+              clipBehavior: Clip.none,
+              children: [
+                card,
+                Positioned(
+                  top: -mayaOverhang,
+                  left: 8,
+                  child: IgnorePointer(
+                    child: Image.asset('assets/maya.png', height: 90, fit: BoxFit.contain),
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           )
         : card;
 
-    // Scale the whole Maya+card unit down uniformly on small screens.
     if (availableW < cardDesignW) {
       cardWithMaya = FittedBox(
         fit: BoxFit.scaleDown,
@@ -322,140 +352,65 @@ class _TutorialOverlayState extends State<TutorialOverlay> {
           left: 16,
           right: 16,
           child: ConstrainedBox(
-            constraints: BoxConstraints(
-              maxHeight: screenH * 0.55,
-            ),
+            constraints: BoxConstraints(maxHeight: screenH * 0.65),
             child: SingleChildScrollView(child: cardWithMaya),
           ),
         ),
+        // Pointer centered above the START BOARDING button.
         if (showPointer)
-          const Positioned(
+          Positioned(
             bottom: 58,
-            right: 72,
-            child: IgnorePointer(child: _BouncingPointer()),
+            left: 0,
+            right: 0,
+            child: Center(
+              child: IgnorePointer(child: _BouncingPointer()),
+            ),
           ),
       ],
     );
   }
 
-  // ─── Debrief ─────────────────────────────────────────────────────────────
+  // ─── Watching toast (boarding in progress) ──────────────────────────────
 
-  Widget _buildDebrief() {
+  Widget _buildWatching() {
     final isDark = _isDark;
-    final timeStr = widget.boardingTimeMs != null
-        ? _fmtMs(widget.boardingTimeMs!)
-        : '—';
-    final titleColor = isDark ? Colors.white : const Color(0xFF0A1628);
+    final bg = isDark ? const Color(0xFF12192E) : Colors.white;
     final bodyColor = isDark ? const Color(0xFFB0B8CC) : const Color(0xFF5A6A8A);
 
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onTap: () {},
-      child: Container(
-        color: _scrim,
+    return IgnorePointer(
+      child: Align(
+        alignment: Alignment.topCenter,
         child: SafeArea(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
-            child: ConstrainedBox(
-              constraints: BoxConstraints(
-                minHeight: MediaQuery.of(context).size.height -
-                    MediaQuery.of(context).padding.top -
-                    MediaQuery.of(context).padding.bottom -
-                    40,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(24, 14, 24, 0),
+            child: Container(
+              decoration: BoxDecoration(
+                color: bg,
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: _accent.withValues(alpha: 0.35)),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: isDark ? 0.45 : 0.10),
+                    blurRadius: 16,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
               ),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  Image.asset('assets/maya.png', height: 110, fit: BoxFit.contain),
-                  const SizedBox(height: 10),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                    decoration: BoxDecoration(
-                      color: isDark
-                          ? const Color(0xFF1E2840)
-                          : const Color(0xFFE8F0FF),
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(
-                        color: _accent.withValues(alpha: 0.5),
+                  const Icon(Icons.visibility_outlined, color: _accent, size: 18),
+                  const SizedBox(width: 10),
+                  Flexible(
+                    child: Text(
+                      'Sit back and watch — your zones are doing the work.',
+                      style: GoogleFonts.barlow(
+                        color: bodyColor,
+                        fontSize: 13,
+                        height: 1.35,
                       ),
                     ),
-                    child: Column(
-                      children: [
-                        Text(
-                          'YOUR BOARDING TIME',
-                          style: TextStyle(
-                            color: _accent.withValues(alpha: 0.8),
-                            fontSize: 9,
-                            fontWeight: FontWeight.w800,
-                            letterSpacing: 1.2,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        FittedBox(
-                          fit: BoxFit.scaleDown,
-                          child: Text(
-                            timeStr,
-                            style: TextStyle(
-                              color: titleColor,
-                              fontSize: 36,
-                              fontWeight: FontWeight.w700,
-                              letterSpacing: 1,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 14),
-                  Text(
-                    "That's your first time!\n\nUse REPLAY to adjust your zones and go faster.",
-                    style: TextStyle(color: bodyColor, fontSize: 13, height: 1.5),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 20),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: OutlinedButton(
-                          onPressed: widget.onReplay,
-                          style: OutlinedButton.styleFrom(
-                            foregroundColor: titleColor,
-                            side: BorderSide(
-                              color: isDark
-                                  ? Colors.white.withValues(alpha: 0.3)
-                                  : const Color(0xFF0A1628).withValues(alpha: 0.25),
-                            ),
-                            padding: const EdgeInsets.symmetric(vertical: 14),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(14),
-                            ),
-                          ),
-                          child: const Text(
-                            'REPLAY',
-                            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        flex: 2,
-                        child: FilledButton(
-                          onPressed: widget.onDismiss,
-                          style: FilledButton.styleFrom(
-                            backgroundColor: _accent,
-                            foregroundColor: const Color(0xFF0A0E1A),
-                            padding: const EdgeInsets.symmetric(vertical: 14),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(14),
-                            ),
-                          ),
-                          child: const Text(
-                            "I GET IT →",
-                            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
-                          ),
-                        ),
-                      ),
-                    ],
                   ),
                 ],
               ),
@@ -468,10 +423,16 @@ class _TutorialOverlayState extends State<TutorialOverlay> {
 
   // ─── Graduation ───────────────────────────────────────────────────────────
 
+  String _fmtMs(int ms) {
+    final s = ms ~/ 1000;
+    return '${s ~/ 60}:${(s % 60).toString().padLeft(2, '0')}.${(ms % 1000).toString().padLeft(3, '0')}';
+  }
+
   Widget _buildGraduationCover() {
     final isDark = _isDark;
     final titleColor = isDark ? Colors.white : const Color(0xFF0A1628);
-    final bodyColor = isDark ? const Color(0xFFB0B8CC) : const Color(0xFF5A6A8A);
+    final subtitleColor = isDark ? Colors.white70 : const Color(0xFF4A5568);
+    final timeMs = widget.boardingTimeMs;
 
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
@@ -479,63 +440,115 @@ class _TutorialOverlayState extends State<TutorialOverlay> {
       child: Container(
         color: _scrim,
         child: SafeArea(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 20),
-            child: ConstrainedBox(
-              constraints: BoxConstraints(
-                minHeight: MediaQuery.of(context).size.height -
-                    MediaQuery.of(context).padding.top -
-                    MediaQuery.of(context).padding.bottom -
-                    40,
-              ),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Image.asset('assets/maya.png', height: 120, fit: BoxFit.contain),
-                  const SizedBox(height: 10),
-                  const Icon(Icons.check_circle_rounded, color: _accent, size: 48),
-                  const SizedBox(height: 10),
-                  Text(
-                    "You're ready!",
-                    style: TextStyle(
-                      color: titleColor,
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 10),
-                  Text(
-                    'The real fleet is unlocked. Each aircraft has a target time — beat it to unlock the next one. Come back and beat your best times!',
-                    style: TextStyle(color: bodyColor, fontSize: 13, height: 1.5),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 24),
-                  SizedBox(
-                    width: double.infinity,
-                    child: FilledButton(
-                      onPressed: widget.onDismiss,
-                      style: FilledButton.styleFrom(
-                        backgroundColor: _accent,
-                        foregroundColor: const Color(0xFF0A0E1A),
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final mayaH = constraints.maxHeight < 520 ? 90.0 : 120.0;
+              return SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 20),
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(minHeight: constraints.maxHeight - 40),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Image.asset('assets/maya.png', height: mayaH, fit: BoxFit.contain),
+                      const SizedBox(height: 16),
+                      FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Text(
+                          "You're ready.",
+                          style: GoogleFonts.rajdhani(
+                            color: titleColor,
+                            fontSize: 28,
+                            fontWeight: FontWeight.w800,
+                          ),
+                          textAlign: TextAlign.center,
                         ),
                       ),
-                      child: const Text(
-                        'GOT IT — TAKE ME TO THE FLEET',
-                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
-                        overflow: TextOverflow.ellipsis,
-                        maxLines: 1,
+                      const SizedBox(height: 8),
+                      Text(
+                        'Board passengers in minimum possible time.',
+                        style: GoogleFonts.barlow(
+                          color: subtitleColor,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                        ),
+                        textAlign: TextAlign.center,
                       ),
-                    ),
+                      if (timeMs != null) ...[
+                        const SizedBox(height: 20),
+                        _buildTimeCard(timeMs, isDark),
+                      ],
+                      const SizedBox(height: 28),
+                      SizedBox(
+                        width: double.infinity,
+                        child: FilledButton(
+                          onPressed: widget.onDismiss,
+                          style: FilledButton.styleFrom(
+                            backgroundColor: _accent,
+                            foregroundColor: const Color(0xFF0A0E1A),
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                            textStyle: GoogleFonts.rajdhani(
+                              fontWeight: FontWeight.w800,
+                              fontSize: 14,
+                              letterSpacing: 0.5,
+                            ),
+                          ),
+                          child: const Text(
+                            "I'M READY — LET'S GO →",
+                            overflow: TextOverflow.ellipsis,
+                            maxLines: 1,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
-                ],
-              ),
-            ),
+                ),
+              );
+            },
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildTimeCard(int ms, bool isDark) {
+    final cardBg = isDark ? const Color(0xFF1A2540) : const Color(0xFFEEF2FF);
+    final borderColor = _accent.withValues(alpha: 0.6);
+    final labelColor = _accent;
+    final timeColor = isDark ? Colors.white : const Color(0xFF0A1628);
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+      decoration: BoxDecoration(
+        color: cardBg,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: borderColor, width: 1.5),
+      ),
+      child: Column(
+        children: [
+          Text(
+            'YOUR BOARDING TIME',
+            style: GoogleFonts.rajdhani(
+              color: labelColor,
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 1.2,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            _fmtMs(ms),
+            style: GoogleFonts.spaceMono(
+              color: timeColor,
+              fontSize: 32,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -552,8 +565,10 @@ class _TutorialOverlayState extends State<TutorialOverlay> {
       children: [
         Text(
           '$current / $required seats',
-          style: TextStyle(
-            color: current >= required ? _accent : (isDark ? const Color(0xFF6B7A99) : const Color(0xFF8898B8)),
+          style: GoogleFonts.rajdhani(
+            color: current >= required
+                ? _accent
+                : (isDark ? const Color(0xFF6B7A99) : const Color(0xFF8898B8)),
             fontSize: 11,
             fontWeight: FontWeight.w700,
           ),
@@ -572,11 +587,6 @@ class _TutorialOverlayState extends State<TutorialOverlay> {
         ),
       ],
     );
-  }
-
-  String _fmtMs(int ms) {
-    final s = ms ~/ 1000;
-    return '${s ~/ 60}:${(s % 60).toString().padLeft(2, '0')}.${(ms % 1000).toString().padLeft(3, '0')}';
   }
 }
 
@@ -650,9 +660,9 @@ class _AnatomyTooltip extends StatelessWidget {
                     const SizedBox(width: 8),
                     Text(
                       label,
-                      style: TextStyle(
+                      style: GoogleFonts.rajdhani(
                         color: inkColor,
-                        fontWeight: FontWeight.bold,
+                        fontWeight: FontWeight.w800,
                         fontSize: 15,
                       ),
                     ),
@@ -661,7 +671,11 @@ class _AnatomyTooltip extends StatelessWidget {
                 const SizedBox(height: 10),
                 Text(
                   body,
-                  style: TextStyle(color: bodyColor, fontSize: 13, height: 1.45),
+                  style: GoogleFonts.barlow(
+                    color: bodyColor,
+                    fontSize: 13,
+                    height: 1.45,
+                  ),
                 ),
                 const SizedBox(height: 14),
                 Align(
@@ -675,7 +689,10 @@ class _AnatomyTooltip extends StatelessWidget {
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(10),
                       ),
-                      textStyle: const TextStyle(fontWeight: FontWeight.w800, fontSize: 13),
+                      textStyle: GoogleFonts.rajdhani(
+                        fontWeight: FontWeight.w800,
+                        fontSize: 13,
+                      ),
                     ),
                     child: const Text('NEXT →'),
                   ),
@@ -703,12 +720,10 @@ class _ArrowPainter extends CustomPainter {
     final paint = Paint()..color = color;
     final path = Path();
     if (pointing == _ArrowEdge.top) {
-      // Triangle pointing UP (arrow at top of card points toward header)
       path.moveTo(size.width / 2, 0);
       path.lineTo(size.width, size.height);
       path.lineTo(0, size.height);
     } else {
-      // Triangle pointing DOWN
       path.moveTo(0, 0);
       path.lineTo(size.width, 0);
       path.lineTo(size.width / 2, size.height);
@@ -803,7 +818,7 @@ class _CoachCard extends StatelessWidget {
           children: [
             Text(
               'MAYA  ·  Chief Boarding Officer',
-              style: TextStyle(
+              style: GoogleFonts.rajdhani(
                 color: _accent.withValues(alpha: 0.75),
                 fontSize: 9,
                 fontWeight: FontWeight.w800,
@@ -813,16 +828,20 @@ class _CoachCard extends StatelessWidget {
             const SizedBox(height: 6),
             Text(
               title,
-              style: TextStyle(
+              style: GoogleFonts.rajdhani(
                 color: titleColor,
-                fontWeight: FontWeight.bold,
+                fontWeight: FontWeight.w800,
                 fontSize: 16,
               ),
             ),
             const SizedBox(height: 10),
             Text(
               body,
-              style: TextStyle(color: bodyColor, fontSize: 13, height: 1.45),
+              style: GoogleFonts.barlow(
+                color: bodyColor,
+                fontSize: 13,
+                height: 1.45,
+              ),
             ),
             if (extra != null) ...[const SizedBox(height: 14), extra!],
             if (cta != null) ...[
@@ -838,7 +857,7 @@ class _CoachCard extends StatelessWidget {
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(10),
                     ),
-                    textStyle: const TextStyle(
+                    textStyle: GoogleFonts.rajdhani(
                       fontWeight: FontWeight.w800,
                       fontSize: 13,
                     ),
