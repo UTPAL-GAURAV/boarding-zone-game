@@ -156,7 +156,7 @@ class _BoardingHomeShellState extends State<BoardingHomeShell> {
       }
     }
     unawaited(AppAudio.instance.init(enabled: soundEnabled).then((_) {
-      AppAudio.instance.startBgMusic();
+      if (tutorialCompleted) AppAudio.instance.startBgMusic();
     }));
 
     // Ensure profile row exists in Supabase from first launch onwards
@@ -270,12 +270,15 @@ class _BoardingHomeShellState extends State<BoardingHomeShell> {
     required String cloudDisplayName,
     required String googleId,
   }) async {
-    // Merge any scores the temp UUID played into the canonical cloud player.
-    // Fire-and-forget — UI shouldn't block on this.
-    unawaited(_rankings.mergeScoresIntoPlayer(
-      fromPlayerId: tempPlayerId,
-      intoPlayerId: cloudPlayerId,
-    ));
+    // Merge any scores the temp UUID played into the canonical cloud player,
+    // then delete the orphan anonymous profile.
+    unawaited(() async {
+      await _rankings.mergeScoresIntoPlayer(
+        fromPlayerId: tempPlayerId,
+        intoPlayerId: cloudPlayerId,
+      );
+      await _rankings.deletePlayer(tempPlayerId);
+    }());
 
     // Switch local UUID to the canonical cloud player ID and restore display name.
     await _store.overridePlayerId(cloudPlayerId);
@@ -416,32 +419,6 @@ class _BoardingHomeShellState extends State<BoardingHomeShell> {
     );
   }
 
-  Future<void> _restorePurchase() async {
-    final account = await _shop.signIn();
-    if (!mounted) return;
-    if (account == null) return;
-    final restored = await _shop.restorePurchase(account.id);
-    if (!mounted) return;
-    if (restored) {
-      setState(() => _premiumUnlocked = true);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Purchase restored successfully!'),
-          behavior: SnackBarBehavior.floating,
-          backgroundColor: Color(0xFF2E7D32),
-        ),
-      );
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('No purchase found for this account.'),
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
-    }
-  }
-
-
   Future<void> _launchAircraft(Aircraft aircraft) async {
     final layout = aircraft.layout;
     if (!_isUnlocked(aircraft)) {
@@ -572,6 +549,7 @@ class _BoardingHomeShellState extends State<BoardingHomeShell> {
 
   Future<void> _launchTutorial() async {
     if (!mounted) return;
+    unawaited(AppAudio.instance.stopBgMusic());
     await Navigator.of(context).push(
       MaterialPageRoute<void>(
         builder: (context) {
@@ -595,6 +573,7 @@ class _BoardingHomeShellState extends State<BoardingHomeShell> {
         },
       ),
     );
+    unawaited(AppAudio.instance.startBgMusic());
     // After returning from tutorial, check if completed.
     if (!mounted) return;
     final completed = await _store.isTutorialCompleted();
@@ -722,8 +701,24 @@ class _BoardingHomeShellState extends State<BoardingHomeShell> {
               _ShopTab(
                 premiumUnlocked: _premiumUnlocked,
                 signIn: _signInForShop,
+                signOut: () async {
+                  await _shop.signOut();
+                  if (!mounted) return;
+                  final progress = await _store.loadFleetProgress(AircraftCatalog.all);
+                  if (!mounted) return;
+                  setState(() {
+                    _premiumUnlocked = false;
+                    _bestTimes = {
+                      for (final e in progress.entries) e.key: e.value.bestTimeMilliseconds,
+                    };
+                    _unlockedAircraftIds = {
+                      for (final e in progress.entries)
+                        if (e.value.unlocked) e.key,
+                    };
+                    _premiumOwnedAircraftIds = {};
+                  });
+                },
                 onPurchase: _openRazorpay,
-                onRestore: _restorePurchase,
                 playerId: crewMember.internalId,
               ),
             ],
@@ -1774,7 +1769,7 @@ class _ManufacturerLogoBadge extends StatelessWidget {
                   ManufacturerBrandAssets.monogramFor(manufacturer),
                   maxLines: 1,
                   style: GoogleFonts.rajdhani(
-                    color: _HC.onAccent,
+                    color: const Color(0xFF1A2B3C),
                     fontSize: 10,
                     fontWeight: FontWeight.w900,
                     letterSpacing: 0.3,
@@ -1788,7 +1783,7 @@ class _ManufacturerLogoBadge extends StatelessWidget {
                   child: Text(
                     ManufacturerBrandAssets.monogramFor(manufacturer),
                     style: GoogleFonts.rajdhani(
-                      color: _HC.onAccent,
+                      color: const Color(0xFF1A2B3C),
                       fontSize: 10,
                       fontWeight: FontWeight.w900,
                     ),
@@ -1824,13 +1819,14 @@ class _RankingsTabState extends State<_RankingsTab> {
   late String _selectedId;
   Future<(List<LeaderboardEntry>, LeaderboardEntry?)>? _dataFuture;
   final ScrollController _chipScrollController = ScrollController();
+  final Map<String, GlobalKey> _chipKeys = {};
 
   @override
   void initState() {
     super.initState();
     _selectedId = widget.initialSelectedId;
     if (_isUnlocked(_selectedId)) _dataFuture = _fetch(_selectedId);
-    WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToSelected());
+    WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToSelected(animate: false));
   }
 
   @override
@@ -1857,21 +1853,46 @@ class _RankingsTabState extends State<_RankingsTab> {
         widget.bestTimes[id] != null;
   }
 
-  void _scrollToSelected() {
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+  void _scrollToSelected({bool animate = true}) {
+    void attempt(bool tryAnimate) {
       if (!_chipScrollController.hasClients) return;
-      final playable =
-          AircraftCatalog.all.where((a) => a.layout != null).toList();
-      final idx = playable.indexWhere((a) => a.id == _selectedId);
-      if (idx < 0) return;
-      const chipWidth = 84.0;
-      const sep = 8.0;
-      _chipScrollController.animateTo(
-        (idx * (chipWidth + sep))
-            .clamp(0.0, _chipScrollController.position.maxScrollExtent),
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeOut,
-      );
+      final pos = _chipScrollController.position;
+      if (!pos.hasContentDimensions) return;
+
+      // Use the chip's GlobalKey to get its exact rendered width and offset,
+      // so centering works regardless of varying label lengths.
+      final key = _chipKeys[_selectedId];
+      final ctx = key?.currentContext;
+      if (ctx == null) return;
+      final box = ctx.findRenderObject() as RenderBox?;
+      if (box == null || !box.hasSize) return;
+      final chipWidth = box.size.width;
+      final chipOffset = box.localToGlobal(Offset.zero).dx;
+      // chipOffset is in global screen coords; convert to scroll offset.
+      final target = (pos.pixels + chipOffset - (pos.viewportDimension - chipWidth) / 2)
+          .clamp(0.0, pos.maxScrollExtent);
+
+      if (tryAnimate) {
+        _chipScrollController.animateTo(
+          target,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeOut,
+        );
+      } else {
+        _chipScrollController.jumpTo(target);
+      }
+    }
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      if (_chipScrollController.hasClients &&
+          _chipScrollController.position.hasContentDimensions) {
+        attempt(animate);
+      } else {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) attempt(animate);
+        });
+      }
     });
   }
 
@@ -1926,8 +1947,11 @@ class _RankingsTabState extends State<_RankingsTab> {
                       final hasPlayed =
                           widget.bestTimes[item.id] != null;
                       final isLocked = !isPremium && !hasPlayed;
+                      final chipKey = _chipKeys.putIfAbsent(item.id, GlobalKey.new);
                       if (isLocked) {
-                        return GestureDetector(
+                        return KeyedSubtree(
+                          key: chipKey,
+                          child: GestureDetector(
                           onTap: () => ScaffoldMessenger.of(context)
                               .showSnackBar(SnackBar(
                             content: Text(
@@ -1941,21 +1965,29 @@ class _RankingsTabState extends State<_RankingsTab> {
                           child: Chip(
                             avatar: Icon(Icons.lock_rounded,
                                 size: 10,
-                                color: _accent.withValues(alpha: 0.6)),
+                                color: active
+                                    ? _HC.onAccent
+                                    : _accent.withValues(alpha: 0.6)),
                             label: Text(item.model),
-                            backgroundColor:
-                                _accent.withValues(alpha: 0.08),
+                            backgroundColor: active
+                                ? _accent
+                                : _accent.withValues(alpha: 0.08),
                             labelStyle: GoogleFonts.rajdhani(
-                              color: hc.muted,
+                              color: active ? _HC.onAccent : hc.muted,
                               fontSize: 11,
                               fontWeight: FontWeight.w700,
                             ),
                             side: BorderSide(
-                                color: _accent.withValues(alpha: 0.25)),
+                                color: active
+                                    ? _accent
+                                    : _accent.withValues(alpha: 0.25)),
                           ),
+                        ),
                         );
                       }
-                      return ChoiceChip(
+                      return KeyedSubtree(
+                        key: chipKey,
+                        child: ChoiceChip(
                         label: Text(item.model),
                         selected: active,
                         onSelected: (_) => _selectAircraft(item.id),
@@ -1967,6 +1999,7 @@ class _RankingsTabState extends State<_RankingsTab> {
                           fontWeight: FontWeight.w700,
                         ),
                         side: BorderSide.none,
+                      ),
                       );
                     },
                   ),
@@ -2213,14 +2246,14 @@ class _ShopTab extends StatefulWidget {
   const _ShopTab({
     required this.premiumUnlocked,
     required this.signIn,
+    required this.signOut,
     required this.onPurchase,
-    required this.onRestore,
     required this.playerId,
   });
   final bool premiumUnlocked;
   final Future<GoogleSignInAccount?> Function() signIn;
+  final Future<void> Function() signOut;
   final void Function(GoogleSignInAccount) onPurchase;
-  final VoidCallback onRestore;
   final String playerId;
 
   @override
@@ -2229,7 +2262,19 @@ class _ShopTab extends StatefulWidget {
 
 class _ShopTabState extends State<_ShopTab> {
   GoogleSignInAccount? _account;
+  String? _cachedEmail;
   bool _signingIn = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadCachedEmail();
+  }
+
+  Future<void> _loadCachedEmail() async {
+    final email = await ShopService().cachedEmail();
+    if (mounted) setState(() => _cachedEmail = email);
+  }
 
   Future<void> _handleSignIn() async {
     setState(() => _signingIn = true);
@@ -2247,7 +2292,17 @@ class _ShopTabState extends State<_ShopTab> {
     }
     setState(() {
       _account = account;
+      _cachedEmail = account.email;
       _signingIn = false;
+    });
+  }
+
+  Future<void> _handleSignOut() async {
+    await widget.signOut();
+    if (!mounted) return;
+    setState(() {
+      _account = null;
+      _cachedEmail = null;
     });
   }
 
@@ -2277,10 +2332,11 @@ class _ShopTabState extends State<_ShopTab> {
                 aircraftList: premiumAircraft,
                 unlocked: widget.premiumUnlocked,
                 signedInAccount: _account,
+                cachedEmail: _cachedEmail,
                 signingIn: _signingIn,
                 onSignIn: _handleSignIn,
+                onSignOut: _handleSignOut,
                 onPurchase: _account != null ? _handlePurchase : null,
-                onRestore: widget.onRestore,
               ),
 
               const SizedBox(height: 20),
@@ -2301,19 +2357,21 @@ class _PremiumPackCard extends StatelessWidget {
     required this.aircraftList,
     required this.unlocked,
     required this.signedInAccount,
+    required this.cachedEmail,
     required this.signingIn,
     required this.onSignIn,
+    required this.onSignOut,
     required this.onPurchase,
-    required this.onRestore,
   });
 
   final List<Aircraft> aircraftList;
   final bool unlocked;
   final GoogleSignInAccount? signedInAccount;
+  final String? cachedEmail;
   final bool signingIn;
   final VoidCallback onSignIn;
+  final Future<void> Function() onSignOut;
   final VoidCallback? onPurchase;
-  final VoidCallback onRestore;
 
   @override
   Widget build(BuildContext context) {
@@ -2525,41 +2583,9 @@ class _PremiumPackCard extends StatelessWidget {
                   ),
                 ] else ...[
                   // Step 2 — signed in, show account + purchase button
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                    decoration: BoxDecoration(
-                      color: hc.surfaceElevated,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Row(
-                      children: [
-                        const Icon(
-                          Icons.check_circle_rounded,
-                          color: Color(0xFF66BB6A),
-                          size: 16,
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            signedInAccount!.displayName ?? signedInAccount!.email,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: GoogleFonts.rajdhani(
-                              color: hc.ink,
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ),
-                        Text(
-                          'Signed in',
-                          style: GoogleFonts.rajdhani(
-                            color: hc.muted,
-                            fontSize: 10,
-                          ),
-                        ),
-                      ],
-                    ),
+                  _SignedInRow(
+                    email: signedInAccount!.email,
+                    onSignOut: onSignOut,
                   ),
                   const SizedBox(height: 10),
                   SizedBox(
@@ -2584,21 +2610,44 @@ class _PremiumPackCard extends StatelessWidget {
                     ),
                   ),
                 ],
-
-                const SizedBox(height: 10),
-                Center(
-                  child: TextButton(
-                    onPressed: onRestore,
-                    child: Text(
-                      'Restore purchase',
-                      style: GoogleFonts.rajdhani(
-                        color: hc.muted,
-                        fontSize: 12,
+              ] else ...[
+                // Unlocked state — show account row if signed in, sign-in button if not
+                if (cachedEmail != null) ...[
+                  _SignedInRow(email: cachedEmail!, onSignOut: onSignOut),
+                  const SizedBox(height: 16),
+                ] else ...[
+                  SizedBox(
+                    width: double.infinity,
+                    child: FilledButton.icon(
+                      onPressed: signingIn ? null : onSignIn,
+                      icon: signingIn
+                          ? const SizedBox(
+                              width: 16,
+                              height: 16,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: _HC.onAccent,
+                              ),
+                            )
+                          : const Icon(Icons.login_rounded, size: 18),
+                      label: Text(signingIn ? 'Signing in…' : 'Sign in with Google'),
+                      style: FilledButton.styleFrom(
+                        backgroundColor: _accent,
+                        foregroundColor: _HC.onAccent,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        textStyle: GoogleFonts.rajdhani(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: 0.3,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14),
+                        ),
                       ),
                     ),
                   ),
-                ),
-              ] else ...[
+                  const SizedBox(height: 16),
+                ],
                 Center(
                   child: Column(
                     children: [
@@ -2653,6 +2702,53 @@ class _Perk extends StatelessWidget {
       ),
     ],
   );
+  }
+}
+
+class _SignedInRow extends StatelessWidget {
+  const _SignedInRow({required this.email, required this.onSignOut});
+  final String email;
+  final Future<void> Function() onSignOut;
+
+  @override
+  Widget build(BuildContext context) {
+    final hc = _HC.from(context);
+    return Container(
+      padding: const EdgeInsets.fromLTRB(14, 8, 8, 8),
+      decoration: BoxDecoration(
+        color: hc.surfaceElevated,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.check_circle_rounded,
+              color: Color(0xFF66BB6A), size: 16),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              email,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: GoogleFonts.rajdhani(
+                color: hc.ink,
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+          const SizedBox(width: 4),
+          IconButton(
+            onPressed: onSignOut,
+            icon: const Icon(Icons.logout_rounded, size: 18),
+            color: hc.muted,
+            tooltip: 'Sign out',
+            visualDensity: VisualDensity.compact,
+            padding: const EdgeInsets.all(6),
+            constraints: const BoxConstraints(),
+          ),
+        ],
+      ),
+    );
   }
 }
 

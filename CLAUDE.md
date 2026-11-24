@@ -8,7 +8,7 @@ Built with the Flame engine. Each aircraft is a timed puzzle — zone seats, boa
 **App name:** Boarding Bluster  
 **Package:** `com.nordiclabs.boardingbluster`  
 **Pubspec name:** `boarding_bluster`  
-**Version:** 1.0.4+8
+**Version:** 1.0.6+10
 
 ---
 
@@ -363,7 +363,7 @@ App never crashes on network failure — errors are swallowed after 3 retries an
 
 All credentials live in the **"Swipe IQ" Google Cloud project** (project number `284949944908`). The project name is unrelated to this app — credentials were added there intentionally and work fine.
 
-**OAuth consent screen:** External, **In production** (any Google account can sign in — no test user list).  
+**OAuth consent screen:** External, **In production** (any Google account can sign in — no test user list). '' 
 **Privacy policy URL:** `https://github.com/UTPAL-GAURAV/BoardingBluster-Privacy-Policy`
 
 **OAuth 2.0 Client IDs:**

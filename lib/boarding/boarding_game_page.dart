@@ -97,6 +97,7 @@ class _BoardingGamePageState extends State<BoardingGamePage>
   int? _currentBestMilliseconds;
   int? _previousBestMilliseconds;
   Future<int?>? _globalRankFuture;
+  Future<int?>? _previousRankFuture;
   int _tutorialStep = 0;
   int _tutZoneACnt = 0;
   int _tutZoneBCnt = 0;
@@ -194,6 +195,16 @@ class _BoardingGamePageState extends State<BoardingGamePage>
           aircraftId: id,
           bestMilliseconds: bestForRank,
         );
+        // Fire old-rank fetch in parallel only when this is a new record
+        // with a known previous best — needed to compute the rank delta.
+        if (_isNewRecord && prev != null) {
+          _previousRankFuture = svc.fetchGlobalRank(
+            aircraftId: id,
+            bestMilliseconds: prev,
+          );
+        } else {
+          _previousRankFuture = null;
+        }
       }
     }
     if (_simulation.isBoarding &&
@@ -220,6 +231,7 @@ class _BoardingGamePageState extends State<BoardingGamePage>
     _game.paused = false;
     _completionSave = null;
     _globalRankFuture = null;
+    _previousRankFuture = null;
     if (mounted) setState(() => _selectedZone = 0);
   }
 
@@ -959,6 +971,7 @@ class _BoardingGamePageState extends State<BoardingGamePage>
             onReplay: _replay,
             onNext: () => unawaited(_nextFlight()),
             globalRankFuture: _globalRankFuture,
+            previousRankFuture: _previousRankFuture,
             c: c,
           ),
         ),
@@ -1076,6 +1089,7 @@ class _CompletionContent extends StatefulWidget {
     required this.onNext,
     required this.c,
     this.globalRankFuture,
+    this.previousRankFuture,
   });
 
   final bool isOverTarget;
@@ -1089,6 +1103,7 @@ class _CompletionContent extends StatefulWidget {
   final VoidCallback onNext;
   final _C c;
   final Future<int?>? globalRankFuture;
+  final Future<int?>? previousRankFuture;
 
   @override
   State<_CompletionContent> createState() => _CompletionContentState();
@@ -1098,11 +1113,13 @@ class _CompletionContentState extends State<_CompletionContent> {
   int? _rank;
   bool _rankLoaded = false;
   bool _rankFailed = false;
+  int? _previousRank;
 
   @override
   void initState() {
     super.initState();
     _listenRank(widget.globalRankFuture);
+    _listenPreviousRank(widget.previousRankFuture);
   }
 
   @override
@@ -1113,6 +1130,10 @@ class _CompletionContentState extends State<_CompletionContent> {
       _rankLoaded = false;
       _rankFailed = false;
       _listenRank(widget.globalRankFuture);
+    }
+    if (widget.previousRankFuture != old.previousRankFuture) {
+      _previousRank = null;
+      _listenPreviousRank(widget.previousRankFuture);
     }
   }
 
@@ -1131,6 +1152,22 @@ class _CompletionContentState extends State<_CompletionContent> {
     }).catchError((_) {
       if (mounted) setState(() { _rankLoaded = true; _rankFailed = true; });
     });
+  }
+
+  void _listenPreviousRank(Future<int?>? future) {
+    if (future == null) return;
+    future.then((rank) {
+      if (mounted && rank != null) setState(() => _previousRank = rank);
+    }).catchError((_) {});  // failure just means no delta shown — silent
+  }
+
+  // Positive = moved up, null = not applicable / unknown.
+  int? get _rankDelta {
+    final r = _rank;
+    final p = _previousRank;
+    if (r == null || p == null) return null;
+    final delta = p - r;
+    return delta > 0 ? delta : null;  // only show when genuinely improved
   }
 
   @override
@@ -1357,6 +1394,31 @@ class _CompletionContentState extends State<_CompletionContent> {
                             fontWeight: FontWeight.w700,
                           ),
                         ),
+                        if (_rankDelta != null) ...[
+                          const SizedBox(width: 8),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: _C.success.withValues(alpha: 0.15),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(Icons.arrow_upward_rounded, size: 10, color: _C.success),
+                                const SizedBox(width: 2),
+                                Text(
+                                  '$_rankDelta',
+                                  style: GoogleFonts.spaceMono(
+                                    color: _C.success,
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
                       ],
                     ),
                   )
@@ -1610,6 +1672,7 @@ class _ActiveButton extends StatelessWidget {
           ),
           style: ElevatedButton.styleFrom(
             backgroundColor: Colors.transparent,
+            foregroundColor: Colors.black,
             shadowColor: Colors.transparent,
             shape:
                 RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),

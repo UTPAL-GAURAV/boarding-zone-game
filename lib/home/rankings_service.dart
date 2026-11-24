@@ -314,6 +314,27 @@ class RankingsService {
     }
   }
 
+  /// Deletes all scores and the profile row for [playerId].
+  /// Called after account consolidation to remove the orphan anonymous profile.
+  Future<void> deletePlayer(String playerId) async {
+    Sentry.addBreadcrumb(Breadcrumb(
+      message: 'deletePlayer: $playerId',
+      category: 'rankings',
+      level: SentryLevel.info,
+    ));
+    try {
+      await _db.from('scores').delete().eq('player_id', playerId);
+      await _db.from('rank_snapshots').delete().eq('player_id', playerId);
+      await _db.from('profiles').delete().eq('id', playerId);
+    } catch (e, st) {
+      await Sentry.captureException(
+        e,
+        stackTrace: st,
+        hint: Hint.withMap({'place': 'deletePlayer', 'player_id': playerId}),
+      );
+    }
+  }
+
   /// Returns the player's global rank for [aircraftId] based on [bestMilliseconds].
   /// Rank = number of players with a strictly better time + 1.
   /// Returns null on any error or timeout.

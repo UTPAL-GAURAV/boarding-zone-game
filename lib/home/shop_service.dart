@@ -61,6 +61,17 @@ class ShopService {
     await prefs.setString(_googleIdKey, googleId);
   }
 
+  Future<void> signOut() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_googleIdKey);
+    await prefs.remove(_emailKey);
+    await prefs.remove(_premiumKey);
+    try {
+      await initGoogleSignIn();
+      await GoogleSignIn.instance.signOut();
+    } catch (_) {}
+  }
+
   // ── Google Sign-In (v7 singleton API) ─────────────────────────────────────
 
   Future<void> initGoogleSignIn() async {
@@ -71,8 +82,9 @@ class ShopService {
   Future<GoogleSignInAccount?> signIn() async {
     try {
       await initGoogleSignIn();
-      // Always use interactive sign-in so the user picks their account every time.
-      // Skipping attemptLightweightAuthentication prevents silent re-login after reinstall.
+      // Sign out first so the account picker is always shown,
+      // preventing silent re-use of a previously cached account.
+      await GoogleSignIn.instance.signOut();
       final account = await GoogleSignIn.instance.authenticate();
       await _cacheGoogleId(account.id, account.email);
       return account;
